@@ -153,6 +153,17 @@ Never paste a live Stripe key (`sk_live_`, `rk_live_`) anywhere. The scripts and
 
 ---
 
+## Documentation
+
+| Document                                            | What it covers                                                                                                                      |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| [Architecture decision records](docs/adr/README.md) | Every significant decision, why it was made and what it costs                                                                       |
+| [Threat model](docs/threat-model.md)                | STRIDE analysis of what's built, with the control and test evidence for each threat, accepted risks, and what each later phase adds |
+| [Secrets inventory](docs/secrets-inventory.md)      | Every secret's name, location and rotation date (never values)                                                                      |
+| [Security policy](SECURITY.md)                      | How to report a vulnerability                                                                                                       |
+
+---
+
 ## Related repositories
 
 | Repository                                                                                      | Relationship                                                                                                          |
