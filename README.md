@@ -10,10 +10,10 @@ Part of the Burn and Churn Coffee security program: [program hub](https://github
 
 One web application for a fictional single-location café, serving two audiences:
 
-| Audience | What they get | Where |
-|---|---|---|
-| **Customers** | The café's site: menu, story, hours, order ahead, accounts, an AI order helper | Public pages, `/account/` |
-| **Staff** | A portal signed in with their work account: the counter register, the order board, the menu, shift notes, links to the intranet | `/staff/` |
+| Audience      | What they get                                                                                                                   | Where                     |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------- |
+| **Customers** | The café's site: menu, story, hours, order ahead, accounts, an AI order helper                                                  | Public pages, `/account/` |
+| **Staff**     | A portal signed in with their work account: the counter register, the order board, the menu, shift notes, links to the intranet | `/staff/`                 |
 
 It's where the program's separate pieces meet in one working system:
 
@@ -27,19 +27,19 @@ It's where the program's separate pieces meet in one working system:
 
 **Planned. The build hasn't started yet.** Nothing below is claimed as working until it's built, tested and evidenced in this repository with a date.
 
-| Phase | What ships | Status |
-|---|---|---|
-| 0. Foundations | Project skeleton on Cloudflare Workers, CI security checks, security headers, fictional-business banner | Planned |
-| 1. Design system and public site | Brand tokens, styleguide, home, menu, cart, info pages | Planned |
-| 2. Staff sign-in | Entra ID sign-in, roles, sessions, audit log | Planned |
-| 3. Register and order board | Counter orders, cash, order board, "86" an item | Planned |
-| 4. Stripe Terminal | Card payments through the simulated reader, refunds | Planned |
-| 5. Customers and Stripe Checkout | Customer accounts, online ordering, signed webhooks | Planned |
-| 6. Trial preparation | Tenant scripts and test plan, dry-run only | Planned |
-| 7. Microsoft 365 and SharePoint | SharePoint site and lists, sync, Conditional Access, evidence | Planned |
-| 8. AI order helper | Read-only assistant with caps and prompt-injection tests | Planned |
-| 9. Hardening and program alignment | Scans, restore test, evidence rolled up to the hub | Planned |
-| 10. Case study | Portfolio write-up, verified against the repos | Planned |
+| Phase                              | What ships                                                                                              | Status      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------- |
+| 0. Foundations                     | Project skeleton on Cloudflare Workers, CI security checks, security headers, fictional-business banner | In progress |
+| 1. Design system and public site   | Brand tokens, styleguide, home, menu, cart, info pages                                                  | Planned     |
+| 2. Staff sign-in                   | Entra ID sign-in, roles, sessions, audit log                                                            | Planned     |
+| 3. Register and order board        | Counter orders, cash, order board, "86" an item                                                         | Planned     |
+| 4. Stripe Terminal                 | Card payments through the simulated reader, refunds                                                     | Planned     |
+| 5. Customers and Stripe Checkout   | Customer accounts, online ordering, signed webhooks                                                     | Planned     |
+| 6. Trial preparation               | Tenant scripts and test plan, dry-run only                                                              | Planned     |
+| 7. Microsoft 365 and SharePoint    | SharePoint site and lists, sync, Conditional Access, evidence                                           | Planned     |
+| 8. AI order helper                 | Read-only assistant with caps and prompt-injection tests                                                | Planned     |
+| 9. Hardening and program alignment | Scans, restore test, evidence rolled up to the hub                                                      | Planned     |
+| 10. Case study                     | Portfolio write-up, verified against the repos                                                          | Planned     |
 
 ## Architecture (planned)
 
@@ -55,14 +55,14 @@ Cloudflare Worker (one deploy)
   Microsoft Entra ID   Microsoft Graph (SharePoint)   Stripe (test mode)
 ```
 
-| Layer | Choice |
-|---|---|
-| Hosting | Cloudflare Workers (free tier) |
-| Front end | Astro + TypeScript, Preact for interactive parts |
-| API | Hono at `/api/v1` |
-| Data | Cloudflare D1, R2 for images |
-| Sign-in | OpenID Connect with PKCE, run on the server (tokens never reach the browser) |
-| Tests | Vitest, Playwright, axe |
+| Layer     | Choice                                                                       |
+| --------- | ---------------------------------------------------------------------------- |
+| Hosting   | Cloudflare Workers (free tier)                                               |
+| Front end | Astro + TypeScript, Preact for interactive parts                             |
+| API       | Hono at `/api/v1`                                                            |
+| Data      | Cloudflare D1, R2 for images                                                 |
+| Sign-in   | OpenID Connect with PKCE, run on the server (tokens never reach the browser) |
+| Tests     | Vitest, Playwright, axe                                                      |
 
 ## Ground rules
 
@@ -75,20 +75,42 @@ Cloudflare Worker (one deploy)
 
 ## Getting started
 
-> Setup steps are filled in as each phase is built. Until Phase 0 lands there's no application to run yet.
+> Setup steps grow as each phase is built. Today the site serves the banner, a placeholder home page and a health check.
+
+### Quick start
+
+```bash
+npm ci                                  # install the exact locked dependencies
+npx playwright install chromium         # one-time browser download for the browser tests
+cp .dev.vars.example .dev.vars          # local Worker settings (see Configuration)
+npm run check-env                       # confirms settings are valid and test-mode only
+npm run dev                             # live-reloading dev server at http://localhost:4321
+```
+
+### Commands
+
+| Command                        | What it does                                                                                    |
+| ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `npm run dev`                  | Astro dev server with live reload (the strict CSP is relaxed here only, for the reload scripts) |
+| `npm run build`                | Production build into `dist/`                                                                   |
+| `npx wrangler dev --port 8787` | Runs the **built** Worker on Cloudflare's local runtime, exactly as deployed                    |
+| `npm run check`                | Everything CI runs: environment check, type check, lint, formatting, unit and API tests         |
+| `npm run e2e`                  | Browser tests (banner, headers, accessibility) against the built Worker, desktop and 360px      |
+| `npm run check-env`            | Validates `.dev.vars` and `.env`; fails on a missing value or any non-test Stripe key           |
+| `npm run format`               | Formats every file with Prettier                                                                |
 
 ### Prerequisites
 
-| Tool | Version | Used for |
-|---|---|---|
-| [Node.js](https://nodejs.org) | 22 LTS (see `.nvmrc`) | Building and running the site |
-| npm | Comes with Node.js | Installing dependencies |
-| Git | Any recent version | Cloning |
-| [Stripe CLI](https://docs.stripe.com/stripe-cli) | Latest | Forwarding test webhooks locally (Phases 4 and 5) |
-| [PowerShell 7](https://learn.microsoft.com/powershell/) and the Microsoft Graph module | Latest | Tenant setup scripts (Phases 2, 6 and 7) |
-| A local clone of the [program hub](https://github.com/MgnCoding2020/grc-paper-project-coffee-shop) | `main` | The staff roster and user provisioning scripts |
+| Tool                                                                                               | Version                         | Used for                                          |
+| -------------------------------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------- |
+| [Node.js](https://nodejs.org)                                                                      | 22.23.4 or newer (see `.nvmrc`) | Building and running the site                     |
+| npm                                                                                                | Comes with Node.js              | Installing dependencies                           |
+| Git                                                                                                | Any recent version              | Cloning                                           |
+| [Stripe CLI](https://docs.stripe.com/stripe-cli)                                                   | Latest                          | Forwarding test webhooks locally (Phases 4 and 5) |
+| [PowerShell 7](https://learn.microsoft.com/powershell/) and the Microsoft Graph module             | Latest                          | Tenant setup scripts (Phases 2, 6 and 7)          |
+| A local clone of the [program hub](https://github.com/MgnCoding2020/grc-paper-project-coffee-shop) | `main`                          | The staff roster and user provisioning scripts    |
 
-**Dependencies:** every JavaScript dependency is pinned in `package.json` and `package-lock.json` (added in Phase 0). One command installs exactly the locked versions:
+**Dependencies:** every JavaScript dependency is pinned to an exact version in `package.json` and `package-lock.json`. One command installs exactly the locked versions:
 
 ```bash
 npm ci
@@ -100,10 +122,10 @@ Wrangler (Cloudflare's CLI) is a project dependency, so it's run with `npx wrang
 
 Two git-ignored files hold every real value. Each has a committed example with placeholders and comments saying where each value comes from:
 
-| Copy | To | Read by | Holds |
-|---|---|---|---|
-| `.dev.vars.example` | `.dev.vars` | The Worker, when run locally | Sign-in app IDs and certificates, Stripe test keys, Graph credentials, Turnstile and AI keys |
-| `.env.example` | `.env` | Setup scripts in `scripts/` | Path to the hub clone, tenant ID and domain, the SharePoint site, the Stripe key used to create test resources |
+| Copy                | To          | Read by                      | Holds                                                                                                          |
+| ------------------- | ----------- | ---------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `.dev.vars.example` | `.dev.vars` | The Worker, when run locally | Sign-in app IDs and certificates, Stripe test keys, Graph credentials, Turnstile and AI keys                   |
+| `.env.example`      | `.env`      | Setup scripts in `scripts/`  | Path to the hub clone, tenant ID and domain, the SharePoint site, the Stripe key used to create test resources |
 
 ```bash
 cp .dev.vars.example .dev.vars
@@ -118,14 +140,14 @@ npx wrangler secret put STRIPE_API_KEY
 
 What you need to create first, and where each value comes from:
 
-| Value | Where to get it |
-|---|---|
-| Entra tenant ID and domain | Microsoft Entra admin centre → Overview |
-| Staff and customer app client IDs | Entra admin centre → App registrations, after the setup scripts create them |
-| Stripe test keys | Stripe Dashboard → Developers → API keys, **with Test mode on** |
-| Stripe Terminal location and reader IDs | Printed by `scripts/stripe/setup-test.mjs` |
-| Stripe webhook secret | `stripe listen` (local) or the webhook endpoint in the Dashboard |
-| Turnstile keys | Cloudflare dashboard → Turnstile (Cloudflare also publishes always-pass test keys) |
+| Value                                   | Where to get it                                                                    |
+| --------------------------------------- | ---------------------------------------------------------------------------------- |
+| Entra tenant ID and domain              | Microsoft Entra admin centre → Overview                                            |
+| Staff and customer app client IDs       | Entra admin centre → App registrations, after the setup scripts create them        |
+| Stripe test keys                        | Stripe Dashboard → Developers → API keys, **with Test mode on**                    |
+| Stripe Terminal location and reader IDs | Printed by `scripts/stripe/setup-test.mjs`                                         |
+| Stripe webhook secret                   | `stripe listen` (local) or the webhook endpoint in the Dashboard                   |
+| Turnstile keys                          | Cloudflare dashboard → Turnstile (Cloudflare also publishes always-pass test keys) |
 
 Never paste a live Stripe key (`sk_live_`, `rk_live_`) anywhere. The scripts and the app reject them.
 
@@ -133,11 +155,11 @@ Never paste a live Stripe key (`sk_live_`, `rk_live_`) anywhere. The scripts and
 
 ## Related repositories
 
-| Repository | Relationship |
-|---|---|
+| Repository                                                                                      | Relationship                                                                                                          |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
 | [grc-paper-project-coffee-shop](https://github.com/MgnCoding2020/grc-paper-project-coffee-shop) | The program hub: policies, risks, controls, change records and evidence. The roster and tenant scripts come from here |
-| [IAM-Access-Review-Lab](https://github.com/MgnCoding2020/IAM-Access-Review-Lab) | Access reviews that cover the `grp-bc-*` groups this site uses |
-| [Vendor-Risk-Assessment-Lab](https://github.com/MgnCoding2020/Vendor-Risk-Assessment-Lab) | Assessments of the vendors this site depends on |
+| [IAM-Access-Review-Lab](https://github.com/MgnCoding2020/IAM-Access-Review-Lab)                 | Access reviews that cover the `grp-bc-*` groups this site uses                                                        |
+| [Vendor-Risk-Assessment-Lab](https://github.com/MgnCoding2020/Vendor-Risk-Assessment-Lab)       | Assessments of the vendors this site depends on                                                                       |
 
 ## Reporting a security issue
 
@@ -149,4 +171,4 @@ This is a portfolio project with no real users or data, but reports are welcome.
 
 ---
 
-*This repository is a simulation for educational and portfolio purposes only. Burn and Churn Coffee, its staff and its customers are fictional.*
+_This repository is a simulation for educational and portfolio purposes only. Burn and Churn Coffee, its staff and its customers are fictional._

@@ -1,0 +1,75 @@
+/* Minimal Phase 0 styles. Replaced by src/styles/tokens.css and the design system in Phase 1. */
+
+:root {
+  color-scheme: light dark;
+  --text: #241a14;
+  --bg: #faf6ef;
+  --banner-bg: #241a14;
+  --banner-text: #faf6ef;
+  --focus: #b84a10;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #f3ece2;
+    --bg: #1a1310;
+    --banner-bg: #f3ece2;
+    --banner-text: #1a1310;
+    --focus: #ff9a5c;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.fiction-banner {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0.5rem 1rem;
+  background: var(--banner-bg);
+  color: var(--banner-text);
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.fiction-banner p {
+  margin: 0;
+}
+
+main {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip-link:focus {
+  left: 1rem;
+  top: 3rem;
+  z-index: 200;
+  padding: 0.5rem 1rem;
+  background: var(--bg);
+}

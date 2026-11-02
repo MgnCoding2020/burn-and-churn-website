@@ -1,0 +1,3 @@
+# Burn and Churn Coffee is a fictional business; this site is not for search engines.
+User-agent: *
+Disallow: /
