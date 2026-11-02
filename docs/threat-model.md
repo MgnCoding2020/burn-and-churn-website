@@ -106,12 +106,12 @@ Status: **Done** (implemented and tested, with the evidence named) · **Partial*
 
 ## 3. Accepted risks (Phase 0)
 
-| Risk                                                                        | Why accepted                                                                                | Revisit                                                     |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| No rate limiting on `/api`                                                  | Only a read-only health route exists; Cloudflare absorbs network floods                     | With the first state-changing route (Phase 2)               |
-| 11 moderate `npm audit` findings (one `minimatch` advisory) in lint tooling | Dev-only, never processes untrusted input; fix needs a major version ESLint doesn't support | When Dependabot offers the fix                              |
-| Shared `workers.dev` domain                                                 | Free tier; HSTS covers this host only; no cookies yet                                       | Before customer sign-in (Phase 5), consider a custom domain |
-| `wrangler preview` is an open-beta feature                                  | Preview builds aren't production                                                            | If it changes, use `wrangler versions upload` (ADR-0010)    |
+| Risk                                                                            | Why accepted                                                                              | Revisit                                                     |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| No rate limiting on `/api`                                                      | Only a read-only health route exists; Cloudflare absorbs network floods                   | With the first state-changing route (Phase 2)               |
+| ~~11 moderate `npm audit` findings (one `minimatch` advisory) in lint tooling~~ | **Resolved 2026-11-02:** minimatch overridden to 11.0.1; `npm audit` reports 0 (ADR-0016) | Remove the override when ESLint depends on minimatch 11     |
+| Shared `workers.dev` domain                                                     | Free tier; HSTS covers this host only; no cookies yet                                     | Before customer sign-in (Phase 5), consider a custom domain |
+| `wrangler preview` is an open-beta feature                                      | Preview builds aren't production                                                          | If it changes, use `wrangler versions upload` (ADR-0010)    |
 
 ---
 
