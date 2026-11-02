@@ -14,6 +14,8 @@ export interface BuildOptions {
   tail?: (app: Hono<AppEnv>) => void;
 }
 
+const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
 function onError(err: Error, c: Context<AppEnv>): Response {
   // Log the error class only; messages can carry upstream details.
   console.error(JSON.stringify({ level: 'error', requestId: c.get('requestId'), error: err.name }));
@@ -61,7 +63,19 @@ export function buildApp({ csp = true, log = true, tail }: BuildOptions = {}) {
     });
   }
 
-  // 4. Test-mode guard (§6.2): refuse to serve anything with a live Stripe key
+  // 4. HTTPS only (§9, SC-8). workers.dev has no "Always Use HTTPS" setting and
+  //    browsers ignore HSTS received over plain HTTP, so redirect here. 308 keeps
+  //    the method. Loopback is exempt for local development.
+  app.use(async (c, next) => {
+    const url = new URL(c.req.url);
+    if (url.protocol === 'http:' && !LOOPBACK_HOSTS.has(url.hostname)) {
+      url.protocol = 'https:';
+      return c.redirect(url.toString(), 308);
+    }
+    await next();
+  });
+
+  // 5. Test-mode guard (§6.2): refuse to serve anything with a live Stripe key
   //    or a broken environment. Only variable names are logged. At build time
   //    Astro prerenders pages through this pipeline with no Worker env at all;
   //    a deployed Worker always has one, so that case is the build, not a bypass.
