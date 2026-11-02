@@ -1,0 +1,48 @@
+# Secrets and settings read by the Cloudflare Worker when running locally (wrangler dev).
+# Copy this file to .dev.vars and fill it in. .dev.vars is git-ignored: never commit it.
+# Preview and production get their own values with `npx wrangler secret put <NAME>`.
+# Every value below is a placeholder. Sections are filled in as each build phase arrives.
+
+# --- App ---
+# local | preview | production
+APP_ENV=local
+# Exact origin used for redirect URIs and the CSRF origin check.
+APP_ORIGIN=http://localhost:8787
+
+# --- Staff sign-in: Entra ID app "bc-website-staff" (Phase 2) ---
+ENTRA_STAFF_TENANT_ID=your-tenant-id
+ENTRA_STAFF_CLIENT_ID=your-staff-app-client-id
+# Certificate credential: the private key (PEM) and the certificate thumbprint.
+# Never commit the key file itself; it is ignored by .gitignore.
+ENTRA_STAFF_CERT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nreplace-me\n-----END PRIVATE KEY-----"
+ENTRA_STAFF_CERT_THUMBPRINT=replace-me
+
+# --- Customer sign-in: Entra External ID app "bc-website-customers" (Phase 5) ---
+EXTERNAL_ID_AUTHORITY=https://your-external-tenant.ciamlogin.example/your-external-tenant-id/v2.0
+EXTERNAL_ID_CLIENT_ID=your-customer-app-client-id
+EXTERNAL_ID_CLIENT_SECRET=replace-me
+
+# --- Stripe, TEST MODE ONLY (Phases 4 and 5) ---
+# A restricted key (rk_test_...) with only the permissions the site uses.
+# The Worker refuses to start with any key that is not a test key.
+STRIPE_API_KEY=rk_test_replace_me
+# From `stripe listen` locally, or the endpoint's signing secret in the Dashboard.
+STRIPE_WEBHOOK_SECRET=whsec_replace_me
+# Printed by scripts/stripe/setup-test.mjs.
+STRIPE_TERMINAL_LOCATION_ID=tml_replace_me
+STRIPE_TERMINAL_READER_ID=tmr_replace_me
+
+# --- SharePoint sync through Microsoft Graph, app-only Sites.Selected (Phase 7) ---
+GRAPH_CLIENT_ID=your-graph-app-client-id
+GRAPH_CERT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nreplace-me\n-----END PRIVATE KEY-----"
+GRAPH_CERT_THUMBPRINT=replace-me
+SHAREPOINT_SITE_ID=replace-me
+
+# --- Cloudflare Turnstile (bot check) ---
+# Cloudflare publishes always-pass test keys for local development.
+TURNSTILE_SITE_KEY=replace-me
+TURNSTILE_SECRET_KEY=replace-me
+
+# --- AI order helper (Phase 8) ---
+AI_GATEWAY_URL=https://gateway.ai.cloudflare.example/v1/your-account/your-gateway/anthropic
+ANTHROPIC_API_KEY=replace-me
