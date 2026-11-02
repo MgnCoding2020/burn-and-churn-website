@@ -99,6 +99,31 @@ describe('CSRF origin check', () => {
   });
 });
 
+describe('HTTPS only', () => {
+  it('redirects plain HTTP to HTTPS, keeping path and query', async () => {
+    const res = await get('http://burn-and-churn.example/page?x=1');
+    expect(res.status).toBe(308);
+    expect(res.headers.get('Location')).toBe('https://burn-and-churn.example/page?x=1');
+    expect(res.headers.get('Strict-Transport-Security')).toBeTruthy();
+  });
+
+  it('redirects state-changing requests too (308 keeps the method)', async () => {
+    const res = await get(`http://burn-and-churn.example${API_BASE}/health`, { method: 'POST' });
+    expect(res.status).toBe(308);
+  });
+
+  it('serves HTTPS requests normally', async () => {
+    expect((await get(`https://burn-and-churn.example${API_BASE}/health`)).status).toBe(200);
+  });
+
+  it.each(['localhost', '127.0.0.1'])(
+    'does not redirect loopback (%s) for local development',
+    async (host) => {
+      expect((await get(`http://${host}${API_BASE}/health`)).status).toBe(200);
+    },
+  );
+});
+
 describe('errors', () => {
   it('a thrown error is a 500 problem without internal details', async () => {
     const res = await get('/boom');
