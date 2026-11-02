@@ -1,0 +1,35 @@
+---
+import FictionBanner from '../components/shared/FictionBanner.astro';
+import '../styles/base.css';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = 'Burn and Churn Coffee, a fictional café: a security portfolio project.',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content={description} />
+    <link rel="icon" href="data:," />
+    <title>{title} · Burn and Churn Coffee</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">
+      Skip to content
+    </a>
+    <FictionBanner />
+    <main id="main">
+      <slot />
+    </main>
+  </body>
+</html>
