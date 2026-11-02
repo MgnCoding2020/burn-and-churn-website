@@ -10,6 +10,14 @@ updates:
     cooldown:
       default-days: 7
     open-pull-requests-limit: 5
+    # Majors held back on purpose (ADR-0008, ADR-0015). Minor and patch updates still arrive.
+    ignore:
+      # TypeScript 7: typescript-eslint and @astrojs/check don't support it yet.
+      - dependency-name: typescript
+        update-types: ['version-update:semver-major']
+      # Vitest 5: @cloudflare/vitest-pool-workers (Phase 2) still requires Vitest 4.
+      - dependency-name: vitest
+        update-types: ['version-update:semver-major']
     groups:
       dev-tooling:
         dependency-type: development
