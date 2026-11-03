@@ -22,6 +22,24 @@ const tastingNotes = ['Dark chocolate', 'Toasted nut', 'Vanilla cream'];
     </p>
   </div>
 
+  <picture class="craft__media">
+    <source
+      type="image/avif"
+      srcset="/images/cream-cold-brew-480.avif 480w, /images/cream-cold-brew-960.avif 960w, /images/cream-cold-brew-1122.avif 1122w"
+      sizes="(min-width: 68.75rem) 30vw, (min-width: 48rem) 45vw, 100vw"
+    />
+    <img
+      src="/images/cream-cold-brew-480.webp"
+      srcset="/images/cream-cold-brew-480.webp 480w, /images/cream-cold-brew-960.webp 960w, /images/cream-cold-brew-1122.webp 1122w"
+      sizes="(min-width: 68.75rem) 30vw, (min-width: 48rem) 45vw, 100vw"
+      width="1122"
+      height="1402"
+      alt="An iced cold brew in a tall glass, with vanilla cream swirling through it."
+      loading="lazy"
+      decoding="async"
+    />
+  </picture>
+
   {featured && (
     <article class="card craft__featured" aria-labelledby="featured-title">
       <span class="eyebrow">Featured drink</span>
@@ -46,11 +64,43 @@ const tastingNotes = ['Dark chocolate', 'Toasted nut', 'Vanilla cream'];
 </section>
 
 <style>
+  /* Mockup layout: copy · cold-brew image · featured card. */
   .craft {
     display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    gap: var(--bc-space-12);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr) minmax(0, 1fr);
+    grid-template-areas: 'copy media card';
+    gap: var(--bc-space-8);
     align-items: center;
+  }
+
+  .craft__copy {
+    grid-area: copy;
+  }
+
+  .craft__media {
+    grid-area: media;
+  }
+
+  .craft__featured {
+    grid-area: card;
+  }
+
+  .craft__media img {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: var(--bc-radius-card);
+  }
+
+  /* Tablet: copy beside the image, the card below spanning both. */
+  @media (max-width: 68.74rem) {
+    .craft {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-areas:
+        'copy media'
+        'card card';
+    }
   }
 
   .craft__featured h3 {
@@ -96,9 +146,14 @@ const tastingNotes = ['Dark chocolate', 'Toasted nut', 'Vanilla cream'];
     text-decoration: underline;
   }
 
-  @media (max-width: 56.24rem) {
+  /* Phones: copy, image, card. */
+  @media (max-width: 47.99rem) {
     .craft {
       grid-template-columns: 1fr;
+      grid-template-areas:
+        'copy'
+        'media'
+        'card';
       gap: var(--bc-space-8);
     }
   }
