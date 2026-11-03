@@ -1,37 +1,58 @@
 ---
+import CategoryNav from '../components/menu/CategoryNav.astro';
+import FeaturedDrink from '../components/menu/FeaturedDrink.astro';
+import MenuCategory from '../components/menu/MenuCategory.astro';
+import MenuHero from '../components/menu/MenuHero.astro';
 import Base from '../layouts/Base.astro';
 import { getMenuSnapshot } from '../lib/menu';
 
 export const prerender = true;
 
-// Placeholder until the full menu page (category navigation, drink details)
-// ships in the next PR. Lists the categories from the validated data so the
-// homepage's links never lead nowhere.
+// Validated at build time: invalid menu data fails the build, so a broken
+// menu (zero-dollar rows, unknown sizes) can never be deployed.
 const menu = getMenuSnapshot();
+const spotlight = menu.items.find((i) => i.id === 'burn-churn-latte');
 ---
 
-<Base title="Menu" description="The Burn and Churn Coffee menu (fictional products and prices).">
-  <div class="container">
-    <span class="eyebrow">Small batch. Big character.</span>
-    <h1>Coffee, crafted your way.</h1>
-    <p class="lede">The full menu, with sizes and prices, is being built. Here's what we pour.</p>
+<Base
+  title="Menu"
+  description="The Burn and Churn Coffee menu: espresso, brewed coffee, milk drinks, cold coffee and signature drinks. Fictional products and prices."
+  flush
+>
+  <MenuHero />
+  <CategoryNav categories={menu.categories} />
+
+  <div class="container menu-board">
     {menu.categories.map((c) => (
-      <section id={c.id} class="menu-stub">
-        <h2>{c.label}</h2>
-        <p class="muted">{c.tagline}</p>
-      </section>
+      <MenuCategory category={c} />
     ))}
   </div>
+
+  <p class="container subtle menu-note">
+    All products and prices are fictional, for a portfolio project. Prices in US dollars.
+  </p>
+
+  {spotlight && <FeaturedDrink item={spotlight} image="/images/signature-latte" />}
 </Base>
 
+<script is:inline type="module" src="/scripts/menu-dialog.js"></script>
+
 <style>
-  .menu-stub {
+  .menu-board {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--bc-space-6);
+    align-items: start;
     margin-top: var(--bc-space-10);
-    scroll-margin-top: var(--bc-space-16);
   }
 
-  .menu-stub h2 {
-    font-size: var(--bc-text-card-title);
-    margin-bottom: var(--bc-space-2);
+  .menu-note {
+    margin-top: var(--bc-space-6);
+  }
+
+  @media (max-width: 68.74rem) {
+    .menu-board {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

@@ -96,6 +96,14 @@ test.describe('hero video', () => {
     await expect(page.locator('.hero__toggle')).toBeHidden();
   });
 
+  test('stays invisible until it is actually playing', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.goto('/');
+    const video = page.locator('.hero__video');
+    await expect(video).not.toHaveClass(/is-playing/);
+  });
+
   test('is decorative and hidden from assistive technology', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('.hero__video')).toHaveAttribute('aria-hidden', 'true');

@@ -23,3 +23,4 @@ Each record captures one significant decision: the context, what was decided, an
 | [0015](0015-hold-typescript-7-and-vitest-5.md)     | Hold TypeScript 7 and Vitest 5 until the tooling supports them  | Accepted | 2026-11-02 |
 | [0016](0016-minimatch-security-override.md)        | Override minimatch to a fixed version                           | Accepted | 2026-11-02 |
 | [0017](0017-hero-video-delivery.md)                | Hero video: poster first, desktop only, pausable                | Accepted | 2026-11-02 |
+| [0018](0018-hero-loop-fades-in.md)                 | The hero loop fades in, and does not show without JavaScript    | Accepted | 2026-11-03 |

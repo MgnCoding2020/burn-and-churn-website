@@ -1,0 +1,94 @@
+---
+/** Shallow menu hero: copy left, roasted-bean texture right behind a dark scrim. No video here. */
+const img = '/images/todays-roast';
+---
+
+<section class="menu-hero" aria-labelledby="menu-title">
+  <picture class="menu-hero__media" aria-hidden="true">
+    <source
+      type="image/avif"
+      srcset={`${img}-360.avif 360w, ${img}-720.avif 720w`}
+      sizes="(min-width: 48rem) 45vw, 100vw"
+    />
+    <img
+      src={`${img}-720.webp`}
+      srcset={`${img}-360.webp 360w, ${img}-720.webp 720w`}
+      sizes="(min-width: 48rem) 45vw, 100vw"
+      width="720"
+      height="540"
+      alt=""
+      decoding="async"
+    />
+  </picture>
+  <div class="container menu-hero__content">
+    <span class="eyebrow">Small batch. Big character.</span>
+    <h1 id="menu-title">Coffee, crafted your way.</h1>
+    <p class="lede">
+      Bold brews and smooth pours, from a single double shot to a slow-steeped cold brew. Every
+      product and price here is fictional.
+    </p>
+  </div>
+</section>
+
+<style>
+  .menu-hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: clamp(18rem, 32vw, 23.75rem);
+    display: flex;
+    align-items: center;
+    border-bottom: var(--bc-border-width) solid var(--bc-border);
+  }
+
+  .menu-hero__media {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 50%;
+    z-index: -1;
+  }
+
+  .menu-hero__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.85;
+  }
+
+  .menu-hero__media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      var(--bc-bg) 0%,
+      rgb(17 13 11 / 0.6) 40%,
+      rgb(17 13 11 / 0.15) 100%
+    );
+  }
+
+  .menu-hero__content {
+    padding-block: var(--bc-space-12);
+  }
+
+  .menu-hero h1 {
+    font-size: var(--bc-text-section);
+    max-width: 14ch;
+  }
+
+  .menu-hero .lede {
+    max-width: 40ch;
+    margin-bottom: 0;
+  }
+
+  @media (max-width: 47.99rem) {
+    .menu-hero__media {
+      width: 100%;
+      opacity: 0.35;
+    }
+
+    .menu-hero__media::after {
+      background: linear-gradient(0deg, var(--bc-bg) 0%, rgb(17 13 11 / 0.5) 100%);
+    }
+  }
+</style>

@@ -105,6 +105,17 @@ const poster = '/images/hero-espresso';
     object-position: 70% center;
   }
 
+  /* The loop stays invisible until the script sees it playing, then fades in
+     over the poster. No JavaScript means no motion (ADR-0018). */
+  .hero__video {
+    opacity: 0;
+    transition: opacity var(--bc-duration-slow) var(--bc-ease-out);
+  }
+
+  .hero__video.is-playing {
+    opacity: 1;
+  }
+
   .hero__scrim {
     position: absolute;
     inset: 0;
