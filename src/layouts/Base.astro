@@ -1,5 +1,7 @@
 ---
 import FictionBanner from '../components/shared/FictionBanner.astro';
+import SiteFooter from '../components/layout/SiteFooter.astro';
+import SiteHeader from '../components/layout/SiteHeader.astro';
 import '../styles/fonts.css';
 import '../styles/tokens.css';
 import '../styles/base.css';
@@ -7,11 +9,14 @@ import '../styles/base.css';
 interface Props {
   title: string;
   description?: string;
+  /** Full-bleed first section (the homepage hero): no top padding on <main>. */
+  flush?: boolean;
 }
 
 const {
   title,
   description = 'Burn and Churn Coffee, a fictional café: a security portfolio project.',
+  flush = false,
 } = Astro.props;
 ---
 
@@ -39,6 +44,7 @@ const {
       type="font/woff2"
       crossorigin
     />
+    <slot name="head" />
     <title>{title} · Burn and Churn Coffee</title>
   </head>
   <body>
@@ -46,8 +52,10 @@ const {
       Skip to content
     </a>
     <FictionBanner />
-    <main id="main">
+    <SiteHeader />
+    <main id="main" class:list={{ 'main--flush': flush }}>
       <slot />
     </main>
+    <SiteFooter />
   </body>
 </html>

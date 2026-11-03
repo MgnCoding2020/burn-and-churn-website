@@ -21,7 +21,8 @@
     "e2e": "playwright test",
     "check-env": "node scripts/check-env.mjs",
     "check": "npm run check-env -- --ci && npm run contrast && npm run typecheck && npm run lint && npm run format:check && npm run test",
-    "contrast": "node scripts/check-contrast.mjs"
+    "contrast": "node scripts/check-contrast.mjs",
+    "images": "node scripts/optimize-images.mjs"
   },
   "dependencies": {
     "hono": "4.13.14",

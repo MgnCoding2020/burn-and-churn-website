@@ -1,0 +1,325 @@
+{
+  "brand": "Burn & Churn Coffee",
+  "currency": "USD",
+  "fictional": true,
+  "price_unit": "cents",
+  "size_labels": {
+    "12oz": "Small \u00b7 12 oz",
+    "16oz": "Medium \u00b7 16 oz",
+    "20oz": "Large \u00b7 20 oz",
+    "single": "Espresso \u00b7 double shot"
+  },
+  "categories": [
+    {
+      "id": "espresso-bar",
+      "label": "Espresso Bar",
+      "tagline": "Small cup. Big character."
+    },
+    {
+      "id": "brewed-coffee",
+      "label": "Brewed Coffee",
+      "tagline": "Freshly brewed, never ordinary."
+    },
+    {
+      "id": "milk-drinks",
+      "label": "Milk Drinks",
+      "tagline": "Silky textures, bold espresso."
+    },
+    {
+      "id": "cold-coffee",
+      "label": "Cold Coffee",
+      "tagline": "Keep the flavor. Lose the heat."
+    },
+    {
+      "id": "signature-seasonal",
+      "label": "Signature & Seasonal",
+      "tagline": "Made to stand out."
+    }
+  ],
+  "items": [
+    {
+      "id": "espresso",
+      "category": "espresso-bar",
+      "name": "Espresso",
+      "description": "Double shot; concentrated, rich, caramel finish",
+      "prices": {
+        "single": 300
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "americano",
+      "category": "espresso-bar",
+      "name": "Americano",
+      "description": "Espresso lengthened with hot water",
+      "prices": {
+        "12oz": 350,
+        "16oz": 400,
+        "20oz": 450
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "red-eye",
+      "category": "espresso-bar",
+      "name": "Red Eye",
+      "description": "House brewed coffee with a shot of espresso",
+      "prices": {
+        "12oz": 425,
+        "16oz": 475,
+        "20oz": 525
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "house-brew",
+      "category": "brewed-coffee",
+      "name": "House Brew",
+      "description": "Balanced, familiar, and brewed fresh",
+      "prices": {
+        "12oz": 300,
+        "16oz": 350,
+        "20oz": 400
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "dark-roast",
+      "category": "brewed-coffee",
+      "name": "Night Shift Dark Roast",
+      "description": "Full-bodied roast with cocoa notes",
+      "prices": {
+        "12oz": 325,
+        "16oz": 375,
+        "20oz": 425
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "single-origin",
+      "category": "brewed-coffee",
+      "name": "Single-Origin Feature",
+      "description": "Rotating coffee; origin and tasting notes vary",
+      "prices": {
+        "12oz": 375,
+        "16oz": 425,
+        "20oz": 475
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "latte",
+      "category": "milk-drinks",
+      "name": "Caff\u00e8 Latte",
+      "description": "Espresso and silky steamed milk",
+      "prices": {
+        "12oz": 475,
+        "16oz": 525,
+        "20oz": 575
+      },
+      "featured": true,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "cappuccino",
+      "category": "milk-drinks",
+      "name": "Cappuccino",
+      "description": "Espresso, steamed milk, airy foam",
+      "prices": {
+        "12oz": 475,
+        "16oz": 525,
+        "20oz": 575
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "mocha",
+      "category": "milk-drinks",
+      "name": "Mocha",
+      "description": "Espresso with dark chocolate and milk",
+      "prices": {
+        "12oz": 525,
+        "16oz": 575,
+        "20oz": 625
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "vanilla-latte",
+      "category": "milk-drinks",
+      "name": "Vanilla Latte",
+      "description": "Espresso, vanilla, and steamed milk",
+      "prices": {
+        "12oz": 525,
+        "16oz": 575,
+        "20oz": 625
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "caramel-latte",
+      "category": "milk-drinks",
+      "name": "Caramel Latte",
+      "description": "Espresso with caramel and steamed milk",
+      "prices": {
+        "12oz": 525,
+        "16oz": 575,
+        "20oz": 625
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "iced-americano",
+      "category": "cold-coffee",
+      "name": "Iced Americano",
+      "description": "Espresso, chilled water, ice",
+      "prices": {
+        "12oz": 375,
+        "16oz": 425,
+        "20oz": 475
+      },
+      "featured": false,
+      "iced": true,
+      "available": true
+    },
+    {
+      "id": "iced-latte",
+      "category": "cold-coffee",
+      "name": "Iced Latte",
+      "description": "Espresso, cold milk, ice",
+      "prices": {
+        "12oz": 475,
+        "16oz": 525,
+        "20oz": 575
+      },
+      "featured": false,
+      "iced": true,
+      "available": true
+    },
+    {
+      "id": "iced-mocha",
+      "category": "cold-coffee",
+      "name": "Iced Mocha",
+      "description": "Espresso, chocolate, milk, ice",
+      "prices": {
+        "12oz": 525,
+        "16oz": 575,
+        "20oz": 625
+      },
+      "featured": false,
+      "iced": true,
+      "available": true
+    },
+    {
+      "id": "cold-brew",
+      "category": "cold-coffee",
+      "name": "Churn Cold Brew",
+      "description": "Slow-steeped, smooth, naturally bold",
+      "prices": {
+        "12oz": 450,
+        "16oz": 500,
+        "20oz": 550
+      },
+      "featured": true,
+      "iced": true,
+      "available": true
+    },
+    {
+      "id": "cream-cold-brew",
+      "category": "cold-coffee",
+      "name": "Cream Churn Cold Brew",
+      "description": "Cold brew with a swirl of vanilla cream",
+      "prices": {
+        "12oz": 525,
+        "16oz": 575,
+        "20oz": 625
+      },
+      "featured": true,
+      "iced": true,
+      "available": true
+    },
+    {
+      "id": "burn-churn-latte",
+      "category": "signature-seasonal",
+      "name": "Burn & Churn Latte",
+      "description": "Espresso, brown sugar, cinnamon, vanilla",
+      "prices": {
+        "12oz": 575,
+        "16oz": 625,
+        "20oz": 675
+      },
+      "featured": true,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "maple-smoke",
+      "category": "signature-seasonal",
+      "name": "Maple Smoke Latte",
+      "description": "Espresso, maple, vanilla, smoked-sugar finish",
+      "prices": {
+        "12oz": 575,
+        "16oz": 625,
+        "20oz": 675
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "campfire-mocha",
+      "category": "signature-seasonal",
+      "name": "Campfire Mocha",
+      "description": "Espresso, cocoa, toasted-marshmallow flavor",
+      "prices": {
+        "12oz": 575,
+        "16oz": 625,
+        "20oz": 675
+      },
+      "featured": false,
+      "iced": false,
+      "available": true
+    },
+    {
+      "id": "spiced-cold-brew",
+      "category": "signature-seasonal",
+      "name": "Spiced Churn Cold Brew",
+      "description": "Cold brew with cinnamon and brown-sugar cream",
+      "prices": {
+        "12oz": 550,
+        "16oz": 600,
+        "20oz": 650
+      },
+      "featured": false,
+      "iced": true,
+      "available": true
+    }
+  ],
+  "notes": [
+    "Fictional prices and products for a portfolio demo; not real offers.",
+    "Espresso is one fixed double-shot serving; all other listed beverages have 12, 16, and 20 oz prices.",
+    "Featured and seasonal items are fictional; do not represent current inventory.",
+    "Prices can be changed later through the planned SharePoint-to-site content flow."
+  ]
+}

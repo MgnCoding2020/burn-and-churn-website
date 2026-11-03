@@ -1,18 +1,27 @@
 ---
+import CraftSection from '../components/home/CraftSection.astro';
+import FeatureCards from '../components/home/FeatureCards.astro';
+import HeroSection from '../components/home/HeroSection.astro';
 import Base from '../layouts/Base.astro';
 
 export const prerender = true;
 ---
 
-<Base title="Home">
-  <div class="container">
-    <span class="eyebrow">Coming soon</span>
-    <h1>Burn and Churn Coffee</h1>
-    <p class="lede">
-      The café's website is being built. The homepage, menu and ordering arrive next.
-    </p>
-    <p>
-      <a href="/styleguide/">See the styleguide</a>
-    </p>
-  </div>
+<Base
+  title="Home"
+  description="Burn and Churn Coffee: small-batch coffee from a fictional café. A security portfolio project; no real orders."
+  flush
+>
+  <link
+    slot="head"
+    rel="preload"
+    as="image"
+    type="image/avif"
+    imagesrcset="/images/hero-espresso-640.avif 640w, /images/hero-espresso-960.avif 960w, /images/hero-espresso-1672.avif 1672w"
+    imagesizes="(min-width: 48rem) 70vw, 100vw"
+    fetchpriority="high"
+  />
+  <HeroSection />
+  <FeatureCards />
+  <CraftSection />
 </Base>

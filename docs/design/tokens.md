@@ -40,6 +40,9 @@ Standard: WCAG 2.2 AA. Text needs 4.5:1 (3:1 at 24px+ or 18.66px+ bold); UI comp
 | `ink` | `banner-bg` | 14.19:1 | 4.5:1 | Pass | Fictional-business banner text |
 | `ink-muted` | `bg` | 11.24:1 | 4.5:1 | Pass | Secondary text on the page |
 | `ink-muted` | `surface` | 9.66:1 | 4.5:1 | Pass | Secondary text on cards |
+| `ink-muted` | `bg-elevated` | 10.45:1 | 4.5:1 | Pass | Secondary text in the footer |
+| `ink-subtle` | `bg-elevated` | 6.31:1 | 4.5:1 | Pass | Captions in the footer |
+| `accent-text` | `bg-elevated` | 5.90:1 | 4.5:1 | Pass | Links in the footer |
 | `ink-subtle` | `bg` | 6.78:1 | 4.5:1 | Pass | Captions on the page |
 | `ink-subtle` | `surface` | 5.83:1 | 4.5:1 | Pass | Captions on cards |
 | `accent` | `bg` | 4.96:1 | 4.5:1 | Pass | Orange text (eyebrows, links) on the page |
@@ -48,6 +51,7 @@ Standard: WCAG 2.2 AA. Text needs 4.5:1 (3:1 at 24px+ or 18.66px+ bold); UI comp
 | `copper` | `surface` | 4.63:1 | 4.5:1 | Pass | Copper labels on cards |
 | `copper` | `bg` | 5.40:1 | 4.5:1 | Pass | Copper labels on the page |
 | `gold` | `bg` | 10.54:1 | 4.5:1 | Pass | Gold highlights on the page |
+| `gold` | `surface` | 9.05:1 | 4.5:1 | Pass | Gold prices on cards |
 | `on-action` | `action` | 5.37:1 | 4.5:1 | Pass | Primary button text |
 | `on-action` | `action-hover` | 6.57:1 | 4.5:1 | Pass | Primary button text on hover |
 | `action` | `bg` | 3.60:1 | 3:1 | Pass | Primary button shape against the page |

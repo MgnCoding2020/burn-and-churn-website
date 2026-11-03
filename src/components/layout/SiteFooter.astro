@@ -1,0 +1,90 @@
+---
+import BrandLogo from '../brand/BrandLogo.astro';
+
+const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container site-footer__inner">
+    <div class="site-footer__brand">
+      <BrandLogo />
+      <p class="muted site-footer__notice">
+        <strong>Burn and Churn Coffee is a fictional business.</strong> This site is a security
+        portfolio project. Products, prices and hours are invented; payments are in test mode and no
+        real orders are placed.
+      </p>
+    </div>
+
+    <nav aria-label="Footer">
+      <ul class="site-footer__links">
+        <li>
+          <a href="/menu/">Menu</a>
+        </li>
+        <li>
+          <a href="/#story">Story</a>
+        </li>
+        <li>
+          <a href="/#hours">Hours</a>
+        </li>
+        <li>
+          <a href="/styleguide/">Styleguide</a>
+        </li>
+        <li>
+          <a href={`${repo}#readme`}>How it's built (GitHub)</a>
+        </li>
+        <li>
+          <a href={`${repo}/blob/main/SECURITY.md`}>Report a security issue</a>
+        </li>
+      </ul>
+    </nav>
+  </div>
+  <div class="container">
+    <p class="subtle site-footer__legal">
+      © {year} Burn and Churn Coffee (fictional). Images AI-generated for this project.
+    </p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: var(--bc-section-space);
+    padding-block: var(--bc-space-12) var(--bc-space-8);
+    background: var(--bc-bg-elevated);
+    border-top: var(--bc-border-width) solid var(--bc-border);
+  }
+
+  .site-footer__inner {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+    gap: var(--bc-space-10);
+  }
+
+  .site-footer__notice {
+    margin-top: var(--bc-space-6);
+  }
+
+  .site-footer__links {
+    display: grid;
+    gap: var(--bc-space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-footer__links a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--bc-tap-target);
+  }
+
+  .site-footer__legal {
+    margin: var(--bc-space-8) 0 0;
+  }
+
+  @media (max-width: 47.99rem) {
+    .site-footer__inner {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

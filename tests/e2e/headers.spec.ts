@@ -3,7 +3,11 @@ import { expect, test } from '@playwright/test';
 // §15 "Headers" gate, checked against the built Worker for every kind of response.
 const paths = [
   '/',
+  '/menu/',
   '/styleguide/',
+  '/images/hero-espresso-960.avif',
+  '/media/hero-espresso-loop.mp4',
+  '/scripts/hero-video.js',
   '/robots.txt',
   '/fonts/inter-latin-variable.woff2',
   '/a-page-that-does-not-exist',

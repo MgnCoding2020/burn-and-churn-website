@@ -1,0 +1,105 @@
+---
+import { formatCents, getMenuSnapshot, startingPrice } from '../../lib/menu';
+
+// The featured drink comes from menu data, never hard-coded copy or prices.
+const FEATURED_ID = 'cream-cold-brew';
+const featured = getMenuSnapshot().items.find((i) => i.id === FEATURED_ID);
+const from = featured ? startingPrice(featured) : undefined;
+
+const tastingNotes = ['Dark chocolate', 'Toasted nut', 'Vanilla cream'];
+---
+
+<section class="container craft" id="story" aria-labelledby="craft-title">
+  <div class="craft__copy">
+    <span class="eyebrow">Our craft</span>
+    <h2 id="craft-title">Coffee Done with Intention.</h2>
+    <p class="lede">
+      From carefully sourced beans to precise roasting and a balanced pour, we sweat the details
+      that make a cup worth remembering.
+    </p>
+    <p class="subtle">
+      Burn and Churn is a fictional café; the story is part of a portfolio project.
+    </p>
+  </div>
+
+  {featured && (
+    <article class="card craft__featured" aria-labelledby="featured-title">
+      <span class="eyebrow">Featured drink</span>
+      <h3 id="featured-title">{featured.name}</h3>
+      <p class="muted">{featured.description}.</p>
+      {featured.available && from !== undefined ? (
+        <p class="price craft__price">From {formatCents(from)}</p>
+      ) : (
+        <p class="status--error">Not available today.</p>
+      )}
+      <h4 class="craft__notes-title eyebrow">Tasting notes</h4>
+      <ul class="craft__notes">
+        {tastingNotes.map((n) => (
+          <li>{n}</li>
+        ))}
+      </ul>
+      <a class="feature-link" href={`/menu/#${featured.categoryId}`}>
+        See it on the menu <span aria-hidden="true">→</span>
+      </a>
+    </article>
+  )}
+</section>
+
+<style>
+  .craft {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: var(--bc-space-12);
+    align-items: center;
+  }
+
+  .craft__featured h3 {
+    margin-bottom: var(--bc-space-3);
+  }
+
+  .craft__price {
+    font-size: var(--bc-text-lg);
+    color: var(--bc-gold);
+  }
+
+  .craft__notes-title {
+    margin: var(--bc-space-6) 0 var(--bc-space-3);
+    color: var(--bc-copper);
+  }
+
+  .craft__notes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-2);
+    margin: 0 0 var(--bc-space-6);
+    padding: 0;
+    list-style: none;
+  }
+
+  .craft__notes li {
+    padding: var(--bc-space-1) var(--bc-space-3);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-pill);
+    font-size: var(--bc-text-sm);
+  }
+
+  .feature-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--bc-space-2);
+    min-height: var(--bc-tap-target);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .feature-link:hover {
+    text-decoration: underline;
+  }
+
+  @media (max-width: 56.24rem) {
+    .craft {
+      grid-template-columns: 1fr;
+      gap: var(--bc-space-8);
+    }
+  }
+</style>

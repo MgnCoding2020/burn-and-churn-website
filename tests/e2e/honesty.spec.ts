@@ -4,7 +4,7 @@ const BANNER =
   'Burn and Churn Coffee is a fictional business. This site is a security portfolio project. Payments are in test mode; no real orders are placed.';
 
 // §1 "Never mistakable for a real business": banner and noindex on every page.
-for (const path of ['/', '/styleguide/', '/a-page-that-does-not-exist']) {
+for (const path of ['/', '/menu/', '/styleguide/', '/a-page-that-does-not-exist']) {
   test(`banner and noindex on ${path}`, async ({ page }) => {
     await page.goto(path);
     const banner = page.getByRole('complementary', { name: 'Fictional business notice' });
