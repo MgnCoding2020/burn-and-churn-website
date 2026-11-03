@@ -1,0 +1,37 @@
+---
+import Base from '../layouts/Base.astro';
+import { getMenuSnapshot } from '../lib/menu';
+
+export const prerender = true;
+
+// Placeholder until the full menu page (category navigation, drink details)
+// ships in the next PR. Lists the categories from the validated data so the
+// homepage's links never lead nowhere.
+const menu = getMenuSnapshot();
+---
+
+<Base title="Menu" description="The Burn and Churn Coffee menu (fictional products and prices).">
+  <div class="container">
+    <span class="eyebrow">Small batch. Big character.</span>
+    <h1>Coffee, crafted your way.</h1>
+    <p class="lede">The full menu, with sizes and prices, is being built. Here's what we pour.</p>
+    {menu.categories.map((c) => (
+      <section id={c.id} class="menu-stub">
+        <h2>{c.label}</h2>
+        <p class="muted">{c.tagline}</p>
+      </section>
+    ))}
+  </div>
+</Base>
+
+<style>
+  .menu-stub {
+    margin-top: var(--bc-space-10);
+    scroll-margin-top: var(--bc-space-16);
+  }
+
+  .menu-stub h2 {
+    font-size: var(--bc-text-card-title);
+    margin-bottom: var(--bc-space-2);
+  }
+</style>

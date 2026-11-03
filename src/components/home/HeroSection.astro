@@ -1,0 +1,206 @@
+---
+/**
+ * Hero: copy on the left, espresso pour on the right.
+ * - The poster image is the main visual and the only one on phones and for
+ *   reduced-motion users. It is decorative: the headline carries the message.
+ * - The loop plays only when its <source> media query matches (desktop, motion
+ *   allowed); otherwise the browser downloads no video at all.
+ * - WCAG 2.2.2: a pause button appears once the video is actually playing
+ *   (public/scripts/hero-video.js, an external file so the CSP holds).
+ */
+const poster = '/images/hero-espresso';
+---
+
+<section class="hero" aria-labelledby="hero-title">
+  <div class="hero__media">
+    <picture>
+      <source
+        type="image/avif"
+        srcset={`${poster}-640.avif 640w, ${poster}-960.avif 960w, ${poster}-1672.avif 1672w`}
+        sizes="(min-width: 48rem) 70vw, 100vw"
+      />
+      <img
+        src={`${poster}-960.webp`}
+        srcset={`${poster}-640.webp 640w, ${poster}-960.webp 960w, ${poster}-1672.webp 1672w`}
+        sizes="(min-width: 48rem) 70vw, 100vw"
+        width="1672"
+        height="941"
+        alt=""
+        fetchpriority="high"
+        decoding="async"
+      />
+    </picture>
+    <video
+      class="hero__video"
+      autoplay
+      muted
+      loop
+      playsinline
+      disablepictureinpicture
+      aria-hidden="true"
+      tabindex="-1"
+      width="960"
+      height="540"
+    >
+      <source
+        src="/media/hero-espresso-loop.mp4"
+        type="video/mp4"
+        media="(min-width: 48rem) and (prefers-reduced-motion: no-preference)"
+      />
+    </video>
+    <div class="hero__scrim"></div>
+  </div>
+
+  <div class="container hero__content">
+    <h1 id="hero-title" class="hero__title">
+      Freshly Roasted.
+      <br />
+      <span class="hero__underline">Never Boring.</span>
+    </h1>
+    <p class="hero__lede">
+      Small-batch coffee, bold flavour, and a digital experience designed with care.
+    </p>
+    <div class="hero__actions">
+      <a class="btn btn--primary" href="/menu/">
+        Explore the menu
+      </a>
+      <span class="btn" role="link" aria-disabled="true">
+        Order ahead · Demo: coming soon
+      </span>
+    </div>
+  </div>
+
+  <button class="hero__toggle" type="button" aria-pressed="false" hidden>
+    Pause animation
+  </button>
+</section>
+
+<script is:inline type="module" src="/scripts/hero-video.js"></script>
+
+<style>
+  .hero {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: clamp(34rem, 70vh, 42rem);
+    display: flex;
+    align-items: center;
+    border-bottom: var(--bc-border-width) solid var(--bc-border);
+  }
+
+  .hero__media {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: min(70%, 70rem);
+    z-index: -1;
+  }
+
+  .hero__media img,
+  .hero__video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 70% center;
+  }
+
+  .hero__scrim {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, var(--bc-bg) 0%, rgb(17 13 11 / 0.85) 22%, rgb(17 13 11 / 0) 55%),
+      linear-gradient(0deg, var(--bc-bg) 0%, rgb(17 13 11 / 0) 25%);
+  }
+
+  .hero__content {
+    padding-block: var(--bc-space-16);
+  }
+
+  .hero__title {
+    max-width: 17ch;
+    margin-bottom: var(--bc-space-6);
+  }
+
+  .hero__underline {
+    text-decoration: underline;
+    text-decoration-color: var(--bc-accent);
+    text-decoration-thickness: 0.06em;
+    text-underline-offset: 0.14em;
+  }
+
+  .hero__lede {
+    max-width: 34ch;
+    margin-bottom: var(--bc-space-8);
+    font-size: var(--bc-text-xl);
+    line-height: 1.4;
+    color: var(--bc-ink);
+  }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-4);
+  }
+
+  .hero__toggle {
+    position: absolute;
+    right: var(--bc-gutter);
+    bottom: var(--bc-space-6);
+    min-height: var(--bc-tap-target);
+    padding: var(--bc-space-2) var(--bc-space-4);
+    background: rgb(17 13 11 / 0.7);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font: inherit;
+    font-size: var(--bc-text-sm);
+    cursor: pointer;
+  }
+
+  .hero__toggle[hidden] {
+    display: none;
+  }
+
+  /* Phones: image above the copy, no video. */
+  @media (max-width: 47.99rem) {
+    .hero {
+      display: block;
+      min-height: 0;
+    }
+
+    .hero__media {
+      position: relative;
+      inset: auto;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+    }
+
+    .hero__video {
+      display: none;
+    }
+
+    .hero__scrim {
+      background: linear-gradient(0deg, var(--bc-bg) 0%, rgb(17 13 11 / 0) 45%);
+    }
+
+    .hero__content {
+      padding-block: 0 var(--bc-space-12);
+      margin-top: calc(var(--bc-space-12) * -1);
+    }
+
+    .hero__title {
+      font-size: clamp(2.75rem, 11vw, 3.25rem);
+    }
+
+    .hero__lede {
+      font-size: var(--bc-text-lg);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero__video {
+      display: none;
+    }
+  }
+</style>

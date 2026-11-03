@@ -1,0 +1,162 @@
+---
+import BrandLogo from '../brand/BrandLogo.astro';
+
+/**
+ * Site header. Features that don't exist yet are shown as visibly
+ * unavailable, never as working links (plan §1, design §7).
+ */
+const links = [
+  { href: '/menu/', label: 'Menu' },
+  { href: '/#story', label: 'Story' },
+  { href: '/#hours', label: 'Hours' },
+];
+const current = Astro.url.pathname;
+---
+
+<header class="site-header">
+  <div class="container site-header__inner">
+    <BrandLogo />
+
+    <nav class="site-nav site-nav--wide" aria-label="Main">
+      <ul>
+        {links.map((l) => (
+          <li>
+            <a href={l.href} aria-current={current === l.href ? 'page' : undefined}>
+              {l.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="site-header__actions">
+      <span class="demo-action" aria-disabled="true">
+        Sign in <span class="demo-action__note">(coming soon)</span>
+      </span>
+      <span class="btn site-header__order" role="link" aria-disabled="true">
+        Order ahead <span class="demo-action__note">· Demo: coming soon</span>
+      </span>
+    </div>
+
+    <details class="site-nav site-nav--narrow">
+      <summary>Navigation</summary>
+      <nav aria-label="Main">
+        <ul>
+          {links.map((l) => (
+            <li>
+              <a href={l.href} aria-current={current === l.href ? 'page' : undefined}>
+                {l.label}
+              </a>
+            </li>
+          ))}
+          <li class="muted">Sign in and ordering: coming soon</li>
+        </ul>
+      </nav>
+    </details>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    background: var(--bc-bg);
+    border-bottom: var(--bc-border-width) solid var(--bc-border);
+  }
+
+  .site-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--bc-space-6);
+    min-height: 5.5rem;
+  }
+
+  .site-nav ul {
+    display: flex;
+    gap: var(--bc-space-8);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .site-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--bc-tap-target);
+    color: var(--bc-ink);
+    font-weight: 500;
+    text-decoration: none;
+  }
+
+  .site-nav a:hover,
+  .site-nav a[aria-current='page'] {
+    text-decoration: underline;
+    text-decoration-color: var(--bc-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.4em;
+  }
+
+  .site-header__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--bc-space-4);
+  }
+
+  .demo-action {
+    color: var(--bc-ink-muted);
+    font-size: var(--bc-text-sm);
+  }
+
+  .demo-action__note {
+    color: var(--bc-ink-subtle);
+    font-size: var(--bc-text-xs);
+  }
+
+  .site-header__order {
+    font-size: var(--bc-text-sm);
+  }
+
+  .site-nav--narrow {
+    display: none;
+  }
+
+  .site-nav--narrow summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--bc-tap-target);
+    padding: 0 var(--bc-space-4);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .site-nav--narrow ul {
+    position: absolute;
+    right: var(--bc-gutter);
+    left: var(--bc-gutter);
+    z-index: var(--bc-z-header);
+    flex-direction: column;
+    gap: var(--bc-space-1);
+    margin-top: var(--bc-space-2);
+    padding: var(--bc-space-4);
+    background: var(--bc-bg-elevated);
+    border: var(--bc-border-width) solid var(--bc-border);
+    border-radius: var(--bc-radius-card);
+  }
+
+  @media (max-width: 56.24rem) {
+    .site-nav--wide,
+    .site-header__actions {
+      display: none;
+    }
+
+    .site-nav--narrow {
+      display: block;
+    }
+
+    .site-header__inner {
+      position: relative;
+      min-height: 4.5rem;
+    }
+  }
+</style>

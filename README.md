@@ -25,12 +25,12 @@ It's where the program's separate pieces meet in one working system:
 
 ## Status
 
-**Planned. The build hasn't started yet.** Nothing below is claimed as working until it's built, tested and evidenced in this repository with a date.
+**In progress.** Phase 0 is done; Phase 1 (design system and public site) is under way. Nothing below is claimed as working until it's built, tested and evidenced in this repository with a date.
 
 | Phase                              | What ships                                                                                              | Status      |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------- | ----------- |
-| 0. Foundations                     | Project skeleton on Cloudflare Workers, CI security checks, security headers, fictional-business banner | In progress |
-| 1. Design system and public site   | Brand tokens, styleguide, home, menu, cart, info pages                                                  | Planned     |
+| 0. Foundations                     | Project skeleton on Cloudflare Workers, CI security checks, security headers, fictional-business banner | Done        |
+| 1. Design system and public site   | Brand tokens, styleguide, home, menu, cart, info pages                                                  | In progress |
 | 2. Staff sign-in                   | Entra ID sign-in, roles, sessions, audit log                                                            | Planned     |
 | 3. Register and order board        | Counter orders, cash, order board, "86" an item                                                         | Planned     |
 | 4. Stripe Terminal                 | Card payments through the simulated reader, refunds                                                     | Planned     |

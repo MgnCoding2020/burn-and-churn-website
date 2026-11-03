@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-const pages = ['/', '/styleguide/', '/a-page-that-does-not-exist'];
+const pages = ['/', '/menu/', '/styleguide/', '/a-page-that-does-not-exist'];
 
 // One dark theme (ADR-0012), whatever the visitor's system preference.
 for (const path of pages) {
