@@ -1,7 +1,15 @@
 import { expect, test } from '@playwright/test';
 
 // §15 "Headers" gate, checked against the built Worker for every kind of response.
-const paths = ['/', '/robots.txt', '/a-page-that-does-not-exist', '/api/v1/health', '/api/v1/nope'];
+const paths = [
+  '/',
+  '/styleguide/',
+  '/robots.txt',
+  '/fonts/inter-latin-variable.woff2',
+  '/a-page-that-does-not-exist',
+  '/api/v1/health',
+  '/api/v1/nope',
+];
 
 for (const path of paths) {
   test(`security headers on ${path}`, async ({ request }) => {

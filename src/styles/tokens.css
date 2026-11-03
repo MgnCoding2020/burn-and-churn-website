@@ -1,0 +1,101 @@
+/*
+ * Burn and Churn Coffee design tokens: the only place colours, type, spacing
+ * and motion are defined. Re-skinning = editing this file.
+ *
+ * Every text/background pair used by components is checked by
+ * scripts/check-contrast.mjs (part of `npm run check`) and recorded in
+ * docs/design/tokens.md. Public site: one dark theme (ADR-0012).
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --bc-bg: #110d0b;
+  --bc-bg-elevated: #1d1512;
+  --bc-surface: #271c17;
+  --bc-surface-hover: #32231c;
+  --bc-banner-bg: #2a1a12;
+
+  /* Text */
+  --bc-ink: #f5ebdd;
+  --bc-ink-muted: #d2c3b5;
+  --bc-ink-subtle: #ab9585;
+
+  /* Accents. Fills that carry white text use --bc-action (5.37:1), never --bc-accent (3.90:1). */
+  --bc-accent: #d65b25;
+  --bc-accent-text: #e2763f;
+  --bc-action: #b34a1c;
+  --bc-action-hover: #a13d17;
+  --bc-on-action: #ffffff;
+  --bc-copper: #b7794f;
+  --bc-gold: #e7b77a;
+
+  /* Lines and focus */
+  --bc-border: #62483b;
+  --bc-control-border: #93705a;
+  --bc-focus: #ffc37c;
+
+  /* Status (always paired with text, never colour alone) */
+  --bc-danger: #ff8a75;
+  --bc-success: #9fd39a;
+
+  /* Type */
+  --bc-font-display: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+  --bc-font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --bc-font-brand: 'Oswald', Impact, 'Arial Narrow', sans-serif;
+
+  --bc-text-xs: 0.75rem;
+  --bc-text-sm: 0.875rem;
+  --bc-text-base: 1rem;
+  --bc-text-lg: 1.125rem;
+  --bc-text-xl: 1.375rem;
+  --bc-text-card-title: clamp(1.5rem, 1.2rem + 1vw, 1.875rem);
+  --bc-text-section: clamp(2.5rem, 1.6rem + 3.5vw, 4.25rem);
+  --bc-text-display: clamp(3.25rem, 1.9rem + 5.2vw, 5.5rem);
+
+  --bc-leading-tight: 0.98;
+  --bc-leading-heading: 1.05;
+  --bc-leading-body: 1.55;
+  --bc-tracking-display: -0.025em;
+  --bc-tracking-eyebrow: 0.22em;
+  --bc-tracking-brand: 0.03em;
+
+  /* Space (4px base) */
+  --bc-space-1: 0.25rem;
+  --bc-space-2: 0.5rem;
+  --bc-space-3: 0.75rem;
+  --bc-space-4: 1rem;
+  --bc-space-5: 1.25rem;
+  --bc-space-6: 1.5rem;
+  --bc-space-8: 2rem;
+  --bc-space-10: 2.5rem;
+  --bc-space-12: 3rem;
+  --bc-space-16: 4rem;
+
+  /* Layout */
+  --bc-max-content: 80rem; /* 1280px */
+  --bc-gutter: clamp(1.25rem, 4.5vw, 4rem);
+  --bc-section-space: clamp(4rem, 9vw, 8rem);
+  --bc-tap-target: 2.75rem; /* 44px public; staff portal uses 48px */
+
+  /* Shape */
+  --bc-radius-card: 12px;
+  --bc-radius-button: 6px;
+  --bc-radius-pill: 999px;
+  --bc-border-width: 1px;
+  --bc-focus-width: 3px;
+  --bc-focus-offset: 2px;
+
+  /* Motion (turned off under prefers-reduced-motion in base.css) */
+  --bc-duration-fast: 120ms;
+  --bc-duration-base: 200ms;
+  --bc-duration-slow: 400ms;
+  --bc-ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --bc-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  /* Depth */
+  --bc-z-banner: 100;
+  --bc-z-header: 90;
+  --bc-z-dialog: 200;
+}

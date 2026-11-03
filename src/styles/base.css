@@ -1,64 +1,95 @@
-/* Minimal Phase 0 styles. Replaced by src/styles/tokens.css and the design system in Phase 1. */
+/*
+ * Base styles and shared components. Values come from tokens.css only.
+ * No inline styles anywhere: the CSP's style-src 'self' blocks them.
+ */
 
-:root {
-  color-scheme: light dark;
-  --text: #241a14;
-  --bg: #faf6ef;
-  --banner-bg: #241a14;
-  --banner-text: #faf6ef;
-  --focus: #b84a10;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #f3ece2;
-    --bg: #1a1310;
-    --banner-bg: #f3ece2;
-    --banner-text: #1a1310;
-    --focus: #ff9a5c;
-  }
-}
-
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
-  color: var(--text);
-  background: var(--bg);
+  min-height: 100vh;
+  background: var(--bc-bg);
+  color: var(--bc-ink);
+  font-family: var(--bc-font-body);
+  font-size: var(--bc-text-base);
+  line-height: var(--bc-leading-body);
+  -webkit-font-smoothing: antialiased;
 }
 
-.fiction-banner {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  padding: 0.5rem 1rem;
-  background: var(--banner-bg);
-  color: var(--banner-text);
-  font-size: 0.9rem;
-  text-align: center;
+img,
+video,
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
 }
 
-.fiction-banner p {
-  margin: 0;
+h1,
+h2,
+h3 {
+  margin: 0 0 var(--bc-space-4);
+  font-family: var(--bc-font-display);
+  font-weight: 400;
+  color: var(--bc-ink);
+  text-wrap: balance;
 }
 
-main {
-  max-width: 60rem;
-  margin: 0 auto;
-  padding: 2rem 1rem;
+h1 {
+  font-size: var(--bc-text-display);
+  line-height: var(--bc-leading-tight);
+  letter-spacing: var(--bc-tracking-display);
+}
+
+h2 {
+  font-size: var(--bc-text-section);
+  line-height: var(--bc-leading-heading);
+}
+
+h3 {
+  font-size: var(--bc-text-card-title);
+  line-height: 1.15;
+}
+
+p {
+  margin: 0 0 var(--bc-space-4);
+  max-width: 65ch;
 }
 
 a {
-  color: inherit;
+  color: var(--bc-accent-text);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+a:hover {
+  text-decoration-thickness: 2px;
 }
 
 :focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 2px;
+  outline: var(--bc-focus-width) solid var(--bc-focus);
+  outline-offset: var(--bc-focus-offset);
+}
+
+/* ---------- Layout ---------- */
+
+.container {
+  width: 100%;
+  max-width: var(--bc-max-content);
+  margin-inline: auto;
+  padding-inline: var(--bc-gutter);
+}
+
+main {
+  padding-block: var(--bc-space-12);
 }
 
 .skip-link {
@@ -67,9 +98,214 @@ a {
 }
 
 .skip-link:focus {
-  left: 1rem;
-  top: 3rem;
-  z-index: 200;
-  padding: 0.5rem 1rem;
-  background: var(--bg);
+  left: var(--bc-space-4);
+  top: var(--bc-space-16);
+  z-index: var(--bc-z-dialog);
+  padding: var(--bc-space-3) var(--bc-space-4);
+  background: var(--bc-bg-elevated);
+  color: var(--bc-ink);
+  border-radius: var(--bc-radius-button);
+}
+
+/* ---------- Fictional-business banner (plan §1: always visible, not dismissible) ---------- */
+
+.fiction-banner {
+  position: sticky;
+  top: 0;
+  z-index: var(--bc-z-banner);
+  padding: var(--bc-space-2) var(--bc-gutter);
+  background: var(--bc-banner-bg);
+  border-bottom: var(--bc-border-width) solid var(--bc-border);
+  color: var(--bc-ink);
+  font-size: var(--bc-text-sm);
+  line-height: 1.4;
+  text-align: center;
+}
+
+.fiction-banner p {
+  margin: 0 auto;
+  max-width: none;
+}
+
+.fiction-banner strong {
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+/* ---------- Text styles ---------- */
+
+.eyebrow {
+  display: block;
+  margin-bottom: var(--bc-space-3);
+  font-family: var(--bc-font-body);
+  font-size: var(--bc-text-xs);
+  font-weight: 700;
+  letter-spacing: var(--bc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--bc-accent);
+}
+
+.surface .eyebrow,
+.card .eyebrow {
+  color: var(--bc-accent-text);
+}
+
+.brand-wordmark {
+  font-family: var(--bc-font-brand);
+  font-weight: 600;
+  letter-spacing: var(--bc-tracking-brand);
+  text-transform: uppercase;
+}
+
+.lede {
+  font-size: var(--bc-text-lg);
+  color: var(--bc-ink-muted);
+}
+
+.muted {
+  color: var(--bc-ink-muted);
+}
+
+.subtle {
+  color: var(--bc-ink-subtle);
+  font-size: var(--bc-text-sm);
+}
+
+.price {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* ---------- Buttons ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bc-space-2);
+  min-height: 3rem;
+  padding: var(--bc-space-3) var(--bc-space-6);
+  border: var(--bc-border-width) solid transparent;
+  border-radius: var(--bc-radius-button);
+  font-family: var(--bc-font-body);
+  font-size: var(--bc-text-base);
+  font-weight: 600;
+  line-height: 1.2;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color var(--bc-duration-fast) var(--bc-ease-out),
+    border-color var(--bc-duration-fast) var(--bc-ease-out);
+}
+
+.btn--primary {
+  background: var(--bc-action);
+  color: var(--bc-on-action);
+}
+
+.btn--primary:hover {
+  background: var(--bc-action-hover);
+}
+
+.btn--secondary {
+  background: transparent;
+  border-color: var(--bc-ink-muted);
+  color: var(--bc-ink);
+}
+
+.btn--secondary:hover {
+  background: var(--bc-bg-elevated);
+}
+
+/* Demo-only actions: visibly unavailable, and say why in text. */
+.btn[aria-disabled='true'],
+.btn:disabled {
+  background: transparent;
+  border-color: var(--bc-control-border);
+  border-style: dashed;
+  color: var(--bc-ink-muted);
+  cursor: not-allowed;
+}
+
+/* ---------- Cards and surfaces ---------- */
+
+.card,
+.surface {
+  background: var(--bc-surface);
+  border: var(--bc-border-width) solid var(--bc-border);
+  border-radius: var(--bc-radius-card);
+}
+
+.card {
+  padding: var(--bc-space-6);
+}
+
+.card > :last-child {
+  margin-bottom: 0;
+}
+
+/* ---------- Chips (category navigation) ---------- */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--bc-tap-target);
+  padding: var(--bc-space-2) var(--bc-space-4);
+  border: var(--bc-border-width) solid var(--bc-control-border);
+  border-radius: var(--bc-radius-pill);
+  color: var(--bc-ink);
+  font-size: var(--bc-text-sm);
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.chip:hover {
+  background: var(--bc-bg-elevated);
+}
+
+/* Current state shown by fill and weight, not colour alone. */
+.chip[aria-current='true'],
+.chip[aria-current='page'] {
+  background: var(--bc-ink);
+  border-color: var(--bc-ink);
+  color: var(--bc-bg);
+  font-weight: 700;
+}
+
+/* ---------- Status text ---------- */
+
+.status--error {
+  color: var(--bc-danger);
+}
+
+.status--ok {
+  color: var(--bc-success);
+}
+
+/* ---------- Accessibility preferences ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Windows high-contrast: keep button and chip edges visible. */
+@media (forced-colors: active) {
+  .btn,
+  .chip {
+    border-color: ButtonText;
+  }
+
+  .chip[aria-current='true'],
+  .chip[aria-current='page'] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
 }
