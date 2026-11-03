@@ -1,0 +1,280 @@
+---
+import type { MenuCategory } from '../../lib/menu';
+import { isSingleServing, priceCells, SIZE_COLUMNS } from '../../lib/menu/display';
+import { VARIANTS } from '../../lib/menu/schema';
+import DrinkDialog from './DrinkDialog.astro';
+
+/**
+ * One category card: a real table (drink, then 12/16/20 oz) so prices are
+ * read in context by screen readers. Espresso's single double shot spans the
+ * size columns, labelled, never with invented empty sizes. On phones the
+ * cells stack and each price shows its size label (data-label + CSS).
+ */
+interface Props {
+  category: MenuCategory;
+}
+const { category } = Astro.props;
+
+const icons: Record<string, string> = {
+  'espresso-bar': 'M10 18h22v6a9 9 0 0 1-9 9h-4a9 9 0 0 1-9-9zM32 20h3a4 4 0 0 1 0 8h-3M8 37h26',
+  'brewed-coffee': 'M12 9h20l-3 9H15zM16 18v4M28 18v4M11 24h22v5a9 9 0 0 1-9 9h-4a9 9 0 0 1-9-9z',
+  'milk-drinks': 'M17 6h10v6l4 6v18a3 3 0 0 1-3 3H16a3 3 0 0 1-3-3V18l4-6zM13 24h18',
+  'cold-coffee':
+    'M13 10h18l-2.5 26a3 3 0 0 1-3 3h-7a3 3 0 0 1-3-3zM18 18h4v4h-4zM23 24h4v4h-4zM24 4l-3 10',
+  'signature-seasonal': 'M22 6l4.5 9.5L37 17l-7.5 7.2L31 35l-9-5-9 5 1.5-10.8L7 17l10.5-1.5z',
+};
+---
+
+<section class="card menu-category" id={category.id} aria-labelledby={`${category.id}-title`}>
+  <header class="menu-category__header">
+    <svg class="menu-category__icon" viewBox="0 0 44 44" aria-hidden="true" focusable="false">
+      <path
+        d={icons[category.id]}
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      ></path>
+    </svg>
+    <div>
+      <h2 id={`${category.id}-title`}>{category.label}</h2>
+      <p class="muted">{category.tagline}</p>
+    </div>
+  </header>
+
+  <table class="menu-table">
+    <caption class="visually-hidden">{category.label}: drinks and prices by size</caption>
+    <thead>
+      <tr>
+        <th scope="col">Drink</th>
+        {SIZE_COLUMNS.map((s) => (
+          <th scope="col" class="menu-table__size">
+            {VARIANTS[s].label}
+          </th>
+        ))}
+      </tr>
+    </thead>
+    <tbody>
+      {category.items.map((item) => (
+        <tr class:list={['menu-row', { 'menu-row--unavailable': !item.available }]}>
+          <th scope="row" class="menu-row__drink">
+            <button
+              class="menu-row__name"
+              type="button"
+              command="show-modal"
+              commandfor={`drink-${item.id}`}
+              aria-haspopup="dialog"
+            >
+              {item.name}
+              <span class="visually-hidden">: sizes and details</span>
+            </button>
+            <span class="menu-row__desc">{item.description}</span>
+            {!item.available && <span class="menu-row__status">Unavailable today</span>}
+          </th>
+          {isSingleServing(item) ? (
+            <td colspan="3" class="menu-row__single price" data-label="Double shot">
+              <span class="menu-row__single-label">Double shot</span> {priceCells(item)[0].text}
+            </td>
+          ) : (
+            priceCells(item).map((cell) => (
+              <td
+                class:list={[
+                  'price',
+                  'menu-row__price',
+                  { 'menu-row__price--na': !cell.available },
+                ]}
+                data-label={cell.label}
+              >
+                {cell.text}
+              </td>
+            ))
+          )}
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  {category.items.map((item) => (
+    <DrinkDialog item={item} />
+  ))}
+</section>
+
+<style>
+  .menu-category {
+    padding: var(--bc-space-6);
+  }
+
+  .menu-category__header {
+    display: flex;
+    gap: var(--bc-space-4);
+    align-items: flex-start;
+    padding-bottom: var(--bc-space-4);
+    margin-bottom: var(--bc-space-2);
+    border-bottom: var(--bc-border-width) solid var(--bc-border);
+  }
+
+  .menu-category__header h2 {
+    margin-bottom: var(--bc-space-1);
+    font-size: var(--bc-text-card-title);
+  }
+
+  .menu-category__header p {
+    margin: 0;
+  }
+
+  .menu-category__icon {
+    flex: none;
+    width: 2.75rem;
+    color: var(--bc-copper);
+  }
+
+  .menu-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .menu-table thead th {
+    padding: var(--bc-space-3) 0 var(--bc-space-2);
+    font-size: var(--bc-text-xs);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--bc-ink-subtle);
+  }
+
+  .menu-table__size {
+    width: 4.5rem;
+    text-align: right !important;
+  }
+
+  .menu-row th,
+  .menu-row td {
+    padding: var(--bc-space-3) 0;
+    border-top: var(--bc-border-width) solid var(--bc-border);
+    vertical-align: top;
+    text-align: left;
+    font-weight: 400;
+  }
+
+  .menu-row__drink {
+    padding-right: var(--bc-space-4) !important;
+  }
+
+  .menu-row__name {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--bc-tap-target);
+    padding: 0;
+    margin: calc(var(--bc-space-2) * -1) 0 0;
+    background: none;
+    border: 0;
+    color: var(--bc-ink);
+    font: inherit;
+    font-weight: 600;
+    font-size: var(--bc-text-base);
+    text-align: left;
+    text-decoration: underline;
+    text-decoration-color: var(--bc-control-border);
+    text-underline-offset: 0.25em;
+    cursor: pointer;
+  }
+
+  .menu-row__name:hover {
+    text-decoration-color: var(--bc-accent);
+  }
+
+  .menu-row__desc {
+    display: block;
+    color: var(--bc-ink-muted);
+    font-size: var(--bc-text-sm);
+  }
+
+  .menu-row__status {
+    display: block;
+    margin-top: var(--bc-space-1);
+    color: var(--bc-danger);
+    font-size: var(--bc-text-sm);
+    font-weight: 600;
+  }
+
+  .menu-row__price,
+  .menu-row__single {
+    text-align: right !important;
+    white-space: nowrap;
+  }
+
+  .menu-row__price--na {
+    color: var(--bc-ink-subtle);
+    font-weight: 400;
+    font-size: var(--bc-text-sm);
+  }
+
+  .menu-row__single-label {
+    color: var(--bc-ink-muted);
+    font-weight: 400;
+    font-size: var(--bc-text-sm);
+    margin-right: var(--bc-space-2);
+  }
+
+  .menu-row--unavailable .menu-row__name {
+    color: var(--bc-ink-muted);
+  }
+
+  /* Phones: stack each row; prices become labelled chips. */
+  @media (max-width: 47.99rem) {
+    .menu-category {
+      padding: var(--bc-space-5) var(--bc-space-4);
+    }
+
+    .menu-table thead {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    .menu-table,
+    .menu-table tbody,
+    .menu-row,
+    .menu-row th,
+    .menu-row td {
+      display: block;
+    }
+
+    .menu-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--bc-space-2);
+      padding: var(--bc-space-4) 0;
+      border-top: var(--bc-border-width) solid var(--bc-border);
+    }
+
+    .menu-row th,
+    .menu-row td {
+      padding: 0 !important;
+      border: 0;
+    }
+
+    .menu-row__drink {
+      flex: 1 0 100%;
+      margin-bottom: var(--bc-space-1);
+    }
+
+    .menu-row__price,
+    .menu-row__single {
+      padding: var(--bc-space-1) var(--bc-space-3) !important;
+      border: var(--bc-border-width) solid var(--bc-control-border) !important;
+      border-radius: var(--bc-radius-pill);
+      text-align: left !important;
+    }
+
+    .menu-row__price::before {
+      content: attr(data-label) ' · ';
+      color: var(--bc-ink-muted);
+      font-weight: 400;
+    }
+  }
+</style>

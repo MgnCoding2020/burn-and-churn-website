@@ -1,0 +1,102 @@
+---
+import { formatCents, startingPrice, type MenuItem } from '../../lib/menu';
+
+/**
+ * Editorial spotlight. Name, description and price come from menu data; if
+ * the drink is unavailable it says so and offers no ordering.
+ */
+interface Props {
+  item: MenuItem;
+  image: string;
+}
+const { item, image } = Astro.props;
+const from = startingPrice(item);
+---
+
+<section class="container featured" aria-labelledby="featured-drink-title">
+  <article class="card featured__card">
+    <picture class="featured__media">
+      <source
+        type="image/avif"
+        srcset={`${image}-360.avif 360w, ${image}-720.avif 720w`}
+        sizes="(min-width: 48rem) 40vw, 100vw"
+      />
+      <img
+        src={`${image}-720.webp`}
+        srcset={`${image}-360.webp 360w, ${image}-720.webp 720w`}
+        sizes="(min-width: 48rem) 40vw, 100vw"
+        width="720"
+        height="540"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+    </picture>
+    <div class="featured__body">
+      <span class="eyebrow">Signature spotlight</span>
+      <h2 id="featured-drink-title">{item.name}</h2>
+      <p class="lede">{item.description}.</p>
+      {item.available && from !== undefined ? (
+        <p class="price featured__price">From {formatCents(from)}</p>
+      ) : (
+        <p class="status--error">Unavailable today.</p>
+      )}
+      <button
+        class="btn btn--secondary"
+        type="button"
+        command="show-modal"
+        commandfor={`drink-${item.id}`}
+        aria-haspopup="dialog"
+      >
+        Sizes and prices
+      </button>
+    </div>
+  </article>
+</section>
+
+<style>
+  .featured {
+    margin-top: var(--bc-section-space);
+  }
+
+  .featured__card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .featured__media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .featured__body {
+    padding: var(--bc-space-10);
+    align-self: center;
+  }
+
+  .featured__body h2 {
+    font-size: var(--bc-text-section);
+  }
+
+  .featured__price {
+    font-size: var(--bc-text-xl);
+    color: var(--bc-gold);
+  }
+
+  @media (max-width: 47.99rem) {
+    .featured__card {
+      grid-template-columns: 1fr;
+    }
+
+    .featured__media {
+      aspect-ratio: 4 / 3;
+    }
+
+    .featured__body {
+      padding: var(--bc-space-6);
+    }
+  }
+</style>
