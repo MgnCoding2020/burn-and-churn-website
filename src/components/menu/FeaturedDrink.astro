@@ -16,11 +16,6 @@ const from = startingPrice(item);
 <section class="container featured" aria-labelledby="featured-drink-title">
   <article class="card featured__card">
     <picture class="featured__media">
-      <source
-        type="image/avif"
-        srcset={`${image}-360.avif 360w, ${image}-720.avif 720w`}
-        sizes="(min-width: 48rem) 40vw, 100vw"
-      />
       <img
         src={`${image}-720.webp`}
         srcset={`${image}-360.webp 360w, ${image}-720.webp 720w`}

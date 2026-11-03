@@ -23,11 +23,6 @@ const cards = [
   {cards.map((c) => (
     <article class="card feature">
       <picture class="feature__media">
-        <source
-          type="image/avif"
-          srcset={`${c.image}-360.avif 360w, ${c.image}-720.avif 720w`}
-          sizes="(min-width: 68.75rem) 12rem, 40vw"
-        />
         <img
           src={`${c.image}-360.webp`}
           srcset={`${c.image}-360.webp 360w, ${c.image}-720.webp 720w`}
@@ -51,11 +46,6 @@ const cards = [
 
   <article class="card feature feature--hours" id="hours">
     <picture class="feature__media">
-      <source
-        type="image/avif"
-        srcset="/images/cafe-lantern-360.avif 360w, /images/cafe-lantern-720.avif 720w"
-        sizes="(min-width: 68.75rem) 12rem, 40vw"
-      />
       <img
         src="/images/cafe-lantern-360.webp"
         srcset="/images/cafe-lantern-360.webp 360w, /images/cafe-lantern-720.webp 720w"

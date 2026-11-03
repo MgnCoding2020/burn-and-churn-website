@@ -14,14 +14,9 @@ const poster = '/images/hero-espresso';
 <section class="hero" aria-labelledby="hero-title">
   <div class="hero__media">
     <picture>
-      <source
-        type="image/avif"
-        srcset={`${poster}-640.avif 640w, ${poster}-960.avif 960w, ${poster}-1672.avif 1672w`}
-        sizes="(min-width: 48rem) 70vw, 100vw"
-      />
       <img
         src={`${poster}-960.webp`}
-        srcset={`${poster}-640.webp 640w, ${poster}-960.webp 960w, ${poster}-1672.webp 1672w`}
+        srcset={`${poster}-640.webp 640w, ${poster}-720.webp 720w, ${poster}-960.webp 960w, ${poster}-1672.webp 1672w`}
         sizes="(min-width: 48rem) 70vw, 100vw"
         width="1672"
         height="941"
