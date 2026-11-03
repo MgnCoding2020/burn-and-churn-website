@@ -2,10 +2,12 @@
 
 Run by the project owner in Chrome DevTools against the live site (`https://burn-and-churn-website.naultmichael.workers.dev`), Lighthouse 13.5.0, Chromium 156. Screenshots in this folder.
 
-| Run           | Page     | Device  | Performance | Accessibility | Best Practices | SEO |
-| ------------- | -------- | ------- | ----------- | ------------- | -------------- | --- |
-| 1 (12:05 EST) | `/`      | Desktop | 100         | 100           | 100            | 66  |
-| 2             | `/menu/` | Mobile  | **79**      | 100           | 100            | 66  |
+| Run                    | Page     | Device  | Performance | Accessibility | Best Practices | SEO |
+| ---------------------- | -------- | ------- | ----------- | ------------- | -------------- | --- |
+| 1 (12:05 EST)          | `/`      | Desktop | 100         | 100           | 100            | 66  |
+| 2                      | `/menu/` | Mobile  | **79**      | 100           | 100            | 66  |
+| 3 (after PRs #14, #15) | `/`      | Mobile  | **87**      | 100           | 100            | 66  |
+| 4 (after PRs #14, #15) | `/menu/` | Mobile  | **93**      | 100           | 100            | 66  |
 
 ## Reading the results
 
@@ -21,4 +23,6 @@ PR "Menu: LCP image gets fetchpriority=high" adds `fetchpriority="high"` to the 
 
 ## Still to record
 
-- [ ] Mobile Lighthouse on `/menu/` and `/` after the fix (gate: Performance ≥ 95)
+- [x] Mobile Lighthouse on `/menu/` and `/` after the fix: menu 79 → **93**, home **87**. Both still below the 95 gate.
+- [x] Home (mobile): the cause was image work, not JavaScript (TBT ≈ 930 ms). Fixed by right-sizing images and serving WebP instead of AVIF; local Lighthouse 13.6.0 TBT fell to about 110–140 ms (ADR-0019).
+- [ ] Re-run both after the next fixes (gate: Performance ≥ 95)

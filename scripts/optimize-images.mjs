@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Turns the original design images (kept outside the repo) into the sized
-// AVIF and WebP files the site serves from public/images/.
+// WebP files the site serves from public/images/. WebP only: AVIF cost too
+// much to decode on slow phones (measured with Lighthouse, ADR-0019).
 //
 //   npm run images                      reads ../burn-and-churn-design/originals
 //   npm run images -- --src <folder>    reads another folder
@@ -22,11 +23,11 @@ const OUT = 'public/images';
 
 // source file -> output base name, widths
 const JOBS = [
-  { src: 'Hero.png', out: 'hero-espresso', widths: [640, 960, 1672] },
+  { src: 'Hero.png', out: 'hero-espresso', widths: [640, 720, 960, 1672] },
   { src: 'Latte.png', out: 'signature-latte', widths: [360, 720] },
   { src: 'Beans.png', out: 'todays-roast', widths: [360, 720] },
   { src: 'Lantern.png', out: 'cafe-lantern', widths: [360, 720] },
-  { src: 'Cold-Brew.png', out: 'cream-cold-brew', widths: [480, 960, 1122] },
+  { src: 'Cold-Brew.png', out: 'cream-cold-brew', widths: [480, 640, 960, 1122] },
 ];
 
 if (!existsSync(SRC)) {
@@ -44,10 +45,7 @@ for (const job of JOBS) {
     const width = Math.min(w, meta.width);
     const base = join(OUT, `${job.out}-${width}`);
     const img = sharp(input).resize({ width, withoutEnlargement: true });
-    await img.clone().avif({ quality: 55, effort: 6 }).toFile(`${base}.avif`);
     await img.clone().webp({ quality: 72, effort: 6 }).toFile(`${base}.webp`);
-    console.log(
-      `${job.src} -> ${base}.avif (${kb(`${base}.avif`)}), .webp (${kb(`${base}.webp`)})`,
-    );
+    console.log(`${job.src} -> ${base}.webp (${kb(`${base}.webp`)})`);
   }
 }
