@@ -50,25 +50,23 @@ const cards = [
   ))}
 
   <article class="card feature feature--hours" id="hours">
-    <div class="feature__media feature__icon" aria-hidden="true">
-      <svg viewBox="0 0 48 48" focusable="false">
-        <circle
-          cx="24"
-          cy="24"
-          r="17"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-        ></circle>
-        <path
-          d="M24 14v11l7 5"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2.5"
-          stroke-linecap="round"
-        ></path>
-      </svg>
-    </div>
+    <picture class="feature__media">
+      <source
+        type="image/avif"
+        srcset="/images/cafe-lantern-360.avif 360w, /images/cafe-lantern-720.avif 720w"
+        sizes="(min-width: 68.75rem) 12rem, 40vw"
+      />
+      <img
+        src="/images/cafe-lantern-360.webp"
+        srcset="/images/cafe-lantern-360.webp 360w, /images/cafe-lantern-720.webp 720w"
+        sizes="(min-width: 68.75rem) 12rem, 40vw"
+        width="360"
+        height="540"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
+    </picture>
     <div class="feature__body">
       <h2 class="feature__title">Café Hours</h2>
       <p>
@@ -103,15 +101,8 @@ const cards = [
     object-fit: cover;
   }
 
-  .feature__icon {
-    display: grid;
-    place-items: center;
-    background: var(--bc-bg-elevated);
-    color: var(--bc-copper);
-  }
-
-  .feature__icon svg {
-    width: 3.5rem;
+  .feature--hours .feature__media img {
+    object-position: center 35%;
   }
 
   .feature__body {
