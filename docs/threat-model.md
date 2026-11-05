@@ -2,11 +2,12 @@
 
 Burn and Churn Coffee is a fictional business; this is a portfolio project. The threat model is written as if the site were real, because that's the skill it demonstrates.
 
-| Version | Date       | Scope                                                                                            | Method                              |
-| ------- | ---------- | ------------------------------------------------------------------------------------------------ | ----------------------------------- |
-| **v1**  | 2026-11-02 | Phase 0: public pages, the API skeleton, the build and deploy pipeline, the accounts behind them | STRIDE per element of the data flow |
+| Version  | Date       | Scope                                                                                                                                       | Method                              |
+| -------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| **v1**   | 2026-11-02 | Phase 0: public pages, the API skeleton, the build and deploy pipeline, the accounts behind them                                            | STRIDE per element of the data flow |
+| **v1.1** | 2026-11-04 | Phase 1 additions: self-hosted fonts, images and video, two page scripts, menu dialogs, caching, log redaction, error and maintenance pages | Same; see §4                        |
 
-The model is updated whenever a phase adds an attack surface (plan §9). The [planned surfaces](#planned-surfaces) section lists what each later phase adds, so the next version knows where to look.
+The model is updated whenever a phase adds an attack surface (plan §9). The [planned surfaces](#5-planned-surfaces) section lists what each later phase adds, so the next version knows where to look.
 
 ---
 
@@ -115,7 +116,20 @@ Status: **Done** (implemented and tested, with the evidence named) · **Partial*
 
 ---
 
-## 4. Planned surfaces
+## 4. Phase 1 additions (v1.1, 2026-11-04)
+
+| Element                                          | Threat                                               | Control                                                                                                        | Status | Evidence                                                 |
+| ------------------------------------------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------- |
+| Fonts, images, video                             | Tampering or tracking through third-party assets     | All self-hosted; CSP `default-src 'self'`; no third-party requests on any page                                 | Done   | `tests/e2e/info-pages.spec.ts` "no third-party requests" |
+| Page scripts (`hero-video.js`, `menu-dialog.js`) | Injected or inline script                            | External files under `script-src 'self'`; no inline script; menu works without JS (ADR-0013)                   | Done   | headers e2e "no CSP violations"                          |
+| Menu dialogs                                     | Content injection from menu data                     | Data validated by zod at build; Astro escapes text; `set:html` banned by lint                                  | Done   | `tests/unit/menu.test.ts`                                |
+| Caching (ADR-0020)                               | Stale or cached private responses                    | Long cache only for static files under `/fonts/`, `/images/`, `/media/`, `/scripts/`; pages and API not cached | Done   | `tests/unit/cache-policy.test.ts`                        |
+| Request logs (ADR-0021)                          | Information disclosure through logged URLs           | Query strings redacted from Cloudflare's logs; our log line has none; 3-day retention                          | Done   | `wrangler.jsonc`; privacy page                           |
+| Error pages (ADR-0022)                           | Information disclosure in errors                     | Branded 500 page for people, problem details for the API, no internals                                         | Done   | `tests/api/maintenance.test.ts`                          |
+| Maintenance switch (ADR-0022)                    | Availability during an incident; a deploy undoing it | Secret-based switch, survives deploys; invalid values stop the site                                            | Done   | runbook; `tests/api/maintenance.test.ts`                 |
+| Preview deploys (ADR-0020)                       | A preview mistaken for production                    | `APP_ENV=preview` via the `previews` block; health check reports it                                            | Done   | verified on a preview URL, 2026-11-04                    |
+
+## 5. Planned surfaces
 
 What each later phase adds, so the next version of this model starts from a list:
 

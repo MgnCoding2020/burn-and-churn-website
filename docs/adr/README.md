@@ -27,3 +27,4 @@ Each record captures one significant decision: the context, what was decided, an
 | [0019](0019-webp-and-right-sized-images.md)        | Serve right-sized WebP, not AVIF                                | Accepted | 2026-11-03 |
 | [0020](0020-audit-follow-ups.md)                   | Follow-ups from the 2026-11-04 code audit                       | Accepted | 2026-11-04 |
 | [0021](0021-log-minimisation.md)                   | Minimise what request logs contain                              | Accepted | 2026-11-04 |
+| [0022](0022-error-page-and-maintenance-mode.md)    | Branded 500 page and a maintenance switch                       | Accepted | 2026-11-04 |

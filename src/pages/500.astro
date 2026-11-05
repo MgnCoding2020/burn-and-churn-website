@@ -1,0 +1,26 @@
+---
+import Base from '../layouts/Base.astro';
+
+// Served by the pipeline (src/server/app.ts) with status 500 when a page
+// request fails. Static, so it works even when the failure is in rendering.
+export const prerender = true;
+---
+
+<Base title="Something went wrong">
+  <div class="container">
+    <span class="eyebrow">Error 500</span>
+    <h1>Something went wrong.</h1>
+    <p class="lede">
+      That's on us, not you. The problem has been logged. Try again in a moment, or head back to the
+      home page.
+    </p>
+    <p>
+      <a class="btn btn--primary" href="/">
+        Back to the home page
+      </a>
+    </p>
+    <p class="subtle">
+      If it keeps happening, the response's <code>X-Request-Id</code> header helps trace it.
+    </p>
+  </div>
+</Base>

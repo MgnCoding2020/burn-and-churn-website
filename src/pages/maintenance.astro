@@ -1,0 +1,24 @@
+---
+import Base from '../layouts/Base.astro';
+
+// Served with status 503 to every page request while MAINTENANCE_MODE=on
+// (docs/runbooks/maintenance-mode.md). Static, so it works whatever is broken.
+export const prerender = true;
+---
+
+<Base
+  title="Back shortly"
+  description="Burn and Churn Coffee's website is briefly down for maintenance."
+>
+  <div class="container">
+    <span class="eyebrow">Maintenance</span>
+    <h1>We'll be back shortly.</h1>
+    <p class="lede">
+      The site is down for planned work or while we fix something. Nothing you need to do: please
+      try again in a few minutes.
+    </p>
+    <p class="subtle">
+      Burn and Churn Coffee is a fictional business; no orders or payments are affected.
+    </p>
+  </div>
+</Base>
