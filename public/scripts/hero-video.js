@@ -24,7 +24,8 @@ if (video instanceof HTMLVideoElement && toggle instanceof HTMLButtonElement) {
   video.addEventListener('pause', sync);
 
   toggle.addEventListener('click', () => {
-    if (video.paused) video.play();
+    // play() can be refused (autoplay policy, power saving): keep the label honest.
+    if (video.paused) video.play().catch(sync);
     else video.pause();
   });
 

@@ -58,7 +58,10 @@ export function createApi() {
   );
   api.use(originCheck());
 
-  define({ method: 'GET', path: '/health', principal: 'public' }, (c) => c.json({ status: 'ok' }));
+  // The environment name is not secret; previews prove they aren't production (ADR-0020).
+  define({ method: 'GET', path: '/health', principal: 'public' }, (c) =>
+    c.json({ status: 'ok', environment: c.env?.APP_ENV ?? 'unknown' }),
+  );
 
   // Deny by default: anything not defined above is a 404 problem.
   api.all('*', (c) => problem(c, 404, 'Not found'));
