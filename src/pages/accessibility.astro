@@ -1,0 +1,65 @@
+---
+import Base from '../layouts/Base.astro';
+
+export const prerender = true;
+const UPDATED = '2026-11-04';
+const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
+---
+
+<Base
+  title="Accessibility"
+  description="Accessibility statement for the Burn and Churn Coffee portfolio site: the target, how it's tested and known limitations."
+>
+  <article class="container prose">
+    <span class="eyebrow">Accessibility</span>
+    <h1>Accessibility statement</h1>
+    <p class="updated">Last updated {UPDATED}</p>
+    <p class="lede">
+      The aim is that everyone can use this site, with a keyboard, a screen reader, a phone or
+      high-contrast settings. The target is <strong>WCAG 2.2 level AA</strong>.
+    </p>
+
+    <h2>How it's tested</h2>
+    <ul>
+      <li>
+        Automated accessibility checks (axe) on every page, at desktop and phone sizes, on every
+        change.
+      </li>
+      <li>
+        Keyboard checks: the first Tab reaches "Skip to content"; menus, buttons and drink details
+        work by keyboard; focus is always visible and returns where it came from.
+      </li>
+      <li>
+        Every colour pair is checked against the WCAG contrast ratios by a script on every change;
+        see the <a href={`${repo}/blob/main/docs/design/tokens.md`}>contrast record</a>.
+      </li>
+      <li>No sideways scrolling at 360 pixels wide.</li>
+      <li>
+        Reduced motion: if your device asks for less motion, the hero video doesn't play and
+        transitions are turned off. Anyone who sees the video can pause it.
+      </li>
+      <li>Windows high-contrast mode keeps buttons and selected items visible.</li>
+    </ul>
+
+    <h2>Known limitations</h2>
+    <ul>
+      <li>
+        <strong>One dark theme.</strong> The site doesn't offer a light version; the
+        <a href={`${repo}/blob/main/docs/adr/0012-dark-only-public-theme.md`}>decision record</a>
+        explains why. Browser reader modes and high-contrast settings still work.
+      </li>
+      <li>
+        <strong>Unfinished features</strong> such as sign-in and ordering are shown as unavailable,
+        with text saying so.
+      </li>
+      <li>Testing so far is automated plus the owner's own checks; no external audit yet.</li>
+    </ul>
+
+    <h2>Problems or suggestions</h2>
+    <p>
+      If something doesn't work for you, please open an issue on{' '}
+      <a href={`${repo}/issues`}>GitHub</a> describing the page and what happened. It will be
+      treated as a bug.
+    </p>
+  </article>
+</Base>

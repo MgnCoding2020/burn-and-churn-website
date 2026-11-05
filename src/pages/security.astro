@@ -1,0 +1,158 @@
+---
+import Base from '../layouts/Base.astro';
+
+export const prerender = true;
+const UPDATED = '2026-11-04';
+const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
+const doc = (path: string) => `${repo}/blob/main/${path}`;
+
+const controls: Array<{
+  area: string;
+  what: string;
+  status: 'In place' | 'Planned';
+  ref?: [string, string];
+}> = [
+  {
+    area: 'Transport',
+    what: 'HTTPS only: plain HTTP is redirected; HSTS for a year',
+    status: 'In place',
+    ref: ['ADR-0005', 'docs/adr/0005-https-redirect-in-the-worker.md'],
+  },
+  {
+    area: 'Browser',
+    what: 'Strict Content Security Policy (scripts only from this site, no inline script), framing blocked, nosniff, referrer and permissions policies, on every response including images and fonts',
+    status: 'In place',
+    ref: ['ADR-0004', 'docs/adr/0004-security-headers-and-strict-csp.md'],
+  },
+  {
+    area: 'Test mode',
+    what: 'The site refuses to serve anything if a live Stripe key is configured',
+    status: 'In place',
+    ref: ['ADR-0006', 'docs/adr/0006-test-mode-guard.md'],
+  },
+  {
+    area: 'API',
+    what: 'Deny by default: every route declares who may call it; same-origin check on changes; no cross-origin access; size limits; errors without internal details',
+    status: 'In place',
+    ref: ['ADR-0007', 'docs/adr/0007-api-conventions.md'],
+  },
+  {
+    area: 'Honesty',
+    what: 'Fictional-business banner and no search indexing on every page; unbuilt features shown as unavailable',
+    status: 'In place',
+  },
+  {
+    area: 'Logging',
+    what: 'Minimal request logs; query strings removed from host logs; 3-day retention',
+    status: 'In place',
+    ref: ['ADR-0021', 'docs/adr/0021-log-minimisation.md'],
+  },
+  {
+    area: 'Supply chain',
+    what: 'Exact dependency versions, a week-old minimum for new releases, Dependabot, Dependency Review, npm audit, CodeQL, CI actions pinned to commits',
+    status: 'In place',
+    ref: ['ADR-0008', 'docs/adr/0008-dependency-policy.md'],
+  },
+  {
+    area: 'Change control',
+    what: 'Every change through a pull request with required checks; no force-pushes',
+    status: 'In place',
+    ref: ['ADR-0009', 'docs/adr/0009-ci-and-branch-protection.md'],
+  },
+  {
+    area: 'Secrets',
+    what: 'No secrets in the repository; secret scanning with push protection; an inventory of names and dates only',
+    status: 'In place',
+    ref: ['Secrets inventory', 'docs/secrets-inventory.md'],
+  },
+  {
+    area: 'Sign-in',
+    what: 'Staff (Microsoft Entra ID) and customers (Entra External ID): OIDC with PKCE, server-side sessions, role-based access, separation of duties on refunds',
+    status: 'Planned',
+  },
+  {
+    area: 'Payments',
+    what: 'Stripe Checkout and Terminal in test mode: signed, replay-checked webhooks; prices set on the server',
+    status: 'Planned',
+  },
+];
+---
+
+<Base
+  title="Security"
+  description="How the Burn and Churn Coffee portfolio site is built and secured, with links to the evidence."
+>
+  <article class="container prose">
+    <span class="eyebrow">Security</span>
+    <h1>How this site is built and secured</h1>
+    <p class="updated">Last updated {UPDATED}</p>
+    <p class="lede">
+      This site is a security portfolio project. Each control below is tested in CI on every change,
+      and each decision is written down with its reasoning and trade-offs.
+    </p>
+
+    <h2>Controls</h2>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Area</th>
+          <th scope="col">Control</th>
+          <th scope="col">Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {controls.map((c) => (
+          <tr>
+            <td>{c.area}</td>
+            <td>
+              {c.what}
+              {c.ref && (
+                <>
+                  {' '}
+                  (<a href={doc(c.ref[1])}>{c.ref[0]}</a>)
+                </>
+              )}
+            </td>
+            <td>
+              <span
+                class:list={[
+                  'status-chip',
+                  c.status === 'In place' ? 'status-chip--done' : 'status-chip--planned',
+                ]}
+              >
+                {c.status}
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+
+    <h2>The evidence</h2>
+    <ul>
+      <li>
+        <a href={doc('docs/threat-model.md')}>Threat model</a>: what could go wrong, the control for
+        each threat, and the test that proves it.
+      </li>
+      <li>
+        <a href={doc('docs/adr/README.md')}>Architecture decision records</a>: every significant
+        decision and what it costs.
+      </li>
+      <li>
+        <a href={`${repo}/tree/main/docs/evidence`}>Evidence</a>: dated results, such as Lighthouse
+        runs.
+      </li>
+      <li>
+        <a href={`${repo}/actions`}>CI runs</a>: the checks on every pull request.
+      </li>
+    </ul>
+
+    <h2>Found a problem?</h2>
+    <p>
+      Please report it privately through{' '}
+      <a href={`${repo}/security/advisories/new`}>GitHub's vulnerability reporting</a>. The{' '}
+      <a href={doc('SECURITY.md')}>security policy</a> covers scope and response times, and
+      <a href="/.well-known/security.txt">security.txt</a> has the same contact.
+    </p>
+  </article>
+</Base>

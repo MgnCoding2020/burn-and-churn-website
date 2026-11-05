@@ -13,8 +13,11 @@
     "binding": "ASSETS",
     "run_worker_first": true,
   },
+  // Host logs keep request metadata but drop query strings, so one-time codes
+  // (OIDC callbacks from Phase 2) never land in logs (ADR-0021).
   "observability": {
     "enabled": true,
+    "redact_query_string": true,
   },
   // Non-secret settings. Secrets go in .dev.vars locally and `wrangler secret put` when deployed.
   "vars": {
