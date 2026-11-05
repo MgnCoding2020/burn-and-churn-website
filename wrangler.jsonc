@@ -20,4 +20,12 @@
   "vars": {
     "APP_ENV": "production",
   },
+  // Preview deployments (`wrangler preview`, one per branch) get their own
+  // settings, so they never present as production (ADR-0020). Preview-only
+  // secrets and databases are added here from Phase 2.
+  "previews": {
+    "vars": {
+      "APP_ENV": "preview",
+    },
+  },
 }

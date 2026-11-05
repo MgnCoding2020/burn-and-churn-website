@@ -1,5 +1,6 @@
 import { Hono, type Context } from 'hono';
 import { API_BASE, createApi } from '../api/app';
+import { cacheControlFor } from '../lib/cache-policy';
 import { checkEnv } from '../lib/env';
 import { problem } from '../lib/problem';
 import { securityHeaders } from '../lib/security-headers';
@@ -40,10 +41,13 @@ export function buildApp({ csp = true, log = true, tail }: BuildOptions = {}) {
 
   // 2. Security headers on every response. Responses from the asset store have
   //    immutable headers, so the response is re-wrapped before setting them.
+  //    Successful static files outside /_astro/ also get a cache policy (ADR-0020).
   app.use(async (c, next) => {
     await next();
     c.res = new Response(c.res.body, c.res);
     for (const [name, value] of Object.entries(headers)) c.res.headers.set(name, value);
+    const cache = c.res.status === 200 ? cacheControlFor(c.req.path) : undefined;
+    if (cache) c.res.headers.set('Cache-Control', cache);
   });
 
   // 3. Request log: no query strings, cookies or bodies.

@@ -47,3 +47,20 @@ test('the page loads without CSP violations', async ({ page }) => {
   await page.waitForLoadState('networkidle');
   expect(violations).toEqual([]);
 });
+
+// ADR-0020: unversioned static files are cached; pages are not.
+for (const [path, maxAge] of [
+  ['/fonts/inter-latin-variable.woff2', 'max-age=2592000'],
+  ['/images/hero-espresso-720.webp', 'max-age=604800'],
+  ['/scripts/hero-video.js', 'max-age=3600'],
+] as const) {
+  test(`static file ${path} is cached (${maxAge})`, async ({ request }) => {
+    const res = await request.get(path);
+    expect(res.headers()['cache-control']).toContain(maxAge);
+  });
+}
+
+test('pages are not cached for long, so deploys show immediately', async ({ request }) => {
+  const res = await request.get('/');
+  expect(res.headers()['cache-control'] ?? '').not.toContain('max-age=604800');
+});
