@@ -12,6 +12,8 @@ for (const path of [
   '/security/',
   '/accessibility/',
   '/styleguide/',
+  '/maintenance/',
+  '/500',
   '/a-page-that-does-not-exist',
 ]) {
   test(`banner and noindex on ${path}`, async ({ page }) => {

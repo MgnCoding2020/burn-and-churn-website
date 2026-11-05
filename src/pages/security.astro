@@ -54,6 +54,12 @@ const controls: Array<{
     ref: ['ADR-0008', 'docs/adr/0008-dependency-policy.md'],
   },
   {
+    area: 'Incidents',
+    what: 'A maintenance switch takes every page offline gracefully (503) without a code change and survives deploys; errors show a branded page without internal details',
+    status: 'In place',
+    ref: ['Runbook', 'docs/runbooks/maintenance-mode.md'],
+  },
+  {
     area: 'Change control',
     what: 'Every change through a pull request with required checks; no force-pushes',
     status: 'In place',

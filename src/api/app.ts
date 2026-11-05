@@ -1,5 +1,6 @@
 import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { isMaintenance } from '../lib/env';
 import { problem } from '../lib/problem';
 import type { AppEnv } from '../server/types';
 import { authorize, type Principal } from './authz';
@@ -60,7 +61,11 @@ export function createApi() {
 
   // The environment name is not secret; previews prove they aren't production (ADR-0020).
   define({ method: 'GET', path: '/health', principal: 'public' }, (c) =>
-    c.json({ status: 'ok', environment: c.env?.APP_ENV ?? 'unknown' }),
+    c.json({
+      status: 'ok',
+      environment: c.env?.APP_ENV ?? 'unknown',
+      maintenance: isMaintenance(c.env as unknown as Record<string, unknown>),
+    }),
   );
 
   // Deny by default: anything not defined above is a 404 problem.

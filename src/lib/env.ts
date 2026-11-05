@@ -16,6 +16,11 @@ const STRIPE_LIVE_PREFIXES = ['sk_live_', 'rk_live_', 'pk_live_'];
 
 export type EnvInput = Record<string, unknown>;
 
+/** True when the incident switch is on (docs/runbooks/maintenance-mode.md). */
+export function isMaintenance(env: EnvInput | undefined): boolean {
+  return env?.MAINTENANCE_MODE === 'on';
+}
+
 export interface EnvCheck {
   ok: boolean;
   errors: string[];
@@ -27,6 +32,16 @@ export function checkEnv(env: EnvInput): EnvCheck {
   const appEnv = env.APP_ENV;
   if (typeof appEnv !== 'string' || !(APP_ENVS as readonly string[]).includes(appEnv)) {
     errors.push(`APP_ENV must be one of: ${APP_ENVS.join(', ')}`);
+  }
+
+  const maintenance = env.MAINTENANCE_MODE;
+  if (
+    maintenance !== undefined &&
+    maintenance !== '' &&
+    maintenance !== 'on' &&
+    maintenance !== 'off'
+  ) {
+    errors.push('MAINTENANCE_MODE must be "on" or "off"');
   }
 
   for (const name of STRIPE_KEY_VARS) {

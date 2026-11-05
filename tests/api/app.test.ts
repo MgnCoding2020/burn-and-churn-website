@@ -49,7 +49,7 @@ describe('/api/v1', () => {
   it('health is public and not cached', async () => {
     const res = await get(`${API_BASE}/health`);
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ status: 'ok', environment: 'local' });
+    expect(await res.json()).toEqual({ status: 'ok', environment: 'local', maintenance: false });
     expect(res.headers.get('Cache-Control')).toBe('no-store');
   });
 

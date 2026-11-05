@@ -1,7 +1,7 @@
 import { Hono, type Context } from 'hono';
 import { API_BASE, createApi } from '../api/app';
 import { cacheControlFor } from '../lib/cache-policy';
-import { checkEnv } from '../lib/env';
+import { checkEnv, isMaintenance } from '../lib/env';
 import { problem } from '../lib/problem';
 import { securityHeaders } from '../lib/security-headers';
 import type { AppEnv } from './types';
@@ -17,10 +17,49 @@ export interface BuildOptions {
 
 const LOOPBACK_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
 
-function onError(err: Error, c: Context<AppEnv>): Response {
+/** Still served during maintenance: what the maintenance page itself needs, and monitoring. */
+const ALWAYS_SERVED = [
+  '/_astro/',
+  '/fonts/',
+  '/images/',
+  '/robots.txt',
+  '/.well-known/',
+  `${API_BASE}/health`,
+];
+const RETRY_AFTER_SECONDS = '600';
+
+/**
+ * A prerendered page from the asset store, sent with a given status and never
+ * cached. Unit tests have no asset store, so they get a plain-text fallback.
+ */
+async function staticPage(
+  c: Context<AppEnv>,
+  path: string,
+  status: 500 | 503,
+  fallback: string,
+): Promise<Response> {
+  const assets = (c.env as { ASSETS?: Fetcher } | undefined)?.ASSETS;
+  if (assets) {
+    const res = await assets.fetch(new URL(path, c.req.url));
+    if (res.ok) {
+      return new Response(res.body, {
+        status,
+        headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+      });
+    }
+  }
+  return new Response(fallback, {
+    status,
+    headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store' },
+  });
+}
+
+async function onError(err: Error, c: Context<AppEnv>): Promise<Response> {
   // Log the error class only; messages can carry upstream details.
   console.error(JSON.stringify({ level: 'error', requestId: c.get('requestId'), error: err.name }));
-  return problem(c, 500, 'Internal server error');
+  // API callers get problem details; people get the branded error page.
+  if (c.req.path.startsWith(API_BASE)) return problem(c, 500, 'Internal server error');
+  return staticPage(c, '/500', 500, 'Something went wrong. Please try again.');
 }
 
 /**
@@ -93,6 +132,24 @@ export function buildApp({ csp = true, log = true, tail }: BuildOptions = {}) {
       return problem(c, 503, 'Service unavailable', 'The site is misconfigured and has stopped.');
     }
     await next();
+  });
+
+  // 6. Maintenance mode (incident switch, ADR-0022): every page gets the
+  //    maintenance page and the API a problem response, both 503 with
+  //    Retry-After. Styles, fonts, images and the health check still work.
+  app.use(async (c, next) => {
+    if (!isMaintenance(c.env as unknown as Record<string, unknown> | undefined)) return next();
+    if (ALWAYS_SERVED.some((p) => c.req.path.startsWith(p))) return next();
+    const res = c.req.path.startsWith(API_BASE)
+      ? problem(c, 503, 'Service unavailable', 'The site is down for maintenance.')
+      : await staticPage(
+          c,
+          '/maintenance/',
+          503,
+          'Down for maintenance. Please try again shortly.',
+        );
+    res.headers.set('Retry-After', RETRY_AFTER_SECONDS);
+    return res;
   });
 
   const { api } = createApi();

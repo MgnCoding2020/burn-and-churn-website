@@ -9,6 +9,8 @@ const pages = [
   '/security/',
   '/accessibility/',
   '/styleguide/',
+  '/maintenance/',
+  '/500',
   '/a-page-that-does-not-exist',
 ];
 
