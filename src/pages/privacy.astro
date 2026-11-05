@@ -1,0 +1,95 @@
+---
+import Base from '../layouts/Base.astro';
+
+export const prerender = true;
+const UPDATED = '2026-11-04';
+const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
+---
+
+<Base
+  title="Privacy"
+  description="What data the Burn and Churn Coffee portfolio site handles, and what it doesn't."
+>
+  <article class="container prose">
+    <span class="eyebrow">Privacy</span>
+    <h1>What this site knows about you</h1>
+    <p class="updated">Last updated {UPDATED}</p>
+    <p class="lede">
+      Very little. Burn and Churn Coffee is a fictional business and this site is a portfolio
+      project. Today it has no accounts, no forms, no cookies, no analytics and no trackers.
+    </p>
+
+    <h2>What is collected today</h2>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">What</th>
+          <th scope="col">Details</th>
+          <th scope="col">Kept for</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Request logs (our code)</td>
+          <td>
+            Method, path, response status, timing and a random request ID. No query strings, cookies
+            or request bodies.
+          </td>
+          <td>3 days</td>
+        </tr>
+        <tr>
+          <td>Request logs (Cloudflare, our host)</td>
+          <td>
+            Cloudflare's own record of each request and response, which can include connection
+            details such as your IP address and approximate location. Query strings are removed from
+            these logs.
+          </td>
+          <td>3 days</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Logs are used only to keep the site working and secure. They're stored in Cloudflare Workers
+      Logs, which keeps them for 3 days on the free plan this site uses (checked against
+      Cloudflare's documentation on {UPDATED}).
+    </p>
+
+    <h2>What this site does not do</h2>
+    <ul>
+      <li>No cookies, and nothing stored in your browser.</li>
+      <li>No analytics, advertising or tracking scripts.</li>
+      <li>
+        No third-party requests: fonts, images and video are served from this site, not from Google
+        Fonts or another service.
+      </li>
+      <li>No real orders or payments, and no card numbers, ever.</li>
+    </ul>
+
+    <h2>What's planned</h2>
+    <p>
+      Later phases add features that will handle more data. This page will be updated
+      <strong>before</strong> each one goes live, describing exactly what it stores and for how
+      long:
+    </p>
+    <ul>
+      <li>
+        <strong>Staff and customer sign-in</strong> (Microsoft Entra ID): one strictly necessary
+        session cookie; test accounts only.
+      </li>
+      <li>
+        <strong>Online ordering</strong> (Stripe Checkout in test mode): order details for a
+        fictional café; card details stay on Stripe's pages and never reach this site.
+      </li>
+      <li>
+        <strong>An AI menu helper</strong>: message counts only; conversations are not stored.
+      </li>
+    </ul>
+
+    <h2>Questions</h2>
+    <p>
+      There's no personal data to request or delete today. If you have a question or spot something
+      wrong, open an issue on <a href={`${repo}/issues`}>GitHub</a>, or report a security concern
+      through <a href={`${repo}/security/advisories/new`}>private vulnerability reporting</a>.
+    </p>
+  </article>
+</Base>

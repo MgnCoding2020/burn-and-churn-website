@@ -1,0 +1,55 @@
+---
+import Base from '../layouts/Base.astro';
+
+export const prerender = true;
+---
+
+<Base
+  title="Our story"
+  description="The story of Burn and Churn Coffee, a fictional café built as a security portfolio project."
+>
+  <article class="container prose">
+    <span class="eyebrow">Our story</span>
+    <h1>Small batch. Big character.</h1>
+    <p class="lede">
+      Burn and Churn Coffee is a neighbourhood café that roasts in small batches and pulls every
+      shot like it matters. It's also <strong>entirely fictional</strong>.
+    </p>
+
+    <h2>The café</h2>
+    <p>
+      The idea is simple: a short menu of coffee done properly. Espresso pulled as a double shot,
+      brewed coffee from beans roasted that week, milk drinks with real texture, cold brew steeped
+      slowly, and a few signature drinks that change with the seasons. No food, no tea, no fuss.
+    </p>
+    <p>
+      The name comes from the two halves of the job: the <em>burn</em> of the roaster and the
+      <em>churn</em> of a busy morning counter.
+    </p>
+
+    <h2>The people</h2>
+    <p>
+      Twenty people run the shop in this story: an owner, a store manager, three shift leads and
+      fifteen baristas, with a part-time IT technician behind the scenes. They're invented, and so
+      are their accounts, schedules and access reviews.
+    </p>
+
+    <h2>Why it exists</h2>
+    <p>
+      Burn and Churn is a security portfolio project. The café gives a realistic reason to build the
+      things a real small business needs: a public website, staff sign-in, a counter register,
+      online ordering and the security program around them. Everything is built to that program's
+      controls and tested, with payments in Stripe's test mode only.
+    </p>
+    <p>
+      To see how the site is built and secured, read <a href="/security/">Security</a>. For what
+      data the site handles (very little), read <a href="/privacy/">Privacy</a>.
+    </p>
+
+    <p>
+      <a class="btn btn--primary" href="/menu/">
+        See the menu
+      </a>
+    </p>
+  </article>
+</Base>
