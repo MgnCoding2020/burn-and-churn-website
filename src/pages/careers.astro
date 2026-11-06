@@ -1,0 +1,69 @@
+---
+import Base from '../layouts/Base.astro';
+
+export const prerender = true;
+---
+
+<Base
+  title="Careers"
+  description="Careers at Burn and Churn Coffee, a fictional café. No real jobs are offered."
+>
+  <article class="container prose">
+    <span class="eyebrow">Careers</span>
+    <h1>Work behind the counter</h1>
+    <p class="lede">
+      Burn and Churn Coffee is a fictional business, so there are <strong>no real jobs</strong> here
+      and no applications are accepted. This page describes the team the story is built around.
+    </p>
+
+    <h2>The team</h2>
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Role</th>
+          <th scope="col">What they do</th>
+          <th scope="col">How many</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Barista</td>
+          <td>Pulls shots, steams milk, takes orders at the counter, keeps the bar clean</td>
+          <td>15</td>
+        </tr>
+        <tr>
+          <td>Shift lead</td>
+          <td>Runs a shift: the order board, sold-out items, opening and closing checks</td>
+          <td>3</td>
+        </tr>
+        <tr>
+          <td>Store manager</td>
+          <td>The menu, schedules, refunds and the day-to-day running of the shop</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td>Owner</td>
+          <td>Runs the business and signs off on its security program</td>
+          <td>1</td>
+        </tr>
+        <tr>
+          <td>IT technician</td>
+          <td>Part time: accounts, devices and the systems behind the counter</td>
+          <td>1</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Each role gets exactly the access it needs, no more. The staff portal, built in later phases,
+      will check it on every action: for example, a barista will be able to take a payment but not
+      refund one.
+    </p>
+
+    <h2>Applying</h2>
+    <p>
+      There's nothing to apply for, and this site doesn't collect applications or CVs. If you're
+      interested in the project itself, read <a href="/about/">our story</a> or{' '}
+      <a href="/security/">how the site is built</a>.
+    </p>
+  </article>
+</Base>

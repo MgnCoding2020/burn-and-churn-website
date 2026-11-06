@@ -50,6 +50,7 @@ Standard: WCAG 2.2 AA. Text needs 4.5:1 (3:1 at 24px+ or 18.66px+ bold); UI comp
 | `accent-text` | `bg` | 6.35:1 | 4.5:1 | Pass | Orange link text on the page |
 | `copper` | `surface` | 4.63:1 | 4.5:1 | Pass | Copper labels on cards |
 | `copper` | `bg` | 5.40:1 | 4.5:1 | Pass | Copper labels on the page |
+| `copper` | `bg-elevated` | 5.02:1 | 4.5:1 | Pass | Footer group headings |
 | `gold` | `bg` | 10.54:1 | 4.5:1 | Pass | Gold highlights on the page |
 | `gold` | `surface` | 9.05:1 | 4.5:1 | Pass | Gold prices on cards |
 | `on-action` | `action` | 5.37:1 | 4.5:1 | Pass | Primary button text |

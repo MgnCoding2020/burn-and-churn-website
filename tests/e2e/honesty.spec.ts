@@ -11,6 +11,8 @@ for (const path of [
   '/privacy/',
   '/security/',
   '/accessibility/',
+  '/careers/',
+  '/contact/',
   '/maintenance/',
   '/500',
   '/a-page-that-does-not-exist',

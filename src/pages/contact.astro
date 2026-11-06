@@ -1,0 +1,46 @@
+---
+import Base from '../layouts/Base.astro';
+import { STORE_HOURS } from '../data/store-hours';
+
+export const prerender = true;
+const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
+---
+
+<Base
+  title="Contact"
+  description="How to get in touch about the Burn and Churn Coffee portfolio project."
+>
+  <article class="container prose">
+    <span class="eyebrow">Contact</span>
+    <h1>Get in touch</h1>
+    <p class="lede">
+      Burn and Churn Coffee is a fictional café, so there's no shop to call or visit. Here's where
+      to go instead.
+    </p>
+
+    <h2>The café (fictional)</h2>
+    <p>
+      <strong>
+        {STORE_HOURS.summary}, {STORE_HOURS.opens} – {STORE_HOURS.closes}.
+      </strong>{' '}
+      {STORE_HOURS.note} There's no real address, phone number or email address for the café, and
+      this site has no contact form.
+    </p>
+
+    <h2>About the project</h2>
+    <ul>
+      <li>
+        Questions, ideas or something that doesn't work: open an issue on{' '}
+        <a href={`${repo}/issues`}>GitHub</a>.
+      </li>
+      <li>
+        A security problem: please report it privately through{' '}
+        <a href={`${repo}/security/advisories/new`}>GitHub's vulnerability reporting</a>, as
+        described in the <a href={`${repo}/blob/main/SECURITY.md`}>security policy</a>.
+      </li>
+      <li>
+        An accessibility problem: see the <a href="/accessibility/">accessibility statement</a>.
+      </li>
+    </ul>
+  </article>
+</Base>
