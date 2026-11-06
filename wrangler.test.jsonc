@@ -1,0 +1,16 @@
+{
+  // Test-only configuration: gives Vitest a real local D1 database through
+  // wrangler's getPlatformProxy (tests/setup/db.ts). Never deployed; the
+  // database lives under .wrangler/test-state and is rebuilt on every run.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "burn-and-churn-website-tests",
+  "compatibility_date": "2026-10-20",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "bc-local-test",
+      "database_id": "local-test-only",
+      "migrations_dir": "migrations",
+    },
+  ],
+}
