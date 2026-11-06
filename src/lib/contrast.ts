@@ -48,6 +48,7 @@ export const CONTRAST_PAIRS: ReadonlyArray<readonly [string, string, number, str
   ['accent-text', 'bg', 4.5, 'Orange link text on the page'],
   ['copper', 'surface', 4.5, 'Copper labels on cards'],
   ['copper', 'bg', 4.5, 'Copper labels on the page'],
+  ['copper', 'bg-elevated', 4.5, 'Footer group headings'],
   ['gold', 'bg', 4.5, 'Gold highlights on the page'],
   ['gold', 'surface', 4.5, 'Gold prices on cards'],
   ['on-action', 'action', 4.5, 'Primary button text'],

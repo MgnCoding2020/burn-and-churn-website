@@ -5,6 +5,8 @@ const pages = [
   { path: '/privacy/', heading: 'What this site knows about you' },
   { path: '/security/', heading: 'How this site is built and secured' },
   { path: '/accessibility/', heading: 'Accessibility statement' },
+  { path: '/careers/', heading: 'Work behind the counter' },
+  { path: '/contact/', heading: 'Get in touch' },
 ];
 
 for (const p of pages) {
@@ -63,4 +65,31 @@ test('the Story link in the header goes to the about page', async ({ page }) => 
     .filter({ visible: true })
     .click();
   await expect(page).toHaveURL(/\/about\/$/);
+});
+
+test('footer groups: Visit, Company, Staff, Trust', async ({ page }) => {
+  await page.goto('/');
+  const footer = page.getByRole('contentinfo');
+  await expect(footer.getByRole('heading', { level: 2 })).toHaveText([
+    'Visit',
+    'Company',
+    'Staff',
+    'Trust',
+  ]);
+});
+
+test('employee sign-in is shown as coming soon, not as a link (until Phase 2)', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const footer = page.getByRole('contentinfo');
+  await expect(footer.getByText('Employee sign-in')).toBeVisible();
+  await expect(footer.getByRole('link', { name: /Employee sign-in/ })).toHaveCount(0);
+});
+
+test('careers and contact collect nothing: no forms anywhere', async ({ page }) => {
+  for (const path of ['/careers/', '/contact/']) {
+    await page.goto(path);
+    expect(await page.locator('form, input, textarea').count()).toBe(0);
+  }
 });

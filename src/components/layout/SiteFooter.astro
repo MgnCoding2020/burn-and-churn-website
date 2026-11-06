@@ -3,6 +3,40 @@ import BrandLogo from '../brand/BrandLogo.astro';
 
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 const year = new Date().getFullYear();
+
+type Item = { label: string; href?: string; note?: string };
+const groups: Array<{ title: string; items: Item[] }> = [
+  {
+    title: 'Visit',
+    items: [
+      { label: 'Home', href: '/' },
+      { label: 'Menu', href: '/menu/' },
+      { label: 'Our story', href: '/about/' },
+    ],
+  },
+  {
+    title: 'Company',
+    items: [
+      { label: 'Careers', href: '/careers/' },
+      { label: 'Contact', href: '/contact/' },
+    ],
+  },
+  {
+    title: 'Staff',
+    // Becomes a link to /staff/ when the staff portal ships (Phase 2).
+    items: [{ label: 'Employee sign-in', note: 'coming soon' }],
+  },
+  {
+    title: 'Trust',
+    items: [
+      { label: 'Privacy', href: '/privacy/' },
+      { label: 'Security', href: '/security/' },
+      { label: 'Accessibility', href: '/accessibility/' },
+      { label: 'Report a security issue', href: `${repo}/security/advisories/new` },
+      { label: "How it's built (GitHub)", href: `${repo}#readme` },
+    ],
+  },
+];
 ---
 
 <footer class="site-footer">
@@ -16,58 +50,76 @@ const year = new Date().getFullYear();
       </p>
     </div>
 
-    <nav aria-label="Footer">
-      <ul class="site-footer__links">
-        <li>
-          <a href="/menu/">Menu</a>
-        </li>
-        <li>
-          <a href="/about/">Our story</a>
-        </li>
-        <li>
-          <a href="/privacy/">Privacy</a>
-        </li>
-        <li>
-          <a href="/security/">Security</a>
-        </li>
-        <li>
-          <a href="/accessibility/">Accessibility</a>
-        </li>
-        <li>
-          <a href={`${repo}#readme`}>How it's built (GitHub)</a>
-        </li>
-        <li>
-          <a href={`${repo}/blob/main/SECURITY.md`}>Report a security issue</a>
-        </li>
-      </ul>
+    <nav class="site-footer__nav" aria-label="Footer">
+      {groups.map((g) => (
+        <div class="site-footer__group">
+          <h2 class="site-footer__heading">{g.title}</h2>
+          <ul>
+            {g.items.map((i) => (
+              <li>
+                {i.href ? (
+                  <a href={i.href}>{i.label}</a>
+                ) : (
+                  <span class="site-footer__soon" aria-disabled="true">
+                    {i.label} <span class="subtle">({i.note})</span>
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ))}
     </nav>
   </div>
-  <div class="container">
-    <p class="subtle site-footer__legal">
-      © {year} Burn and Churn Coffee (fictional). Images AI-generated for this project.
-    </p>
+
+  <div class="container site-footer__bottom">
+    <p class="subtle">© {year} Burn and Churn Coffee (fictional).</p>
+    <p class="subtle">Images AI-generated for this project. Payments in Stripe test mode only.</p>
   </div>
 </footer>
 
 <style>
   .site-footer {
     margin-top: var(--bc-section-space);
-    padding-block: var(--bc-space-12) var(--bc-space-8);
+    padding-block: var(--bc-space-12) var(--bc-space-6);
     background: var(--bc-bg-elevated);
     border-top: var(--bc-border-width) solid var(--bc-border);
   }
 
   .site-footer__inner {
     display: grid;
-    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
-    gap: var(--bc-space-10);
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 3fr);
+    gap: var(--bc-space-12);
   }
 
   .site-footer__notice {
     margin-top: var(--bc-space-6);
+    max-width: 34ch;
   }
 
-  .site-footer__links {
+  .site-footer__nav {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--bc-space-8);
+  }
+
+  /* Each group starts with a thin copper rule, like a label on a coffee bag. */
+  .site-footer__group {
+    padding-top: var(--bc-space-4);
+    border-top: 2px solid var(--bc-copper);
+  }
+
+  .site-footer__heading {
+    margin: 0 0 var(--bc-space-3);
+    font-family: var(--bc-font-body);
+    font-size: var(--bc-text-xs);
+    font-weight: 700;
+    letter-spacing: var(--bc-tracking-eyebrow);
+    text-transform: uppercase;
+    color: var(--bc-copper);
+  }
+
+  .site-footer__group ul {
     display: grid;
     gap: var(--bc-space-1);
     margin: 0;
@@ -75,19 +127,57 @@ const year = new Date().getFullYear();
     list-style: none;
   }
 
-  .site-footer__links a {
+  .site-footer__group a {
     display: inline-flex;
     align-items: center;
     min-height: var(--bc-tap-target);
+    font-size: var(--bc-text-sm);
   }
 
-  .site-footer__legal {
-    margin: var(--bc-space-8) 0 0;
+  .site-footer__group a {
+    color: var(--bc-ink);
+    text-decoration: none;
+  }
+
+  .site-footer__group a:hover {
+    color: var(--bc-accent-text);
+    text-decoration: underline;
+  }
+
+  /* Plain text, not a flex row, so the note wraps naturally after the label. */
+  .site-footer__soon {
+    display: block;
+    padding-block: var(--bc-space-3);
+    color: var(--bc-ink-muted);
+    font-size: var(--bc-text-sm);
+    line-height: 1.4;
+  }
+
+  .site-footer__bottom {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--bc-space-2) var(--bc-space-6);
+    margin-top: var(--bc-space-10);
+    padding-top: var(--bc-space-5);
+    border-top: var(--bc-border-width) solid var(--bc-border);
+  }
+
+  .site-footer__bottom p {
+    margin: 0;
+  }
+
+  @media (max-width: 68.74rem) {
+    .site-footer__inner {
+      grid-template-columns: 1fr;
+      gap: var(--bc-space-10);
+    }
   }
 
   @media (max-width: 47.99rem) {
-    .site-footer__inner {
-      grid-template-columns: 1fr;
+    .site-footer__nav {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--bc-space-8) var(--bc-space-6);
     }
   }
 </style>

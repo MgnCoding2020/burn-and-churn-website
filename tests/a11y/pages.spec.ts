@@ -8,6 +8,8 @@ const pages = [
   '/privacy/',
   '/security/',
   '/accessibility/',
+  '/careers/',
+  '/contact/',
   '/maintenance/',
   '/500',
   '/a-page-that-does-not-exist',

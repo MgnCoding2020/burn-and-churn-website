@@ -13,6 +13,8 @@ const pages = [
   '/privacy/',
   '/security/',
   '/accessibility/',
+  '/careers/',
+  '/contact/',
   '/500',
   '/maintenance/',
   '/a-page-that-does-not-exist',
@@ -24,6 +26,8 @@ for (const path of pages) {
     const joins = await page.evaluate(() => {
       const found: string[] = [];
       const word = /[\p{L}\p{N}]/u;
+      // A word also may not follow closing punctuation directly ("PM.Fictional").
+      const end = /[\p{L}\p{N}.,;:!?)]/u;
       const selector =
         'main a, main strong, main em, main code, footer a, footer strong, .fiction-banner strong';
       for (const el of document.querySelectorAll(selector)) {
@@ -40,7 +44,7 @@ for (const path of pages) {
         if (
           next?.nodeType === Node.TEXT_NODE &&
           word.test(next.textContent?.[0] ?? '') &&
-          word.test(text.slice(-1))
+          end.test(text.slice(-1))
         ) {
           found.push(`${text.slice(-25)}|${next.textContent?.slice(0, 15)}…`);
         }
