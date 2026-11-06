@@ -7,7 +7,7 @@ test('brand fonts load from this site only', async ({ page, baseURL }) => {
     if (req.resourceType() === 'font') fontRequests.push(req.url());
   });
 
-  await page.goto('/styleguide/');
+  await page.goto('/');
   await page.evaluate(() => document.fonts.ready);
 
   const loaded = await page.evaluate(() => ({
