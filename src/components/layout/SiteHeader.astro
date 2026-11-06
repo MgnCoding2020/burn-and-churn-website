@@ -6,9 +6,10 @@ import BrandLogo from '../brand/BrandLogo.astro';
  * unavailable, never as working links (plan §1, design §7).
  */
 const links = [
+  // "Hours" returns in Phase 7 with the Store Hours list from SharePoint.
+  { href: '/', label: 'Home' },
   { href: '/menu/', label: 'Menu' },
   { href: '/about/', label: 'Story' },
-  { href: '/#hours', label: 'Hours' },
 ];
 const current = Astro.url.pathname;
 ---

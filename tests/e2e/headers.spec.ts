@@ -4,7 +4,6 @@ import { expect, test } from '@playwright/test';
 const paths = [
   '/',
   '/menu/',
-  '/styleguide/',
   '/images/hero-espresso-960.webp',
   '/media/hero-espresso-loop.mp4',
   '/scripts/hero-video.js',

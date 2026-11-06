@@ -8,7 +8,6 @@ const pages = [
   '/privacy/',
   '/security/',
   '/accessibility/',
-  '/styleguide/',
   '/maintenance/',
   '/500',
   '/a-page-that-does-not-exist',
@@ -58,8 +57,8 @@ test('the first Tab reaches the skip link, which moves to the content', async ({
 });
 
 test('focus is visible on links and buttons', async ({ page }) => {
-  await page.goto('/styleguide/');
-  const button = page.getByRole('link', { name: 'Explore menu' });
+  await page.goto('/');
+  const button = page.getByRole('link', { name: 'Explore the menu' });
   await button.focus();
   const outline = await button.evaluate((el) => getComputedStyle(el).outlineStyle);
   expect(outline).toBe('solid');
@@ -67,9 +66,9 @@ test('focus is visible on links and buttons', async ({ page }) => {
 
 test('reduced motion turns transitions off', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.goto('/styleguide/');
+  await page.goto('/');
   const duration = await page
-    .getByRole('link', { name: 'Explore menu' })
+    .getByRole('link', { name: 'Explore the menu' })
     .evaluate((el) => getComputedStyle(el).transitionDuration);
   expect(parseFloat(duration)).toBeLessThan(0.01);
 });

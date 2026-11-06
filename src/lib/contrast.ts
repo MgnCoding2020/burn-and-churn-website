@@ -1,6 +1,6 @@
 /**
- * WCAG 2.x contrast maths, shared by scripts/check-contrast.mjs and the
- * /styleguide/ page. Kept free of imports so Node can load it directly.
+ * WCAG 2.x contrast maths for scripts/check-contrast.mjs. Kept free of
+ * imports so Node can load it directly.
  */
 
 /** Reads `--bc-name: #rrggbb;` declarations from tokens.css. */
