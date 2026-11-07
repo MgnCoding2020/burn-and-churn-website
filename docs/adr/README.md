@@ -29,3 +29,4 @@ Each record captures one significant decision: the context, what was decided, an
 | [0021](0021-log-minimisation.md)                   | Minimise what request logs contain                                 | Accepted | 2026-11-04 |
 | [0022](0022-error-page-and-maintenance-mode.md)    | Branded 500 page and a maintenance switch                          | Accepted | 2026-11-04 |
 | [0023](0023-no-public-styleguide-hours-later.md)   | No public styleguide page; "Hours" leaves the header until Phase 7 | Accepted | 2026-11-05 |
+| [0024](0024-server-side-sessions.md)               | Server-side sessions in D1, with hashed tokens                     | Accepted | 2026-11-05 |
