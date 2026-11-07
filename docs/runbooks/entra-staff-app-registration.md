@@ -6,6 +6,33 @@ Time: about 30 minutes. Done by the owner (Claude Code never holds tenant admin 
 
 **Privacy:** none of the values below are pasted into chat or committed. They go only into your local `.dev.vars` (git-ignored) and, later, Cloudflare secrets. The private key never leaves your machine except into those.
 
+## The scripted way (recommended)
+
+`scripts/tenant/setup-staff-app.ps1` does steps 1 to 8 below for you, and is safe to run again at any time. It reads the tenant ID and domain from the hub's git-ignored `.env`, and who gets which role from the hub's `people.csv`. Users and groups themselves come from the hub's `tools/tenant/provision-users.ps1`; run that first.
+
+In Windows PowerShell, from the repository root:
+
+```powershell
+# Once: the Graph sign-in module (no other Graph modules are needed)
+Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
+
+# 1. Look first: signs in read-only and lists every change it would make
+.\scripts\tenant\setup-staff-app.ps1 -NewCertificate -WhatIf
+
+# 2. Do it: makes the certificate in Documents\burn-and-churn-secrets, registers the app,
+#    grants consent, assigns roles and fills in .dev.vars
+.\scripts\tenant\setup-staff-app.ps1 -NewCertificate -WriteDevVars
+```
+
+A browser window asks you to sign in with your admin account and approve the permissions the script uses. What it does on a re-run:
+
+- **Roles follow `people.csv`.** Someone added to the roster gets their role; a changed group changes the role; someone marked Terminated loses it. People not in the tenant yet are listed and skipped. Assignments for anyone not in `people.csv`, such as a guest tester, are listed and left alone.
+- **Phase 7 (Entra ID P1):** `-ByGroup` assigns the four `grp-bc-` groups instead of each person, and removes the per-person assignments.
+- **Yearly certificate rotation:** move the old files aside, then `-NewCertificate -ReplaceCertificate -WriteDevVars`.
+- **To undo everything:** `.\scripts\tenant\remove-staff-app.ps1 -WhatIf`, then without `-WhatIf`. It asks before each deletion; a deleted app can be restored for 30 days.
+
+Each run writes a log to `scripts/tenant/logs/` (git-ignored; fictional domain only). Then do step 9 (record it). The manual steps below do the same thing by hand.
+
 ## Before you start
 
 - Sign in to the [Microsoft Entra admin centre](https://entra.microsoft.com) with an account that can register applications and grant consent (your admin account).
