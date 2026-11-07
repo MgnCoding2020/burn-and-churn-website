@@ -13,6 +13,8 @@ for (const path of [
   '/accessibility/',
   '/careers/',
   '/contact/',
+  '/staff/sign-in-problem/',
+  '/staff/signed-out/',
   '/maintenance/',
   '/500',
   '/a-page-that-does-not-exist',

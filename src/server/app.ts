@@ -4,6 +4,7 @@ import { cacheControlFor } from '../lib/cache-policy';
 import { checkEnv, isMaintenance } from '../lib/env';
 import { problem } from '../lib/problem';
 import { securityHeaders } from '../lib/security-headers';
+import { readSession, tokenFromCookieHeader } from '../lib/session';
 import type { AppEnv } from './types';
 
 export interface BuildOptions {
@@ -27,6 +28,9 @@ const ALWAYS_SERVED = [
   `${API_BASE}/health`,
 ];
 const RETRY_AFTER_SECONDS = '600';
+
+/** Where the session cookie is looked up. */
+const SESSION_PATHS = [`${API_BASE}/`, '/staff/'];
 
 /**
  * A prerendered page from the asset store, sent with a given status and never
@@ -150,6 +154,17 @@ export function buildApp({ csp = true, log = true, tail }: BuildOptions = {}) {
         );
     res.headers.set('Retry-After', RETRY_AFTER_SECONDS);
     return res;
+  });
+
+  // 7. Session (ADR-0024): who is signed in, for the API and the staff pages
+  //    only, so static files and public pages cost no database read.
+  app.use(async (c, next) => {
+    const db = (c.env as unknown as { DB?: D1Database } | undefined)?.DB;
+    if (db && SESSION_PATHS.some((p) => c.req.path.startsWith(p))) {
+      const user = await readSession(db, tokenFromCookieHeader(c.req.header('Cookie')));
+      if (user) c.set('user', user);
+    }
+    await next();
   });
 
   const { api } = createApi();

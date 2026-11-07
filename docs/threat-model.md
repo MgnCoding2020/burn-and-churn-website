@@ -6,6 +6,7 @@ Burn and Churn Coffee is a fictional business; this is a portfolio project. The 
 | -------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
 | **v1**   | 2026-11-02 | Phase 0: public pages, the API skeleton, the build and deploy pipeline, the accounts behind them                                            | STRIDE per element of the data flow |
 | **v1.1** | 2026-11-04 | Phase 1 additions: self-hosted fonts, images and video, two page scripts, menu dialogs, caching, log redaction, error and maintenance pages | Same; see §4                        |
+| **v1.2** | 2026-11-07 | Phase 2 additions: staff sign-in with Entra ID, sessions, the audit log, the first staff route and pages                                    | Same; see §4a                       |
 
 The model is updated whenever a phase adds an attack surface (plan §9). The [planned surfaces](#5-planned-surfaces) section lists what each later phase adds, so the next version knows where to look.
 
@@ -128,6 +129,23 @@ Status: **Done** (implemented and tested, with the evidence named) · **Partial*
 | Error pages (ADR-0022)                           | Information disclosure in errors                     | Branded 500 page for people, problem details for the API, no internals                                         | Done   | `tests/api/maintenance.test.ts`                          |
 | Maintenance switch (ADR-0022)                    | Availability during an incident; a deploy undoing it | Secret-based switch, survives deploys; invalid values stop the site                                            | Done   | runbook; `tests/api/maintenance.test.ts`                 |
 | Preview deploys (ADR-0020)                       | A preview mistaken for production                    | `APP_ENV=preview` via the `previews` block; health check reports it                                            | Done   | verified on a preview URL, 2026-11-04                    |
+
+## 4a. Phase 2 additions (v1.2, 2026-11-07)
+
+Staff sign-in (ADR-0024, ADR-0025, ADR-0027). Status "Built" means coded and tested against a stubbed Entra; "Done" also needs Michael's live test with the tenant.
+
+| Element                             | Threat                                                       | Control                                                                                                                                                                              | Status | Evidence                                                           |
+| ----------------------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ------------------------------------------------------------------ |
+| Sign-in start (`/auth/staff/login`) | Login CSRF (an attacker signs the victim in as the attacker) | State bound to the browser in a `__Host-` cookie and stored hashed in D1; both must match                                                                                            | Built  | `tests/api/staff-auth.test.ts` "no login cookie", "state mismatch" |
+| Callback (`/auth/staff/callback`)   | Code interception or replay                                  | PKCE (S256); each sign-in attempt used once and deleted; 10-minute expiry; codes kept out of logs (ADR-0021)                                                                         | Built  | "a replayed callback is refused"                                   |
+| ID token                            | Forged or substituted token                                  | Token taken only from Entra's token endpoint over TLS; issuer, audience, expiry and nonce checked by oauth4webapi; tenant and object ID checked by the site                          | Built  | "nonce does not match", "another tenant"                           |
+| Client credential                   | Stolen secret used to impersonate the app                    | No client secret; certificate assertion (`private_key_jwt`, `x5t`); key outside the repo; expiry tracked                                                                             | Built  | "a certificate assertion, no secret"; secrets inventory            |
+| Roles                               | A person without a role gets in; wrong role mapping          | Entra "Assignment required"; site refuses a token without a staff role; highest role wins; role fixed at sign-in                                                                     | Built  | `tests/unit/entra.test.ts`; evidence 2026-11-07                    |
+| Sessions                            | Fixation, theft, a tablet left signed in                     | New token per sign-in, stored hashed; `HttpOnly; Secure; SameSite=Lax`; 8 h absolute, 1 h idle; sign-out is a POST behind the Origin check; switch-user forces a fresh Entra sign-in | Built  | `tests/db/session.test.ts`; logout tests                           |
+| Staff pages                         | A cached personal page; customers reaching staff pages       | `/staff/` rendered per request with `no-store`; requires `idp = workforce` and a role                                                                                                | Built  | page code; `/staff/me` authz tests                                 |
+| Audit log                           | Missing or altered records of who signed in                  | Sign-in, sign-out and every refusal (with a reason code) written to the insert-only `audit_log`                                                                                      | Built  | refusal and sign-in tests                                          |
+
+**Accepted for now:** sign-out ends the site's session but not the person's Entra session; on the shared tablet the next person uses "Sign in as someone else" (`prompt=login`). The 15-minute idle limit for register screens comes with the register (Phase 3).
 
 ## 5. Planned surfaces
 

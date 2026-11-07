@@ -76,6 +76,7 @@ describe('sessions (ADR-0024)', () => {
     expect(await readSession(db, token)).toEqual({
       id: userId,
       idp: 'workforce',
+      displayName: 'Test sub-read',
       role: 'Staff.Barista',
     });
   });
@@ -117,7 +118,11 @@ describe('sessions (ADR-0024)', () => {
     const t0 = Date.now();
     const { token, cookie } = await createSession(db, { userId, idp: 'customer' }, t0);
     expect(cookie).toContain('Max-Age=1209600');
-    expect(await readSession(db, token, t0 + 47 * HOUR)).toEqual({ id: userId, idp: 'customer' });
+    expect(await readSession(db, token, t0 + 47 * HOUR)).toEqual({
+      id: userId,
+      idp: 'customer',
+      displayName: 'Customer',
+    });
   });
 
   it('signs out one session, or every session for a user', async () => {

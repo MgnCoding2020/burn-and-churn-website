@@ -38,6 +38,7 @@ interface SessionRow {
   expires_at: number;
   idle_expires_at: number;
   idle_ms: number;
+  display_name: string;
 }
 
 const toHex = (buf: ArrayBuffer) =>
@@ -123,7 +124,8 @@ export async function readSession(
   const idHash = await hashToken(token);
   const row = await db
     .prepare(
-      'SELECT user_id, idp, role, expires_at, idle_expires_at, idle_ms FROM sessions WHERE id_hash = ?',
+      `SELECT s.user_id, s.idp, s.role, s.expires_at, s.idle_expires_at, s.idle_ms, u.display_name
+       FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.id_hash = ?`,
     )
     .bind(idHash)
     .first<SessionRow>();
@@ -140,7 +142,12 @@ export async function readSession(
     .bind(nextIdle, idHash)
     .run();
 
-  return { id: row.user_id, idp: row.idp, ...(row.role ? { role: row.role } : {}) };
+  return {
+    id: row.user_id,
+    idp: row.idp,
+    displayName: row.display_name,
+    ...(row.role ? { role: row.role } : {}),
+  };
 }
 
 /** Signs out one session. */

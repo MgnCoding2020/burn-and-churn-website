@@ -15,6 +15,8 @@ const pages = [
   '/accessibility/',
   '/careers/',
   '/contact/',
+  '/staff/sign-in-problem/',
+  '/staff/signed-out/',
   '/500',
   '/maintenance/',
   '/a-page-that-does-not-exist',
