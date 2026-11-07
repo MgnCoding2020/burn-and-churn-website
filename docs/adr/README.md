@@ -30,3 +30,5 @@ Each record captures one significant decision: the context, what was decided, an
 | [0022](0022-error-page-and-maintenance-mode.md)    | Branded 500 page and a maintenance switch                          | Accepted | 2026-11-04 |
 | [0023](0023-no-public-styleguide-hours-later.md)   | No public styleguide page; "Hours" leaves the header until Phase 7 | Accepted | 2026-11-05 |
 | [0024](0024-server-side-sessions.md)               | Server-side sessions in D1, with hashed tokens                     | Accepted | 2026-11-05 |
+| [0025](0025-oauth4webapi-for-sign-in.md)           | oauth4webapi for OpenID Connect sign-in                            | Accepted | 2026-11-06 |
+| [0026](0026-tenant-changes-by-script.md)           | Tenant changes for the website are made by scripts the owner runs  | Accepted | 2026-11-06 |
