@@ -2,10 +2,14 @@
 
 Names, locations and dates only. **Never values.** Updated in the same PR that adds, rotates or removes a secret (IA-5, SC-12).
 
-| Secret                                                | Where it lives                                                                                                               | Used by                                                   | Created    | Last rotated | Rotate by            |
-| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------- | ------------ | -------------------- |
-| Cloudflare API token "burn-and-churn build token"     | Cloudflare (Workers Builds settings)                                                                                         | Workers Builds deploys of this project only               | 2026-11-02 | —            | 2027-11-02           |
-| Entra certificate `CN=bc-website-staff` (private key) | Owner's laptop, `Documents\burn-and-churn-secrets\` (outside the repo), and local `.dev.vars`; a Worker secret once deployed | Staff sign-in (`private_key_jwt`), app `bc-website-staff` | 2026-11-07 | —            | 2027-11-07 (expires) |
+| Secret                                                | Where it lives                                                                                                                                                    | Used by                                                   | Created    | Last rotated | Rotate by            |
+| ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- | ---------- | ------------ | -------------------- |
+| Cloudflare API token "burn-and-churn build token"     | Cloudflare (Workers Builds settings)                                                                                                                              | Workers Builds deploys of this project only               | 2026-11-02 | —            | 2027-11-02           |
+| Entra certificate `CN=bc-website-staff` (private key) | Owner's laptop, `Documents\burn-and-churn-secrets\` (outside the repo), local `.dev.vars`, and the production Worker secrets (set 2026-11-07; previews have none) | Staff sign-in (`private_key_jwt`), app `bc-website-staff` | 2026-11-07 | —            | 2027-11-07 (expires) |
+
+The production Worker also holds `ENTRA_STAFF_TENANT_ID`, `ENTRA_STAFF_CLIENT_ID` and `ENTRA_STAFF_CERT_THUMBPRINT` as secrets (set 2026-11-07). They aren't secret in themselves; keeping them out of `wrangler.jsonc` keeps the tenant out of the public repo.
+
+The owner's `wrangler login` (an OAuth token on the laptop) was used to create the D1 databases and set those secrets on 2026-11-07, then revoked with `wrangler logout` the same day.
 
 **Not secrets, listed for clarity:** `APP_ENV` (a plain variable in `wrangler.jsonc`), `NODE_VERSION` (a Workers Builds build variable).
 
