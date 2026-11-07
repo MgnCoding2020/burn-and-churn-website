@@ -31,7 +31,14 @@ test.describe('homepage', () => {
     expect(hrefs.length).toBeGreaterThan(3);
     for (const href of hrefs) {
       const [path, hash] = href.split('#');
-      const res = await request.get(path || '/');
+      const res = await request.get(path || '/', { maxRedirects: 0 });
+      // The staff portal's answer to a signed-out visitor is "sign in first"
+      if (res.status() === 302) {
+        expect(new URL(res.headers()['location']!, 'http://x').pathname, href).toBe(
+          '/api/v1/auth/staff/login',
+        );
+        continue;
+      }
       expect(res.status(), href).toBe(200);
       if (hash) expect(await res.text(), href).toContain(`id="${hash}"`);
     }
