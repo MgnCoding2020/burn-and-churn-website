@@ -1,0 +1,25 @@
+---
+import Base from '../../layouts/Base.astro';
+
+export const prerender = true;
+---
+
+<Base title="Sign-in problem" description="Staff sign-in could not be completed.">
+  <article class="container prose">
+    <span class="eyebrow">Staff portal</span>
+    <h1>We couldn't sign you in</h1>
+    <p class="lede">
+      The sign-in didn't complete. It may have taken longer than 10 minutes, been started in another
+      tab, or your account may not have a staff role on this site.
+    </p>
+    <p>
+      <a class="btn btn--primary" href="/api/v1/auth/staff/login?switch=1">
+        Try again
+      </a>
+    </p>
+    <p>
+      If it keeps happening, ask your manager to check your role. Every refused sign-in is recorded
+      with a reason, so they can see what went wrong.
+    </p>
+  </article>
+</Base>

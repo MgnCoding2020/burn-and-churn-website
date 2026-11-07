@@ -2,12 +2,20 @@
 // the run, so every run starts empty and proves the migrations apply cleanly.
 // Plain .mjs (like scripts/*.mjs) because it uses Node APIs (ADR-0020: no @types/node).
 import { execFileSync } from 'node:child_process';
-import { rmSync } from 'node:fs';
+import { randomUUID } from 'node:crypto';
+import { cpSync, rmSync } from 'node:fs';
 
 export const TEST_STATE = '.wrangler/test-state';
 // wrangler's --persist-to adds a v3/ folder itself; getPlatformProxy uses its path as given,
 // so the tests open TEST_STATE/v3 (DB_STATE).
 export const DB_STATE = TEST_STATE + '/v3';
+
+/** A private copy of the migrated database, so test files running in parallel never share one. */
+export function copyDbState() {
+  const dir = `${TEST_STATE}/copies/${randomUUID()}`;
+  cpSync(DB_STATE, dir, { recursive: true });
+  return dir;
+}
 
 export default function setup() {
   rmSync(TEST_STATE, { recursive: true, force: true });

@@ -23,6 +23,8 @@ export interface SessionUser {
   idp: 'workforce' | 'customer';
   /** Staff only: the app role from Entra ID. */
   role?: StaffRole;
+  /** The name to show, from the directory at sign-in. */
+  displayName?: string;
 }
 
 export type Decision = 'allow' | 'unauthenticated' | 'forbidden';

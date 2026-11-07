@@ -4,6 +4,7 @@ import { isMaintenance } from '../lib/env';
 import { problem } from '../lib/problem';
 import type { AppEnv } from '../server/types';
 import { authorize, type Principal } from './authz';
+import { registerStaffAuth } from './staff-auth';
 
 export const API_BASE = '/api/v1';
 export const MAX_BODY_BYTES = 16 * 1024;
@@ -17,6 +18,9 @@ export interface RouteSpec {
 }
 
 type Handler = (c: Context<AppEnv>) => Response | Promise<Response>;
+
+/** Adds a route; the principal is required (deny by default). */
+export type Define = (spec: RouteSpec, handler: Handler) => void;
 
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -42,7 +46,7 @@ export function createApi() {
   const routes: RouteSpec[] = [];
 
   /** The only way to add a route: it must declare its principal. */
-  const define = (spec: RouteSpec, handler: Handler) => {
+  const define: Define = (spec, handler) => {
     routes.push(spec);
     api.on(spec.method, spec.path, authorize(spec.principal), handler);
   };
@@ -67,6 +71,8 @@ export function createApi() {
       maintenance: isMaintenance(c.env as unknown as Record<string, unknown>),
     }),
   );
+
+  registerStaffAuth(define);
 
   // Deny by default: anything not defined above is a 404 problem.
   api.all('*', (c) => problem(c, 404, 'Not found'));

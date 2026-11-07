@@ -1,0 +1,21 @@
+---
+import Base from '../../layouts/Base.astro';
+
+export const prerender = true;
+---
+
+<Base title="Signed out" description="You have signed out of the staff portal.">
+  <article class="container prose">
+    <span class="eyebrow">Staff portal</span>
+    <h1>You're signed out</h1>
+    <p class="lede">
+      Your session on this site has ended. On a shared counter tablet, the next person signs in with
+      their own account.
+    </p>
+    <p>
+      <a class="btn btn--primary" href="/api/v1/auth/staff/login?switch=1">
+        Sign in as someone else
+      </a>
+    </p>
+  </article>
+</Base>

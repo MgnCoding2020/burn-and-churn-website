@@ -78,13 +78,13 @@ test('footer groups: Visit, Company, Staff, Trust', async ({ page }) => {
   ]);
 });
 
-test('employee sign-in is shown as coming soon, not as a link (until Phase 2)', async ({
-  page,
-}) => {
+test('employee sign-in links to the staff portal', async ({ page }) => {
   await page.goto('/');
   const footer = page.getByRole('contentinfo');
-  await expect(footer.getByText('Employee sign-in')).toBeVisible();
-  await expect(footer.getByRole('link', { name: /Employee sign-in/ })).toHaveCount(0);
+  await expect(footer.getByRole('link', { name: 'Employee sign-in' })).toHaveAttribute(
+    'href',
+    '/staff/',
+  );
 });
 
 test('careers and contact collect nothing: no forms anywhere', async ({ page }) => {

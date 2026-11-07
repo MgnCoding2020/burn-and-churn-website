@@ -1,0 +1,93 @@
+---
+import Base from '../../layouts/Base.astro';
+
+// Rendered per request: it shows who is signed in.
+export const prerender = false;
+
+const ROLE_LABELS = {
+  'Staff.Barista': 'Barista',
+  'Staff.ShiftLead': 'Shift Lead',
+  'Staff.Manager': 'Manager',
+  'Staff.Owner': 'Owner',
+} as const;
+
+const user = Astro.locals.user;
+if (!user || user.idp !== 'workforce' || !user.role) {
+  return Astro.redirect('/api/v1/auth/staff/login', 302);
+}
+Astro.response.headers.set('Cache-Control', 'no-store');
+const role = ROLE_LABELS[user.role];
+---
+
+<Base title="Staff portal" description="Burn and Churn Coffee staff portal (fictional business).">
+  <section class="container portal">
+    <header class="portal__bar">
+      <div>
+        <span class="eyebrow">Staff portal</span>
+        <h1>Hello, {user.displayName ?? 'there'}</h1>
+      </div>
+      <ul class="portal__badges" aria-label="Session">
+        <li class="badge">Role: {role}</li>
+        <li class="badge badge--test">TEST MODE</li>
+      </ul>
+    </header>
+
+    <p class="lede">
+      You're signed in with your Burn and Churn work account. The counter register and the order
+      board arrive in the next build phase.
+    </p>
+
+    <div class="portal__actions">
+      <form method="post" action="/api/v1/auth/staff/logout">
+        <button class="btn btn--secondary" type="submit">
+          Sign out
+        </button>
+      </form>
+    </div>
+    <p class="portal__note">Signed-in sessions end after 8 hours, or after 1 hour without use.</p>
+  </section>
+</Base>
+
+<style>
+  .portal {
+    max-width: 52rem;
+  }
+  .portal__bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+  }
+  .portal__badges {
+    display: flex;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .badge {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  .badge--test {
+    border-color: var(--bc-gold);
+    color: var(--bc-gold);
+  }
+  .portal__actions {
+    margin-top: 2rem;
+  }
+  .portal__actions .btn {
+    min-height: 48px;
+  }
+  .portal__note {
+    margin-top: 1rem;
+    color: var(--bc-ink-muted);
+    font-size: 0.9375rem;
+  }
+</style>

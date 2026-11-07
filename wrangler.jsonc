@@ -23,12 +23,31 @@
   "vars": {
     "APP_ENV": "production",
   },
+  // Users, sessions, sign-in attempts and the audit log (ADR-0024, ADR-0027).
+  // `wrangler dev` uses a local copy; migrations: `npx wrangler d1 migrations apply DB`.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "burn-and-churn-website",
+      "database_id": "2e5928e2-b207-4958-a418-c25d8ca7f979",
+      "migrations_dir": "migrations",
+    },
+  ],
   // Preview deployments (`wrangler preview`, one per branch) get their own
-  // settings, so they never present as production (ADR-0020). Preview-only
-  // secrets and databases are added here from Phase 2.
+  // settings and their own database, so they never present as production or
+  // touch its data (ADR-0020). Previews get no sign-in secrets: their URLs
+  // aren't registered in Entra, so staff sign-in there answers 503.
   "previews": {
     "vars": {
       "APP_ENV": "preview",
     },
+    "d1_databases": [
+      {
+        "binding": "DB",
+        "database_name": "burn-and-churn-website-preview",
+        "database_id": "8f85680a-b290-4bb9-84dd-1e1271e46399",
+        "migrations_dir": "migrations",
+      },
+    ],
   },
 }
