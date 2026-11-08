@@ -40,6 +40,7 @@ Neither that page nor [Workers limits](https://developers.cloudflare.com/workers
 | Preview deploy (`feat-rate-limits`)          | 31 sign-in starts, then 140 health requests              | **No 429**: the preview build deployed, but the limiters didn't take effect there            |
 | Preview, newest deploy                       | Cloudflare dashboard (Michael)                           | **Both limiters listed as attached bindings**                                                |
 | Preview, newest deploy                       | 300 parallel health requests, 60 parallel sign-in starts | **No 429**                                                                                   |
+| Production (after merge, PR #31)             | 150 parallel health requests                             | **No 429**: same as the preview                                                              |
 
 **Cause: a known Cloudflare bug, not this code.** [workers-sdk issue #16097](https://github.com/cloudflare/workers-sdk/issues/16097) (opened 2026-10-06, open on 2026-11-07, labelled as needing Cloudflare platform support on 2026-11-04) reports the same thing on workers.dev with Workers Free accounts: the binding returns `success: true` far past its limit, while `wrangler dev` enforces correctly. So on this account the limiters are attached but don't limit, today. Until production shows 429s, the security page doesn't claim rate limits.
 

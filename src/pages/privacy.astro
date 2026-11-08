@@ -82,16 +82,18 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
             Sign-in cookie <code>__Host-bc_login</code>
           </td>
           <td>
-            A random value that ties a staff sign-in to the browser that started it, so a sign-in
-            can't be forced on someone else. Strictly necessary; used once.
+            The one-time values of a staff sign-in in progress, encrypted so the browser can't read
+            or change them. It ties the sign-in to the browser that started it, so a sign-in can't
+            be forced on someone else. Strictly necessary; deleted when the sign-in finishes.
           </td>
           <td>10 minutes</td>
         </tr>
         <tr>
           <td>Staff audit log</td>
           <td>
-            Each staff sign-in, sign-out and refused sign-in (with the reason), with the request ID.
-            It can't be edited or deleted, by design.
+            Each staff sign-in and sign-out, and each refused sign-in of a real work account (with
+            the reason), with the request ID. It can't be edited or deleted, by design. Other failed
+            sign-ins appear only in the request logs.
           </td>
           <td>Project life</td>
         </tr>
