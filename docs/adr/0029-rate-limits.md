@@ -20,7 +20,7 @@ Options considered (Michael chose the first, 2026-11-07):
   - `SIGNIN_LIMITER`: **20 a minute** per address on starting and finishing a staff sign-in, the only public routes that write to D1.
 - Over the limit: `429 Too many requests` as a problem response, with `Retry-After: 60`. Pages and static files aren't counted.
 - Production and previews use separate namespaces (`1001`/`1002` and `1101`/`1102`), so preview testing never counts against production.
-- **If the binding is absent, requests pass.** The limit is defence in depth; the site doesn't stop working without it. Unit tests run without it and inject a stand-in.
+- **If the binding is absent, requests pass**, and a deployed Worker logs `{"rateLimit": "<name>", "missing": true}` once per instance, so the gap shows in Workers Logs instead of failing silently. The limit is defence in depth; the site doesn't stop working without it. Unit tests run without it and inject a stand-in.
 
 ## What Cloudflare's documentation says, and doesn't (checked 2026-11-07)
 
@@ -30,7 +30,16 @@ From [the binding's page](https://developers.cloudflare.com/workers/runtime-apis
 - Counts are kept per Cloudflare location and are eventually consistent, so requests can exceed the limit. A strict global limit would need Durable Objects.
 - Cloudflare advises against keying on IP addresses because many users can share one. Before sign-in there's no other key, so the limits are set well above normal use (a shift change on one café network is far below 20 sign-ins a minute).
 
-Neither that page nor [Workers limits](https://developers.cloudflare.com/workers/platform/limits/) states whether the binding is on the Free plan. **This is proven by deploying, not assumed:** the preview deploy of this change, with a burst test, is the evidence. If Cloudflare refuses the binding, this ADR is superseded and option 2 is used.
+Neither that page nor [Workers limits](https://developers.cloudflare.com/workers/platform/limits/) states whether the binding is on the Free plan. **This is proven by deploying, not assumed.** If Cloudflare doesn't provide the binding in production, this ADR is superseded and option 2 is used.
+
+## Verification so far (2026-11-07)
+
+| Where                                        | Test                                        | Result                                                                                       |
+| -------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Local runtime (`wrangler dev`, built Worker) | 140 requests to `/api/v1/health`            | Wrangler lists both limiters; **120 answered 200, the next 20 answered 429**: the code works |
+| Preview deploy (`feat-rate-limits`)          | 31 sign-in starts, then 140 health requests | **No 429**: the preview build deployed, but the limiters didn't take effect there            |
+
+Still to find out (Michael, Cloudflare dashboard): whether the preview's build log lists the two Rate Limit bindings. If it does, the binding is attached but not counting in previews; if it doesn't, previews (an open-beta feature, ADR-0010) or the Free plan don't provide it. Production is tested with the same burst after merge. Until production shows 429s, the security page doesn't claim rate limits.
 
 ## Consequences
 

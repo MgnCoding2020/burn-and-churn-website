@@ -23,10 +23,14 @@ export function clientKey(headers: Headers): string {
   return headers.get('CF-Connecting-IP') ?? 'unknown';
 }
 
+/** Deployed environments warn once per Worker instance if a limiter is missing. */
+const warned = new Set<string>();
+
 /**
  * One limiter for the requests `applies` selects. Without the binding (unit
- * tests, or a plan that lacks it) requests pass: the limit is defence in
- * depth, and its absence is visible in the ADR and the health of the deploy.
+ * tests, or a deploy Cloudflare didn't attach it to) requests pass: the limit
+ * is defence in depth. A deployed Worker logs a warning, so a missing limiter
+ * shows in Workers Logs instead of failing silently.
  */
 export function rateLimit(
   binding: 'API_LIMITER' | 'SIGNIN_LIMITER',
@@ -36,6 +40,11 @@ export function rateLimit(
     const limiter = (c.env as unknown as Record<string, RateLimiter | undefined> | undefined)?.[
       binding
     ];
+    const appEnv = (c.env as unknown as { APP_ENV?: string } | undefined)?.APP_ENV;
+    if (!limiter && (appEnv === 'production' || appEnv === 'preview') && !warned.has(binding)) {
+      warned.add(binding);
+      console.warn(JSON.stringify({ level: 'warn', rateLimit: binding, missing: true, appEnv }));
+    }
     if (limiter && applies(c.req.path)) {
       const { success } = await limiter.limit({
         key: `${binding}:${clientKey(c.req.raw.headers)}`,

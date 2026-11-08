@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { API_BASE } from '../../src/api/app';
 import { clientKey, type RateLimiter } from '../../src/lib/rate-limit';
 import { buildApp } from '../../src/server/app';
@@ -69,6 +69,20 @@ describe('rate limits (ADR-0029)', () => {
 
   it('without the binding, requests pass (defence in depth, not a dependency)', async () => {
     expect((await call(`${API_BASE}/health`, {})).status).toBe(200);
+  });
+
+  it('a deployed Worker without its limiter says so in the logs, once', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    for (let i = 0; i < 3; i++) await call(`${API_BASE}/health`, { APP_ENV: 'production' });
+    const lines = warn.mock.calls.map((args) => JSON.parse(String(args[0])));
+    expect(lines).toContainEqual({
+      level: 'warn',
+      rateLimit: 'API_LIMITER',
+      missing: true,
+      appEnv: 'production',
+    });
+    expect(lines.filter((l) => l.rateLimit === 'API_LIMITER')).toHaveLength(1);
+    warn.mockRestore();
   });
 
   it("keys on Cloudflare's client address, never on X-Forwarded-For", () => {
