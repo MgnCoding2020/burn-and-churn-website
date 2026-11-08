@@ -15,7 +15,9 @@ updates:
       # TypeScript 7: typescript-eslint and @astrojs/check don't support it yet.
       - dependency-name: typescript
         update-types: ['version-update:semver-major']
-      # Vitest 5: @cloudflare/vitest-pool-workers (Phase 2) still requires Vitest 4.
+      # Vitest 5: held under ADR-0015 for the Workers test pool, which Phase 2 didn't adopt
+      # (tests use wrangler's getPlatformProxy). Lifting the hold is a dependency decision:
+      # see docs/evidence/2026-11-07-repo-audit/README.md.
       - dependency-name: vitest
         update-types: ['version-update:semver-major']
     groups:

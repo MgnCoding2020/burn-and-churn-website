@@ -25,13 +25,13 @@ It's where the program's separate pieces meet in one working system:
 
 ## Status
 
-**In progress.** Phases 0 and 1 are done: the public site is live, with mobile Lighthouse Performance 97. Phase 2 (staff sign-in) is next. Nothing below is claimed as working until it's built, tested and evidenced in this repository with a date.
+**In progress.** Phases 0 and 1 are done: the public site is live, with mobile Lighthouse Performance 97. Phase 2 is live: staff sign in with Microsoft Entra ID on the production site (first live sign-in 2026-11-07, [evidence](docs/evidence/2026-11-07-staff-sign-in/README.md)); tests of the remaining roles and one open finding are still to close. Nothing below is claimed as working until it's built, tested and evidenced in this repository with a date.
 
 | Phase                              | What ships                                                                                              | Status                       |
 | ---------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------- |
 | 0. Foundations                     | Project skeleton on Cloudflare Workers, CI security checks, security headers, fictional-business banner | Done                         |
 | 1. Design system and public site   | Brand tokens, styleguide, home, menu, info pages, error and maintenance pages                           | Done (cart moved to Phase 5) |
-| 2. Staff sign-in                   | Entra ID sign-in, roles, sessions, audit log                                                            | Planned                      |
+| 2. Staff sign-in                   | Entra ID sign-in, roles, sessions, audit log                                                            | Live (role tests to finish)  |
 | 3. Register and order board        | Counter orders, cash, order board, "86" an item                                                         | Planned                      |
 | 4. Stripe Terminal                 | Card payments through the simulated reader, refunds                                                     | Planned                      |
 | 5. Customers and Stripe Checkout   | Customer accounts, cart, online ordering, signed webhooks                                               | Planned                      |
@@ -66,7 +66,7 @@ Cloudflare Worker (one deploy)
 
 ## Ground rules
 
-- **Test mode only.** The app refuses to start with a Stripe key that isn't a test key, or with a reader that isn't simulated.
+- **Test mode only.** The site refuses to serve anything if a Stripe key isn't a test key. From Phase 4 it will also refuse a card reader that isn't Stripe's simulated one.
 - **No secrets in the repository.** Real values live only in git-ignored files (below) and in Cloudflare's secret store.
 - **No real people.** Staff are invented lab accounts from the hub's roster; customers are test accounts.
 - **Not mistakable for a real business.** Every page carries the fictional-business banner and is excluded from search engines.
@@ -75,7 +75,7 @@ Cloudflare Worker (one deploy)
 
 ## Getting started
 
-> Setup steps grow as each phase is built. Today the site serves the banner, a placeholder home page and a health check.
+> Setup steps grow as each phase is built. Today: the public site (home, menu, information pages), staff sign-in and the staff portal, and a health check at `/api/v1/health`. Staff sign-in needs the Entra app first; see the [staff app runbook](docs/runbooks/entra-staff-app-registration.md). Without it, sign-in answers "not configured" and the rest of the site works.
 
 ### Quick start
 
@@ -108,6 +108,7 @@ npm run dev                             # live-reloading dev server at http://lo
 | Git                                                                                                | Any recent version              | Cloning                                           |
 | [Stripe CLI](https://docs.stripe.com/stripe-cli)                                                   | Latest                          | Forwarding test webhooks locally (Phases 4 and 5) |
 | [PowerShell 7](https://learn.microsoft.com/powershell/) and the Microsoft Graph module             | Latest                          | Tenant setup scripts (Phases 2, 6 and 7)          |
+| OpenSSL (included with [Git for Windows](https://gitforwindows.org))                               | Any recent version              | Creating the staff sign-in certificate (Phase 2)  |
 | A local clone of the [program hub](https://github.com/MgnCoding2020/grc-paper-project-coffee-shop) | `main`                          | The staff roster and user provisioning scripts    |
 
 **Dependencies:** every JavaScript dependency is pinned to an exact version in `package.json` and `package-lock.json`. One command installs exactly the locked versions:
@@ -145,7 +146,7 @@ What you need to create first, and where each value comes from:
 | Entra tenant ID and domain              | Microsoft Entra admin centre → Overview                                            |
 | Staff and customer app client IDs       | Entra admin centre → App registrations, after the setup scripts create them        |
 | Stripe test keys                        | Stripe Dashboard → Developers → API keys, **with Test mode on**                    |
-| Stripe Terminal location and reader IDs | Printed by `scripts/stripe/setup-test.mjs`                                         |
+| Stripe Terminal location and reader IDs | Printed by `scripts/stripe/setup-test.mjs` (Phase 4, not written yet)              |
 | Stripe webhook secret                   | `stripe listen` (local) or the webhook endpoint in the Dashboard                   |
 | Turnstile keys                          | Cloudflare dashboard → Turnstile (Cloudflare also publishes always-pass test keys) |
 
@@ -160,6 +161,8 @@ Never paste a live Stripe key (`sk_live_`, `rk_live_`) anywhere. The scripts and
 | [Architecture decision records](docs/adr/README.md) | Every significant decision, why it was made and what it costs                                                                       |
 | [Threat model](docs/threat-model.md)                | STRIDE analysis of what's built, with the control and test evidence for each threat, accepted risks, and what each later phase adds |
 | [Secrets inventory](docs/secrets-inventory.md)      | Every secret's name, location and rotation date (never values)                                                                      |
+| [Runbooks](docs/runbooks/)                          | Step-by-step procedures: the staff sign-in app, maintenance mode                                                                    |
+| [Evidence](docs/evidence/)                          | Dated results: Lighthouse runs, the Entra app, live staff sign-in, repository audits                                                |
 | [Security policy](SECURITY.md)                      | How to report a vulnerability                                                                                                       |
 
 ---

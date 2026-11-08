@@ -18,10 +18,24 @@ const signedIn = async (page: Page, token: string) => {
 
 const warning = (page: Page) => page.getByRole('dialog', { name: 'Signing out soon' });
 
-test('no warning while plenty of time is left', async ({ page }) => {
+test('the signed-in portal: no warning while plenty of time is left, and accessible', async ({
+  page,
+}) => {
   await signedIn(page, seedStaffSession({ idleMs: 3_600_000 }));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Hello, Test Barista');
   await expect(warning(page)).toBeHidden();
+
+  // The whole signed-in page, not just the dialog (tests/a11y covers signed-out pages).
+  await page.emulateMedia({ colorScheme: 'light' });
+  const { violations } = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+    .analyze();
+  const serious = violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+  expect(serious.map((v) => `${v.id}: ${v.help}`)).toEqual([]);
+
+  // Staff targets are at least 48px tall for the counter tablet (plan §10).
+  const signOut = page.getByRole('button', { name: 'Sign out', exact: true });
+  expect((await signOut.boundingBox())!.height).toBeGreaterThanOrEqual(48);
 });
 
 test('warns before sign-out for inactivity, and "Stay signed in" extends it', async ({ page }) => {

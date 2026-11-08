@@ -6,8 +6,9 @@
 # --- App ---
 # local | preview | production
 APP_ENV=local
-# Exact origin used for redirect URIs and the CSRF origin check.
-APP_ORIGIN=http://localhost:8787
+# Incident switch (docs/runbooks/maintenance-mode.md): "on" serves the maintenance page
+# everywhere. A secret when deployed, so it survives deploys. Leave unset normally.
+# MAINTENANCE_MODE=off
 
 # --- Staff sign-in: Entra ID app "bc-website-staff" (Phase 2) ---
 ENTRA_STAFF_TENANT_ID=your-tenant-id
