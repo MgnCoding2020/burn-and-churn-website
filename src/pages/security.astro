@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 
 export const prerender = true;
-const UPDATED = '2026-11-04';
+const UPDATED = '2026-11-07';
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 const doc = (path: string) => `${repo}/blob/main/${path}`;
 
@@ -72,8 +72,19 @@ const controls: Array<{
     ref: ['Secrets inventory', 'docs/secrets-inventory.md'],
   },
   {
-    area: 'Sign-in',
-    what: 'Staff (Microsoft Entra ID) and customers (Entra External ID): OIDC with PKCE, server-side sessions, role-based access, separation of duties on refunds',
+    area: 'Staff sign-in',
+    what: 'Microsoft Entra ID with OIDC, PKCE, state and nonce, run on the server; hashed server-side sessions with 8-hour and 1-hour limits and a warning before sign-out; roles from Entra; every sign-in, sign-out and refusal in an insert-only audit log',
+    status: 'In place',
+    ref: ['ADR-0027', 'docs/adr/0027-staff-sign-in-flow.md'],
+  },
+  {
+    area: 'Customer sign-in',
+    what: 'Entra External ID, a separate directory from staff; customers see only their own data',
+    status: 'Planned',
+  },
+  {
+    area: 'Refunds',
+    what: 'Managers and owners only, never by the person who took the payment (separation of duties), each one audited',
     status: 'Planned',
   },
   {

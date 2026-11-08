@@ -5,6 +5,7 @@ import { problem } from '../lib/problem';
 import type { AppEnv } from '../server/types';
 import { authorize, type Principal } from './authz';
 import { registerStaffAuth } from './staff-auth';
+import { registerStaffSession } from './staff-session';
 
 export const API_BASE = '/api/v1';
 export const MAX_BODY_BYTES = 16 * 1024;
@@ -73,6 +74,7 @@ export function createApi() {
   );
 
   registerStaffAuth(define);
+  registerStaffSession(define);
 
   // Deny by default: anything not defined above is a 404 problem.
   api.all('*', (c) => problem(c, 404, 'Not found'));

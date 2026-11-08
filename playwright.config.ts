@@ -17,7 +17,8 @@ export default defineConfig({
   ],
   // The built Worker on Cloudflare's local runtime, as deployed.
   webServer: {
-    command: `npm run build && npx wrangler dev --port ${PORT} --ip 127.0.0.1`,
+    // Its own database, rebuilt from migrations each run (tests/setup/e2e-db.mjs).
+    command: `npm run build && node tests/setup/e2e-db.mjs && npx wrangler dev --port ${PORT} --ip 127.0.0.1 --persist-to .wrangler/e2e-state`,
     url: `http://127.0.0.1:${PORT}/robots.txt`,
     reuseExistingServer: false,
     timeout: 180_000,

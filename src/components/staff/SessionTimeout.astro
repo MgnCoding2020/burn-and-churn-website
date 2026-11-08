@@ -1,0 +1,98 @@
+---
+/**
+ * Warns before the staff session ends (WCAG 2.2.1 Timing Adjustable, ADR-0028).
+ * Two minutes before sign-out, a modal dialog says when it will happen:
+ * - inactivity: "Stay signed in" extends it with one button (or Escape);
+ * - the 8-hour limit: it can't be extended, so the dialog offers a fresh sign-in.
+ * public/scripts/session-timeout.js runs it. Without JavaScript the server still
+ * ends the session on time; there's just no warning.
+ */
+interface Props {
+  idleMsLeft: number;
+  absoluteMsLeft: number;
+}
+const { idleMsLeft, absoluteMsLeft } = Astro.props;
+---
+
+<dialog
+  class="timeout"
+  id="session-timeout"
+  aria-labelledby="session-timeout-title"
+  aria-describedby="session-timeout-idle"
+  data-idle-ms-left={idleMsLeft}
+  data-absolute-ms-left={absoluteMsLeft}
+>
+  <h2 id="session-timeout-title">Signing out soon</h2>
+
+  <div data-timeout-variant="idle">
+    <p id="session-timeout-idle">
+      For security, you'll be signed out at <strong data-timeout-at></strong> because the portal
+      hasn't been used for a while.
+    </p>
+    <div class="timeout__actions">
+      <button class="btn btn--primary" type="button" data-timeout-stay>
+        Stay signed in
+      </button>
+      <form method="post" action="/api/v1/auth/staff/logout">
+        <button class="btn btn--secondary" type="submit">
+          Sign out now
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div data-timeout-variant="absolute" hidden>
+    <p id="session-timeout-absolute">
+      Staff sessions last 8 hours, so you'll be signed out at <strong data-timeout-at></strong>.
+      Sign in again to keep working.
+    </p>
+    <div class="timeout__actions">
+      <a class="btn btn--primary" href="/api/v1/auth/staff/login">
+        Sign in again
+      </a>
+      <button class="btn btn--secondary" type="button" data-timeout-close>
+        Close
+      </button>
+    </div>
+  </div>
+
+  <p class="timeout__status" role="status" data-timeout-status></p>
+</dialog>
+<script is:inline src="/scripts/session-timeout.js" defer></script>
+
+<style>
+  .timeout {
+    width: min(100% - 2 * var(--bc-gutter), 30rem);
+    padding: var(--bc-space-6);
+    background: var(--bc-surface);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-card);
+    color: var(--bc-ink);
+  }
+  .timeout::backdrop {
+    background: rgb(12 8 6 / 0.72);
+  }
+  .timeout h2 {
+    margin: 0 0 var(--bc-space-3);
+    font-size: var(--bc-text-card-title);
+  }
+  .timeout__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-3);
+    margin-top: var(--bc-space-6);
+  }
+  .timeout__actions form {
+    margin: 0;
+  }
+  .timeout__actions .btn {
+    min-height: var(--bc-tap-target);
+  }
+  .timeout__status {
+    margin: var(--bc-space-3) 0 0;
+    color: var(--bc-ink-muted);
+  }
+  .timeout__status:empty {
+    display: none;
+  }
+</style>

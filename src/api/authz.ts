@@ -25,6 +25,9 @@ export interface SessionUser {
   role?: StaffRole;
   /** The name to show, from the directory at sign-in. */
   displayName?: string;
+  /** When the session ends: the absolute limit, and the idle limit as of this request (epoch ms). */
+  expiresAt?: number;
+  idleExpiresAt?: number;
 }
 
 export type Decision = 'allow' | 'unauthenticated' | 'forbidden';

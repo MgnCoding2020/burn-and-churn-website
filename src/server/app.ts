@@ -31,6 +31,8 @@ const RETRY_AFTER_SECONDS = '600';
 
 /** Where the session cookie is looked up. */
 const SESSION_PATHS = [`${API_BASE}/`, '/staff/'];
+/** Reports the time left without counting as activity (the timeout warning polls it). */
+export const SESSION_STATUS_PATH = `${API_BASE}/staff/session`;
 
 /**
  * A prerendered page from the asset store, sent with a given status and never
@@ -161,7 +163,10 @@ export function buildApp({ csp = true, log = true, tail }: BuildOptions = {}) {
   app.use(async (c, next) => {
     const db = (c.env as unknown as { DB?: D1Database } | undefined)?.DB;
     if (db && SESSION_PATHS.some((p) => c.req.path.startsWith(p))) {
-      const user = await readSession(db, tokenFromCookieHeader(c.req.header('Cookie')));
+      const touch = !(c.req.method === 'GET' && c.req.path === SESSION_STATUS_PATH);
+      const user = await readSession(db, tokenFromCookieHeader(c.req.header('Cookie')), undefined, {
+        touch,
+      });
       if (user) c.set('user', user);
     }
     await next();

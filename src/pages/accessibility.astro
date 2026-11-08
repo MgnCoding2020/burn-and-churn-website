@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 
 export const prerender = true;
-const UPDATED = '2026-11-04';
+const UPDATED = '2026-11-07';
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 ---
 
@@ -49,8 +49,15 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
         explains why. Browser reader modes and high-contrast settings still work.
       </li>
       <li>
-        <strong>Unfinished features</strong> such as sign-in and ordering are shown as unavailable,
-        with text saying so.
+        <strong>Unfinished features</strong> such as customer sign-in and ordering are shown as
+        unavailable, with text saying so.
+      </li>
+      <li>
+        <strong>Staff sign-out after a time limit.</strong> For security, the staff portal signs
+        people out after 1 hour without use. Two minutes before, a dialog says when, and one button
+        (or Escape) keeps them signed in. The 8-hour limit on a staff session can't be extended; the
+        same warning appears with a link to sign in again. Customers and public pages have no time
+        limits.
       </li>
       <li>Testing so far is automated plus the owner's own checks; no external audit yet.</li>
     </ul>

@@ -6,6 +6,7 @@
 import { cf } from '@astrojs/cloudflare/hono';
 import { getFetchState, middleware, notFound, pages } from 'astro/hono';
 import { buildApp } from './server/app';
+import { scheduled } from './server/scheduled';
 
 const cloudflare = cf();
 
@@ -26,4 +27,8 @@ const app = buildApp({
   },
 });
 
-export default app;
+// Requests go to the Hono pipeline; Cron Triggers run the clean-up.
+export default {
+  fetch: app.fetch,
+  scheduled,
+} satisfies ExportedHandler<Env>;
