@@ -2,6 +2,7 @@ import { Hono, type Context, type MiddlewareHandler } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
 import { isMaintenance } from '../lib/env';
 import { problem } from '../lib/problem';
+import { rateLimit } from '../lib/rate-limit';
 import type { AppEnv } from '../server/types';
 import { authorize, type Principal } from './authz';
 import { registerStaffAuth } from './staff-auth';
@@ -9,6 +10,7 @@ import { registerStaffSession } from './staff-session';
 
 export const API_BASE = '/api/v1';
 export const MAX_BODY_BYTES = 16 * 1024;
+const SIGNIN_PATHS = [`${API_BASE}/auth/staff/login`, `${API_BASE}/auth/staff/callback`];
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -63,6 +65,10 @@ export function createApi() {
     }),
   );
   api.use(originCheck());
+  // Rate limits (ADR-0029): the whole API, and a tighter one on starting and
+  // finishing a sign-in, the only public routes that write to the database.
+  api.use(rateLimit('API_LIMITER'));
+  api.use(rateLimit('SIGNIN_LIMITER', (path) => SIGNIN_PATHS.includes(path)));
 
   // The environment name is not secret; previews prove they aren't production (ADR-0020).
   define({ method: 'GET', path: '/health', principal: 'public' }, (c) =>

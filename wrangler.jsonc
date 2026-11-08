@@ -23,6 +23,12 @@
   "triggers": {
     "crons": ["17 * * * *"],
   },
+  // Rate limits per client IP, counted per Cloudflare location (src/lib/rate-limit.ts, ADR-0029).
+  // Namespace IDs are this account's own numbering; previews use separate ones below.
+  "ratelimits": [
+    { "name": "API_LIMITER", "namespace_id": "1001", "simple": { "limit": 120, "period": 60 } },
+    { "name": "SIGNIN_LIMITER", "namespace_id": "1002", "simple": { "limit": 20, "period": 60 } },
+  ],
   // Non-secret settings. Secrets go in .dev.vars locally and `wrangler secret put` when deployed.
   "vars": {
     "APP_ENV": "production",
@@ -45,6 +51,10 @@
     "vars": {
       "APP_ENV": "preview",
     },
+    "ratelimits": [
+      { "name": "API_LIMITER", "namespace_id": "1101", "simple": { "limit": 120, "period": 60 } },
+      { "name": "SIGNIN_LIMITER", "namespace_id": "1102", "simple": { "limit": 20, "period": 60 } },
+    ],
     "d1_databases": [
       {
         "binding": "DB",

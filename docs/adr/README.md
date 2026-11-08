@@ -34,3 +34,4 @@ Each record captures one significant decision: the context, what was decided, an
 | [0026](0026-tenant-changes-by-script.md)             | Tenant changes for the website are made by scripts the owner runs  | Accepted | 2026-11-06 |
 | [0027](0027-staff-sign-in-flow.md)                   | Staff sign-in flow                                                 | Accepted | 2026-11-07 |
 | [0028](0028-session-timeout-warning-and-clean-up.md) | Session timeout warning and scheduled clean-up                     | Accepted | 2026-11-07 |
+| [0029](0029-rate-limits.md)                          | Rate limits with Cloudflare's Rate Limiting binding                | Accepted | 2026-11-07 |
