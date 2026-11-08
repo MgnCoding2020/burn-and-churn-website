@@ -22,11 +22,18 @@ function wrangler(args) {
 }
 
 /**
- * A signed-in barista, written straight into the test database. Returns the
- * session cookie value. `idleMs` sets the idle limit each request slides to;
- * until the first request it has a minute's slack, since seeding takes seconds.
+ * A signed-in staff member (a barista unless `role` says otherwise), written
+ * straight into the test database; `name` and `role` are test constants, never
+ * input. Returns the session cookie value. `idleMs` sets the idle limit each
+ * request slides to; until the first request it has a minute's slack, since
+ * seeding takes seconds.
  */
-export function seedStaffSession({ idleMs, absoluteMs = 8 * 3_600_000 }) {
+export function seedStaffSession({
+  idleMs,
+  absoluteMs = 8 * 3_600_000,
+  role = 'Staff.Barista',
+  name = 'Test Barista',
+}) {
   const token = randomBytes(32).toString('base64url');
   const hash = createHash('sha256').update(token).digest('hex');
   const userId = randomUUID();
@@ -34,9 +41,9 @@ export function seedStaffSession({ idleMs, absoluteMs = 8 * 3_600_000 }) {
   const at = new Date(now).toISOString();
   const sql = `
     INSERT INTO users (id, idp, idp_sub, display_name, role, created_at, last_seen_at)
-    VALUES ('${userId}', 'workforce', '${randomUUID()}', 'Test Barista', 'Staff.Barista', '${at}', '${at}');
+    VALUES ('${userId}', 'workforce', '${randomUUID()}', '${name}', '${role}', '${at}', '${at}');
     INSERT INTO sessions (id_hash, user_id, idp, role, created_at, expires_at, idle_expires_at, idle_ms)
-    VALUES ('${hash}', '${userId}', 'workforce', 'Staff.Barista', ${now}, ${now + absoluteMs},
+    VALUES ('${hash}', '${userId}', 'workforce', '${role}', ${now}, ${now + absoluteMs},
             ${now + Math.min(Math.max(idleMs, 60_000), absoluteMs)}, ${idleMs});`;
   execSql(sql);
   return token;

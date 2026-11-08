@@ -18,8 +18,13 @@ export interface AuditEntry {
 
 const json = (v: unknown) => (v === undefined ? null : JSON.stringify(v));
 
-export async function writeAudit(db: D1Database, e: AuditEntry, now = new Date()): Promise<void> {
-  await db
+/** The insert as a statement, so it can join a batch with the change it records (one transaction). */
+export function auditStatement(
+  db: D1Database,
+  e: AuditEntry,
+  now = new Date(),
+): D1PreparedStatement {
+  return db
     .prepare(
       `INSERT INTO audit_log (at, request_id, actor_user_id, actor_role, action, target, before, after)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -33,6 +38,9 @@ export async function writeAudit(db: D1Database, e: AuditEntry, now = new Date()
       e.target ?? null,
       json(e.before),
       json(e.after),
-    )
-    .run();
+    );
+}
+
+export async function writeAudit(db: D1Database, e: AuditEntry, now = new Date()): Promise<void> {
+  await auditStatement(db, e, now).run();
 }

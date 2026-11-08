@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { menuForToday } from '../lib/availability';
 import { createCashOrder, listBoard, moveOrder, priceOrder, STAGES } from '../lib/orders';
 import { problem } from '../lib/problem';
 import type { Define } from './app';
@@ -55,7 +56,8 @@ export function registerStaffOrders(define: Define) {
     if (!parsed.success) return problem(c, 400, 'Bad request', 'The order is not valid.');
     const { idempotencyKey, lines, tenderedCents } = parsed.data;
 
-    const priced = priceOrder(lines);
+    // Today's menu: an item marked sold out (86) can't be sold, even from a stale page.
+    const priced = priceOrder(lines, await menuForToday(db));
     if (!priced.ok) {
       const detail =
         priced.error === 'unavailable'
@@ -70,6 +72,8 @@ export function registerStaffOrders(define: Define) {
     const result = await createCashOrder(db, {
       idempotencyKey,
       takenBy: c.get('user')!.id,
+      actorRole: c.get('user')!.role!,
+      requestId: c.get('requestId'),
       lines: priced.lines,
       totalCents: priced.totalCents,
       tenderedCents,

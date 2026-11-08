@@ -1,0 +1,204 @@
+---
+import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import StaffBar from '../../components/staff/StaffBar.astro';
+import Base from '../../layouts/Base.astro';
+import { decide } from '../../api/authz';
+import { menuForToday, openRestockRequests, type RestockRequest } from '../../lib/availability';
+import { getMenuSnapshot } from '../../lib/menu';
+import { STORE_TIME_ZONE } from '../../lib/orders';
+import { staffPageAccess, timeLeft } from '../../lib/staff-page';
+
+// "86" items for today (Shift Lead+) and restock requests (Manager+), ADR-0032.
+export const prerender = false;
+
+const access = staffPageAccess(Astro.locals.user, 'Staff.ShiftLead');
+if (!access.ok) return Astro.redirect(access.redirect, access.status);
+const { user } = access;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const db = Astro.locals.db;
+const menu = db ? await menuForToday(db) : getMenuSnapshot();
+const canRestock = decide('Staff.Manager', user) === 'allow';
+const requests: RestockRequest[] = db && canRestock ? await openRestockRequests(db) : [];
+const requested = new Set(requests.map((r) => r.itemId));
+const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
+const time = new Intl.DateTimeFormat('en-US', {
+  timeZone: STORE_TIME_ZONE,
+  hour: 'numeric',
+  minute: '2-digit',
+});
+---
+
+<Base title="Menu" description="Burn and Churn Coffee menu availability (fictional business).">
+  <section class="container staff-menu">
+    <StaffBar name={user.displayName ?? 'Staff member'} role={user.role} current="/staff/menu/" />
+    <h1>Menu today</h1>
+    <p class="lede">
+      Mark a drink sold out when it runs out. It comes back by itself tomorrow
+      {canRestock && ', and you can ask for a restock here'}.
+    </p>
+    <p class="staff-menu__status" role="status" data-menu-status></p>
+
+    {canRestock && (
+      <section aria-labelledby="restock-title" class="staff-menu__restock">
+        <h2 id="restock-title">Open restock requests</h2>
+        {requests.length === 0 ? (
+          <p class="muted">None open.</p>
+        ) : (
+          <ul class="staff-menu__requests">
+            {requests.map((r) => (
+              <li>
+                <span>
+                  <strong>{r.itemName}</strong>: {r.quantity}
+                  {r.note && ` (${r.note})`} · asked by {r.requestedBy} at{' '}
+                  {time.format(new Date(r.requestedAt))}
+                </span>
+                <button
+                  type="button"
+                  class="btn btn--secondary"
+                  data-restock-done={r.id}
+                  aria-label={`Mark the ${r.itemName} restock done`}
+                >
+                  Done
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+    )}
+
+    {menu.categories.map((c) => (
+      <section aria-labelledby={`m-${c.id}`}>
+        <h2 id={`m-${c.id}`}>{c.label}</h2>
+        <ul class="staff-menu__items">
+          {c.items.map((item) => (
+            <li class:list={['staff-menu__item', { 'staff-menu__item--out': !item.available }]}>
+              <span class="staff-menu__name">{item.name}</span>
+              <span class="staff-menu__state">
+                {item.available ? 'Available' : 'Sold out today'}
+              </span>
+              <span class="staff-menu__actions">
+                <button
+                  type="button"
+                  class="btn btn--secondary"
+                  data-toggle={item.id}
+                  data-sold-out={item.available ? 'true' : 'false'}
+                  aria-label={
+                    item.available
+                      ? `Mark ${item.name} sold out today`
+                      : `Mark ${item.name} available again`
+                  }
+                >
+                  {item.available ? 'Sold out' : 'Back in stock'}
+                </button>
+                {canRestock && !item.available && !requested.has(item.id) && (
+                  <form class="staff-menu__restock-form" data-restock={item.id}>
+                    <label for={`q-${item.id}`}>Quantity</label>
+                    <input
+                      id={`q-${item.id}`}
+                      name="quantity"
+                      required
+                      maxlength="40"
+                      placeholder="e.g. 2 bags"
+                    />
+                    <label for={`n-${item.id}`}>Note (optional)</label>
+                    <input id={`n-${item.id}`} name="note" maxlength="200" />
+                    <button type="submit" class="btn btn--primary">
+                      Request restock
+                    </button>
+                  </form>
+                )}
+                {canRestock && requested.has(item.id) && (
+                  <span class="muted">Restock requested</span>
+                )}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))}
+  </section>
+  <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
+</Base>
+
+<script>
+  import '../../scripts/staff-menu';
+</script>
+
+<style>
+  .staff-menu {
+    max-width: 64rem;
+  }
+  .staff-menu h2 {
+    margin: var(--bc-space-6) 0 var(--bc-space-3);
+    font-size: var(--bc-text-card-title);
+  }
+  .staff-menu__items,
+  .staff-menu__requests {
+    display: grid;
+    gap: var(--bc-space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .staff-menu__item,
+  .staff-menu__requests li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-3);
+    align-items: center;
+    padding: var(--bc-space-3) var(--bc-space-4);
+    background: var(--bc-surface);
+    border: var(--bc-border-width) solid var(--bc-border);
+    border-radius: var(--bc-radius-card);
+  }
+  .staff-menu__requests li {
+    justify-content: space-between;
+  }
+  .staff-menu__item--out {
+    border-color: var(--bc-gold);
+  }
+  .staff-menu__name {
+    flex: 1 1 12rem;
+    font-weight: 700;
+  }
+  .staff-menu__state {
+    color: var(--bc-ink-muted);
+  }
+  .staff-menu__item--out .staff-menu__state {
+    color: var(--bc-gold);
+    font-weight: 700;
+  }
+  .staff-menu__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-3);
+    align-items: end;
+  }
+  .staff-menu .btn {
+    min-height: var(--bc-staff-target);
+  }
+  .staff-menu__restock-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-2);
+    align-items: end;
+  }
+  .staff-menu__restock-form label {
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  .staff-menu__restock-form input {
+    min-height: var(--bc-staff-target);
+    padding: 0 var(--bc-space-3);
+    background: var(--bc-bg);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font: inherit;
+  }
+  .staff-menu__status:empty {
+    display: none;
+  }
+</style>

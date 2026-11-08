@@ -106,6 +106,9 @@ export async function createCashOrder(
   input: {
     idempotencyKey: string;
     takenBy: string;
+    /** For the audit row recorded with the sale (staff activity, ADR-0032). */
+    actorRole: string;
+    requestId: string;
     lines: PricedLine[];
     totalCents: number;
     tenderedCents: number;
@@ -162,6 +165,18 @@ export async function createCashOrder(
         .bind(id, i + 1, l.itemId, l.variantId, l.name, l.variantLabel, l.qty, l.unitPriceCents),
     ),
   ];
+  // The sale in staff activity, in the same transaction (ADR-0032). It reads
+  // the order number the insert above just assigned.
+  statements.push(
+    db
+      .prepare(
+        `INSERT INTO audit_log (at, request_id, actor_user_id, actor_role, action, target, after)
+         SELECT ?, ?, ?, ?, 'order.sale', id,
+                json_object('number', number, 'totalCents', total_cents, 'tender', tender)
+         FROM orders WHERE id = ?`,
+      )
+      .bind(new Date(now).toISOString(), input.requestId, input.takenBy, input.actorRole, id),
+  );
   await db.batch(statements);
   const row = await db
     .prepare('SELECT number FROM orders WHERE id = ?')

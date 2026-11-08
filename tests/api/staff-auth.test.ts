@@ -162,7 +162,7 @@ describe('route principals', () => {
       routes.filter(
         (r) =>
           r.path.includes('/auth/staff/') ||
-          r.path.startsWith('/staff/me') ||
+          r.path === '/staff/me' ||
           r.path.startsWith('/staff/session'),
       ),
     ).toEqual([

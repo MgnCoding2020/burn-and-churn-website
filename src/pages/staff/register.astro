@@ -2,6 +2,7 @@
 import SessionTimeout from '../../components/staff/SessionTimeout.astro';
 import StaffBar from '../../components/staff/StaffBar.astro';
 import Base from '../../layouts/Base.astro';
+import { menuForToday } from '../../lib/availability';
 import { formatCents, getMenuSnapshot } from '../../lib/menu';
 import { staffPageAccess, timeLeft } from '../../lib/staff-page';
 
@@ -13,7 +14,8 @@ if (!access.ok) return Astro.redirect(access.redirect, access.status);
 const { user } = access;
 Astro.response.headers.set('Cache-Control', 'no-store');
 
-const menu = getMenuSnapshot();
+// Today's menu: items marked sold out (86) show as unavailable.
+const menu = Astro.locals.db ? await menuForToday(Astro.locals.db) : getMenuSnapshot();
 const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
 ---
 
