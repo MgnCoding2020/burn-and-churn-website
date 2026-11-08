@@ -18,6 +18,10 @@ export default defineConfig({
     // Inline <style> tags would need 'unsafe-inline' or hashes in the CSP.
     inlineStylesheets: 'never',
   },
+  // Same for scripts: Astro inlines small bundled scripts below Vite's asset
+  // inline limit, and the CSP (script-src 'self') blocks inline script. 0 keeps
+  // every bundled script an external file (ADR-0031).
+  vite: { build: { assetsInlineLimit: 0 } },
   // No anonymous usage data from the dev tooling.
   devToolbar: { enabled: false },
 });

@@ -1,56 +1,47 @@
 ---
 import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import StaffBar from '../../components/staff/StaffBar.astro';
 import Base from '../../layouts/Base.astro';
+import { screensFor, staffPageAccess, timeLeft } from '../../lib/staff-page';
 
 // Rendered per request: it shows who is signed in.
 export const prerender = false;
 
-const ROLE_LABELS = {
-  'Staff.Barista': 'Barista',
-  'Staff.ShiftLead': 'Shift Lead',
-  'Staff.Manager': 'Manager',
-  'Staff.Owner': 'Owner',
-} as const;
-
-const user = Astro.locals.user;
-if (!user || user.idp !== 'workforce' || !user.role) {
-  return Astro.redirect('/api/v1/auth/staff/login', 302);
-}
+const access = staffPageAccess(Astro.locals.user, 'Staff.Barista');
+if (!access.ok) return Astro.redirect(access.redirect, access.status);
+const { user } = access;
 Astro.response.headers.set('Cache-Control', 'no-store');
-const role = ROLE_LABELS[user.role];
-const now = Date.now();
-const idleMsLeft = Math.max(0, (user.idleExpiresAt ?? now) - now);
-const absoluteMsLeft = Math.max(0, (user.expiresAt ?? now) - now);
+
+const BLURBS: Record<string, string> = {
+  '/staff/register/': 'Ring up a counter order and take cash.',
+  '/staff/orders/': 'Move orders from New to In progress to Ready.',
+};
+const screens = screensFor(user.role);
+const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
 ---
 
 <Base title="Staff portal" description="Burn and Churn Coffee staff portal (fictional business).">
   <section class="container portal">
-    <header class="portal__bar">
-      <div>
-        <span class="eyebrow">Staff portal</span>
-        <h1>Hello, {user.displayName ?? 'there'}</h1>
-      </div>
-      <ul class="portal__badges" aria-label="Session">
-        <li class="badge">Role: {role}</li>
-        <li class="badge badge--test">TEST MODE</li>
-      </ul>
-    </header>
+    <StaffBar name={user.displayName ?? 'Staff member'} role={user.role} current="/staff/" />
+    <span class="eyebrow">Staff portal</span>
+    <h1>Hello, {user.displayName ?? 'there'}</h1>
+    <p class="lede">You're signed in with your Burn and Churn work account.</p>
 
-    <p class="lede">
-      You're signed in with your Burn and Churn work account. The counter register and the order
-      board arrive in the next build phase.
-    </p>
+    <ul class="launcher">
+      {screens.map((s) => (
+        <li>
+          <a class="launcher__item" href={s.href}>
+            <span class="launcher__title">{s.label}</span>
+            <span class="launcher__blurb">{BLURBS[s.href]}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
 
-    <div class="portal__actions">
-      <form method="post" action="/api/v1/auth/staff/logout">
-        <button class="btn btn--secondary" type="submit">
-          Sign out
-        </button>
-      </form>
-    </div>
     <p class="portal__note">
-      Signed-in sessions end after 8 hours, or after 1 hour without use. You'll get a warning two
-      minutes before, with a button to stay signed in.
+      Signed-in sessions end after 8 hours, or after 1 hour without use (15 minutes once you've used
+      the register or the order board). You'll get a warning two minutes before, with a button to
+      stay signed in.
     </p>
   </section>
   <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
@@ -58,43 +49,39 @@ const absoluteMsLeft = Math.max(0, (user.expiresAt ?? now) - now);
 
 <style>
   .portal {
-    max-width: 52rem;
+    max-width: 64rem;
   }
-  .portal__bar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem 2rem;
-    align-items: flex-end;
-    justify-content: space-between;
-    margin-bottom: 1.5rem;
-  }
-  .portal__badges {
-    display: flex;
-    gap: 0.5rem;
-    margin: 0;
+  .launcher {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+    gap: var(--bc-space-4);
+    margin: var(--bc-space-6) 0;
     padding: 0;
     list-style: none;
   }
-  .badge {
-    padding: 0.35rem 0.75rem;
-    border: 1px solid var(--bc-control-border);
-    border-radius: var(--bc-radius-button);
+  .launcher__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--bc-space-2);
+    min-height: 6rem;
+    padding: var(--bc-space-6);
+    background: var(--bc-surface);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-card);
     color: var(--bc-ink);
-    font-size: 0.875rem;
+    text-decoration: none;
+  }
+  .launcher__item:hover {
+    background: var(--bc-surface-hover);
+  }
+  .launcher__title {
+    font-size: var(--bc-text-card-title);
     font-weight: 700;
   }
-  .badge--test {
-    border-color: var(--bc-gold);
-    color: var(--bc-gold);
-  }
-  .portal__actions {
-    margin-top: 2rem;
-  }
-  .portal__actions .btn {
-    min-height: 48px;
+  .launcher__blurb {
+    color: var(--bc-ink-muted);
   }
   .portal__note {
-    margin-top: 1rem;
     color: var(--bc-ink-muted);
     font-size: 0.9375rem;
   }

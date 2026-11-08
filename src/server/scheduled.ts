@@ -1,22 +1,40 @@
 import { purgeExpiredSessions } from '../lib/session';
 
 /**
- * Hourly clean-up (Cron Trigger in wrangler.jsonc, ADR-0028): expired
- * sessions are deleted, and any rows left in the retired `oidc_logins` table
- * (ADR-0030), so nothing is kept past its limit (plan §9, privacy: sessions
- * purged on expiry). Expired sessions are already refused when presented;
- * this removes the ones never presented again. The audit log is never touched.
+ * Hourly clean-up (Cron Trigger in wrangler.jsonc, ADR-0028), so nothing is
+ * kept past its limit (plan §9): expired sessions, any rows left in the
+ * retired `oidc_logins` table (ADR-0030), and orders older than 90 days.
+ * Expired sessions are already refused when presented; this removes the ones
+ * never presented again. The audit log is never touched.
  */
 
 export interface CleanUpResult {
   sessions: number;
   logins: number;
+  orders: number;
 }
+
+/** Orders are kept for 90 days (plan §9, privacy page). */
+export const ORDER_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
 export async function cleanUp(db: D1Database, now = Date.now()): Promise<CleanUpResult> {
   const sessions = await purgeExpiredSessions(db, now);
-  const res = await db.prepare('DELETE FROM oidc_logins WHERE expires_at <= ?').bind(now).run();
-  return { sessions, logins: res.meta.changes ?? 0 };
+  const logins = await db.prepare('DELETE FROM oidc_logins WHERE expires_at <= ?').bind(now).run();
+  // Lines first: they belong to the orders being removed.
+  const cutoff = now - ORDER_RETENTION_MS;
+  const [, orders] = await db.batch([
+    db
+      .prepare(
+        'DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE created_at < ?)',
+      )
+      .bind(cutoff),
+    db.prepare('DELETE FROM orders WHERE created_at < ?').bind(cutoff),
+  ]);
+  return {
+    sessions,
+    logins: logins.meta.changes ?? 0,
+    orders: orders!.meta.changes ?? 0,
+  };
 }
 
 export async function scheduled(_controller: ScheduledController, env: Env): Promise<void> {

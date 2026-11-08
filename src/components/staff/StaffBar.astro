@@ -1,0 +1,100 @@
+---
+import type { StaffRole } from '../../api/authz';
+import { ROLE_LABELS, screensFor } from '../../lib/staff-page';
+
+/**
+ * The staff portal's bar: who is signed in, their role, TEST MODE, the
+ * screens their role may open, and switch user (plan §10 "Portal shell").
+ */
+interface Props {
+  name: string;
+  role: StaffRole;
+  current: string;
+}
+const { name, role, current } = Astro.props;
+const screens = [{ href: '/staff/', label: 'Home' }, ...screensFor(role)];
+---
+
+<div class="staff-bar">
+  <nav class="staff-bar__nav" aria-label="Staff portal">
+    <ul>
+      {screens.map((s) => (
+        <li>
+          <a href={s.href} aria-current={current === s.href ? 'page' : undefined}>
+            {s.label}
+          </a>
+        </li>
+      ))}
+    </ul>
+  </nav>
+  <ul class="staff-bar__who" aria-label="Session">
+    <li>{name}</li>
+    <li class="badge">Role: {ROLE_LABELS[role]}</li>
+    <li class="badge badge--test">TEST MODE</li>
+    <li>
+      <form method="post" action="/api/v1/auth/staff/logout">
+        <button class="btn btn--secondary staff-bar__switch" type="submit">
+          Sign out
+        </button>
+      </form>
+    </li>
+  </ul>
+</div>
+
+<style>
+  .staff-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-3) var(--bc-space-6);
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--bc-space-3) 0;
+    margin-bottom: var(--bc-space-6);
+    border-bottom: var(--bc-border-width) solid var(--bc-border);
+  }
+  .staff-bar ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-2) var(--bc-space-3);
+    align-items: center;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .staff-bar__nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--bc-staff-target);
+    padding: 0 var(--bc-space-4);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .staff-bar__nav a[aria-current='page'] {
+    border-color: var(--bc-gold);
+    color: var(--bc-gold);
+  }
+  .staff-bar__who {
+    color: var(--bc-ink-muted);
+  }
+  .staff-bar__who form {
+    margin: 0;
+  }
+  .staff-bar__switch {
+    min-height: var(--bc-staff-target);
+  }
+  .badge {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  .badge--test {
+    border-color: var(--bc-gold);
+    color: var(--bc-gold);
+  }
+</style>

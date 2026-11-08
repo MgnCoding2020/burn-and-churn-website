@@ -6,6 +6,7 @@ import { rateLimit } from '../lib/rate-limit';
 import type { AppEnv } from '../server/types';
 import { authorize, type Principal } from './authz';
 import { registerStaffAuth } from './staff-auth';
+import { registerStaffOrders } from './staff-orders';
 import { registerStaffSession } from './staff-session';
 
 export const API_BASE = '/api/v1';
@@ -81,6 +82,7 @@ export function createApi() {
 
   registerStaffAuth(define);
   registerStaffSession(define);
+  registerStaffOrders(define);
 
   // Deny by default: anything not defined above is a 404 problem.
   api.all('*', (c) => problem(c, 404, 'Not found'));

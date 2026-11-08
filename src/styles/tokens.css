@@ -77,7 +77,8 @@
   --bc-max-content: 80rem; /* 1280px */
   --bc-gutter: clamp(1.25rem, 4.5vw, 4rem);
   --bc-section-space: clamp(4rem, 9vw, 8rem);
-  --bc-tap-target: 2.75rem; /* 44px public; staff portal uses 48px */
+  --bc-tap-target: 2.75rem; /* 44px public */
+  --bc-staff-target: 3rem; /* 48px: staff portal, counter tablet (plan §10) */
 
   /* Shape */
   --bc-radius-card: 12px;

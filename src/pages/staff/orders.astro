@@ -1,0 +1,123 @@
+---
+import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import StaffBar from '../../components/staff/StaffBar.astro';
+import Base from '../../layouts/Base.astro';
+import { staffPageAccess, timeLeft } from '../../lib/staff-page';
+
+// The order board (plan §10, ADR-0031). The script fills it and refreshes it
+// every 5 seconds; refreshing doesn't count as activity.
+export const prerender = false;
+
+const access = staffPageAccess(Astro.locals.user, 'Staff.Barista');
+if (!access.ok) return Astro.redirect(access.redirect, access.status);
+const { user } = access;
+Astro.response.headers.set('Cache-Control', 'no-store');
+const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
+
+const COLUMNS = [
+  { stage: 'new', title: 'New', action: 'Start', next: 'in_progress' },
+  { stage: 'in_progress', title: 'In progress', action: 'Ready', next: 'ready' },
+  { stage: 'ready', title: 'Ready', action: 'Picked up', next: 'collected' },
+] as const;
+---
+
+<Base title="Orders" description="Burn and Churn Coffee order board (fictional business).">
+  <section class="container board">
+    <StaffBar name={user.displayName ?? 'Staff member'} role={user.role} current="/staff/orders/" />
+    <h1 class="board__title">Orders</h1>
+    <p class="board__updated" data-updated>
+      Loading…
+    </p>
+
+    <div class="board__columns">
+      {COLUMNS.map((col) => (
+        <section class="board__column" aria-labelledby={`col-${col.stage}`}>
+          <h2 id={`col-${col.stage}`}>
+            {col.title} <span data-count={col.stage}>(0)</span>
+          </h2>
+          <ol
+            class="board__list"
+            data-stage={col.stage}
+            data-action={col.action}
+            data-next={col.next}
+          ></ol>
+        </section>
+      ))}
+    </div>
+    <p class="board__status" role="status" data-board-status></p>
+  </section>
+  <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
+</Base>
+
+<script>
+  import '../../scripts/order-board';
+</script>
+
+<style>
+  .board {
+    max-width: 90rem;
+  }
+  .board__title {
+    margin-bottom: var(--bc-space-2);
+    font-size: var(--bc-text-card-title);
+  }
+  .board__updated {
+    color: var(--bc-ink-muted);
+  }
+  .board__columns {
+    display: grid;
+    gap: var(--bc-space-4);
+  }
+  @media (min-width: 900px) {
+    .board__columns {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .board__column {
+    padding: var(--bc-space-4);
+    background: var(--bc-bg-elevated);
+    border: var(--bc-border-width) solid var(--bc-border);
+    border-radius: var(--bc-radius-card);
+  }
+  .board__column h2 {
+    margin: 0 0 var(--bc-space-3);
+    font-size: 1.25rem;
+  }
+  .board__list {
+    display: grid;
+    gap: var(--bc-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* Cards are created by the script, so scoped styles need :global(). */
+  .board__list :global(.ticket) {
+    padding: var(--bc-space-4);
+    background: var(--bc-surface);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-card);
+  }
+  .board__list :global(.ticket__head) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-2);
+    justify-content: space-between;
+    font-weight: 700;
+  }
+  .board__list :global(.ticket__tag) {
+    color: var(--bc-gold);
+    font-size: 0.875rem;
+    letter-spacing: 0.08em;
+  }
+  .board__list :global(.ticket__items) {
+    margin: var(--bc-space-3) 0;
+    padding-left: var(--bc-space-4);
+  }
+  .board__list :global(.ticket .btn) {
+    width: 100%;
+    min-height: var(--bc-staff-target);
+  }
+  .board__status:empty {
+    display: none;
+  }
+</style>
