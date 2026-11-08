@@ -49,6 +49,15 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
           <td>3 days</td>
         </tr>
         <tr>
+          <td>Rate-limit counts (Cloudflare)</td>
+          <td>
+            For requests to the site's API and sign-in only: a count per IP address, so one visitor
+            can't flood the site. Counts cover one-minute windows. Cloudflare keeps them; this site
+            doesn't store them.
+          </td>
+          <td>1 minute</td>
+        </tr>
+        <tr>
           <td>Staff accounts (staff portal only)</td>
           <td>
             For test employee accounts only: the name and role from Microsoft Entra ID, the
