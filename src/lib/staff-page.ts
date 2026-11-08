@@ -13,6 +13,8 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
 export const STAFF_SCREENS = [
   { href: '/staff/register/', label: 'Register', min: 'Staff.Barista' },
   { href: '/staff/orders/', label: 'Orders', min: 'Staff.Barista' },
+  { href: '/staff/menu/', label: 'Menu', min: 'Staff.ShiftLead' },
+  { href: '/staff/activity/', label: 'Activity', min: 'Staff.Barista' },
 ] as const satisfies readonly { href: string; label: string; min: StaffRole }[];
 
 export type PageAccess =

@@ -1,0 +1,128 @@
+---
+import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import StaffBar from '../../components/staff/StaffBar.astro';
+import Base from '../../layouts/Base.astro';
+import { STAFF_ROLES } from '../../api/authz';
+import {
+  activityFor,
+  describeEvent,
+  PAGE_SIZE,
+  rolesBelow,
+  type ActivityEvent,
+} from '../../lib/activity';
+import { STORE_TIME_ZONE } from '../../lib/orders';
+import { ROLE_LABELS, staffPageAccess, timeLeft } from '../../lib/staff-page';
+
+// Staff activity (plan §4.4, ADR-0032): your own actions and everyone below
+// your role; the Owner sees all. No script: older entries are a plain link.
+export const prerender = false;
+
+const access = staffPageAccess(Astro.locals.user, 'Staff.Barista');
+if (!access.ok) return Astro.redirect(access.redirect, access.status);
+const { user } = access;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const beforeParam = Astro.url.searchParams.get('before');
+const before = beforeParam && /^\d{1,15}$/.test(beforeParam) ? Number(beforeParam) : undefined;
+const db = Astro.locals.db;
+const events: ActivityEvent[] = db
+  ? await activityFor(db, { id: user.id, role: user.role }, before)
+  : [];
+const older = events.length === PAGE_SIZE ? events[events.length - 1]!.id : undefined;
+
+const scope =
+  user.role === 'Staff.Owner'
+    ? 'Everyone’s activity.'
+    : rolesBelow(user.role).length
+      ? `Your activity, and ${rolesBelow(user.role)
+          .map((r) => `${ROLE_LABELS[r]}s`)
+          .join(' and ')}’.`
+      : 'Your own activity.';
+const when = new Intl.DateTimeFormat('en-US', {
+  timeZone: STORE_TIME_ZONE,
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+const roleLabel = (r: string | null) =>
+  r && (STAFF_ROLES as readonly string[]).includes(r)
+    ? ROLE_LABELS[r as keyof typeof ROLE_LABELS]
+    : '—';
+const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
+---
+
+<Base title="Activity" description="Burn and Churn Coffee staff activity (fictional business).">
+  <section class="container activity">
+    <StaffBar
+      name={user.displayName ?? 'Staff member'}
+      role={user.role}
+      current="/staff/activity/"
+    />
+    <h1>Activity</h1>
+    <p class="lede">{scope} Shifts are shown as sign-ins and sign-outs.</p>
+
+    {events.length === 0 ? (
+      <p class="muted">Nothing to show yet.</p>
+    ) : (
+      <div class="activity__table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">When</th>
+              <th scope="col">Who</th>
+              <th scope="col">Role</th>
+              <th scope="col">What</th>
+            </tr>
+          </thead>
+          <tbody>
+            {events.map((e) => (
+              <tr>
+                <td>{when.format(new Date(e.at))}</td>
+                <td>{e.actorName ?? 'Unknown account'}</td>
+                <td>{roleLabel(e.actorRole)}</td>
+                <td>{describeEvent(e)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+
+    {older !== undefined && (
+      <p>
+        <a class="btn btn--secondary activity__older" href={`/staff/activity/?before=${older}`}>
+          Older activity
+        </a>
+      </p>
+    )}
+  </section>
+  <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
+</Base>
+
+<style>
+  .activity {
+    max-width: 64rem;
+  }
+  .activity__table {
+    overflow-x: auto;
+  }
+  .activity table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .activity th,
+  .activity td {
+    padding: var(--bc-space-3);
+    border-bottom: var(--bc-border-width) solid var(--bc-border);
+    text-align: left;
+    vertical-align: top;
+  }
+  .activity th {
+    color: var(--bc-ink-muted);
+  }
+  .activity__older {
+    min-height: var(--bc-staff-target);
+    margin-top: var(--bc-space-4);
+  }
+</style>

@@ -18,7 +18,9 @@ const app = buildApp({
     app.use((c, next) => (c.env === undefined ? next() : cloudflare(c, next)));
     // Pages read the signed-in user from Astro.locals (set by the session layer).
     app.use((c, next) => {
-      getFetchState(c).locals.user = c.get('user');
+      const locals = getFetchState(c).locals;
+      locals.user = c.get('user');
+      locals.db = (c.env as unknown as { DB?: D1Database } | undefined)?.DB;
       return next();
     });
     app.use(notFound());
