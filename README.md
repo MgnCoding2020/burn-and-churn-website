@@ -32,7 +32,7 @@ It's where the program's separate pieces meet in one working system:
 | 0. Foundations                     | Project skeleton on Cloudflare Workers, CI security checks, security headers, fictional-business banner | Done                         |
 | 1. Design system and public site   | Brand tokens, styleguide, home, menu, info pages, error and maintenance pages                           | Done (cart moved to Phase 5) |
 | 2. Staff sign-in                   | Entra ID sign-in, roles, sessions, audit log                                                            | Live (role tests to finish)  |
-| 3. Register and order board        | Counter orders, cash, order board, "86" an item                                                         | Planned                      |
+| 3. Register and order board        | Counter orders, cash, order board, "86" an item                                                         | In progress                  |
 | 4. Stripe Terminal                 | Card payments through the simulated reader, refunds                                                     | Planned                      |
 | 5. Customers and Stripe Checkout   | Customer accounts, cart, online ordering, signed webhooks                                               | Planned                      |
 | 6. Trial preparation               | Tenant scripts and test plan, dry-run only                                                              | Planned                      |

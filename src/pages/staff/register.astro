@@ -1,0 +1,348 @@
+---
+import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import StaffBar from '../../components/staff/StaffBar.astro';
+import Base from '../../layouts/Base.astro';
+import { formatCents, getMenuSnapshot } from '../../lib/menu';
+import { staffPageAccess, timeLeft } from '../../lib/staff-page';
+
+// The counter register (plan §6.3, ADR-0031). Rendered per request.
+export const prerender = false;
+
+const access = staffPageAccess(Astro.locals.user, 'Staff.Barista');
+if (!access.ok) return Astro.redirect(access.redirect, access.status);
+const { user } = access;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const menu = getMenuSnapshot();
+const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
+---
+
+<Base title="Register" description="Burn and Churn Coffee counter register (fictional business).">
+  <section class="container register">
+    <StaffBar
+      name={user.displayName ?? 'Staff member'}
+      role={user.role}
+      current="/staff/register/"
+    />
+    <h1 class="visually-hidden">Register</h1>
+
+    <nav class="register__categories" aria-label="Menu categories">
+      <ul>
+        {menu.categories.map((c) => (
+          <li>
+            <a href={`#cat-${c.id}`}>{c.label}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <div class="register__layout">
+      <div class="register__menu">
+        {menu.categories.map((c) => (
+          <section class="register__category" id={`cat-${c.id}`} aria-labelledby={`h-${c.id}`}>
+            <h2 id={`h-${c.id}`}>{c.label}</h2>
+            <ul class="register__items">
+              {c.items.map((item) => (
+                <li class:list={['register__item', { 'register__item--out': !item.available }]}>
+                  <span class="register__item-name">{item.name}</span>
+                  {!item.available && <span class="register__out">Sold out</span>}
+                  <span class="register__sizes">
+                    {item.variants.map((v) => (
+                      <button
+                        type="button"
+                        class="register__size"
+                        data-add
+                        data-item={item.id}
+                        data-variant={v.id}
+                        data-name={item.name}
+                        data-label={v.label}
+                        data-price={v.priceCents}
+                        disabled={!v.available}
+                        aria-label={`Add ${item.name}, ${v.label}, ${formatCents(v.priceCents)}`}
+                      >
+                        {v.sizeOz ? `${v.sizeOz}` : 'Double'}
+                      </button>
+                    ))}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+
+      <aside class="register__order" aria-labelledby="order-title" data-order>
+        <h2 id="order-title">Current order</h2>
+        <p class="register__empty" data-empty>
+          Tap a size to add a drink.
+        </p>
+        <ul class="register__lines" data-lines></ul>
+        <p class="register__total">
+          <span>Total</span>
+          <strong class="price" data-total>
+            {formatCents(0)}
+          </strong>
+        </p>
+        <div class="register__actions">
+          <button type="button" class="btn btn--secondary" data-clear disabled>
+            Clear
+          </button>
+          <button type="button" class="btn btn--primary" data-pay disabled>
+            Pay cash
+          </button>
+        </div>
+        <p class="register__note">Pay by card arrives with the card reader (Phase 4).</p>
+        <p class="register__status" role="status" data-status></p>
+      </aside>
+    </div>
+
+    <noscript>
+      <p class="register__note">The register needs JavaScript to build an order.</p>
+    </noscript>
+  </section>
+
+  <dialog class="cash" id="cash-dialog" aria-labelledby="cash-title">
+    <form method="dialog" class="cash__form" data-cash-form>
+      <h2 id="cash-title">Cash payment</h2>
+      <p class="cash__row">
+        <span>Total due</span>
+        <strong class="price" data-due></strong>
+      </p>
+      <label class="cash__label" for="tendered">
+        Amount handed over ($)
+      </label>
+      <input
+        class="cash__input"
+        id="tendered"
+        name="tendered"
+        inputmode="decimal"
+        autocomplete="off"
+        required
+        data-tendered
+      />
+      <p class="cash__quick" aria-label="Quick amounts" data-quick></p>
+      <p class="cash__row">
+        <span>Change due</span>
+        <strong class="price" data-change>
+          —
+        </strong>
+      </p>
+      <p class="cash__error" role="alert" data-cash-error></p>
+      <div class="cash__actions">
+        <button type="button" class="btn btn--secondary" data-cash-cancel>
+          Cancel
+        </button>
+        <button type="submit" class="btn btn--primary" data-complete>
+          Complete sale
+        </button>
+      </div>
+    </form>
+  </dialog>
+
+  <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
+</Base>
+
+<script>
+  import '../../scripts/register';
+</script>
+
+<style>
+  .register {
+    max-width: 80rem;
+  }
+  .register__categories ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-2);
+    margin: 0 0 var(--bc-space-4);
+    padding: 0;
+    list-style: none;
+  }
+  .register__categories a {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--bc-staff-target);
+    padding: 0 var(--bc-space-4);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font-weight: 700;
+    text-decoration: none;
+  }
+  .register__layout {
+    display: grid;
+    gap: var(--bc-space-6);
+  }
+  @media (min-width: 900px) {
+    .register__layout {
+      grid-template-columns: minmax(0, 1fr) 22rem;
+      align-items: start;
+    }
+    .register__order {
+      position: sticky;
+      top: var(--bc-space-4);
+    }
+  }
+  .register__category h2 {
+    margin: var(--bc-space-4) 0 var(--bc-space-3);
+    font-size: var(--bc-text-card-title);
+  }
+  .register__items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+    gap: var(--bc-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .register__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--bc-space-3);
+    padding: var(--bc-space-4);
+    background: var(--bc-surface);
+    border: var(--bc-border-width) solid var(--bc-border);
+    border-radius: var(--bc-radius-card);
+  }
+  .register__item--out {
+    border-style: dashed;
+  }
+  .register__item-name {
+    font-weight: 700;
+  }
+  .register__out {
+    color: var(--bc-ink-subtle);
+    font-size: 0.875rem;
+  }
+  .register__sizes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-2);
+  }
+  .register__size {
+    min-width: var(--bc-staff-target);
+    min-height: var(--bc-staff-target);
+    padding: 0 var(--bc-space-3);
+    background: var(--bc-bg);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .register__size:disabled {
+    color: var(--bc-ink-subtle);
+    cursor: not-allowed;
+  }
+  .register__order {
+    padding: var(--bc-space-6);
+    background: var(--bc-surface);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-card);
+  }
+  .register__order h2 {
+    margin: 0 0 var(--bc-space-3);
+    font-size: var(--bc-text-card-title);
+  }
+  .register__empty,
+  .register__note {
+    color: var(--bc-ink-muted);
+  }
+  .register__lines {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  /* Lines are created by the script, so scoped styles need :global(). */
+  .register__lines :global(.register__line) {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: var(--bc-space-3);
+    align-items: center;
+    padding: var(--bc-space-2) 0;
+    border-bottom: var(--bc-border-width) solid var(--bc-border);
+  }
+  .register__lines :global(.register__remove) {
+    width: var(--bc-staff-target);
+    height: var(--bc-staff-target);
+    background: none;
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font-size: 1.25rem;
+    cursor: pointer;
+  }
+  .register__total,
+  .cash__row {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--bc-space-4);
+    margin: var(--bc-space-4) 0;
+    font-size: 1.125rem;
+  }
+  .register__actions,
+  .cash__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-3);
+  }
+  .register__actions .btn,
+  .cash__actions .btn {
+    flex: 1;
+    min-height: var(--bc-staff-target);
+  }
+  .register__status:empty,
+  .cash__error:empty {
+    display: none;
+  }
+  .register__status {
+    margin-top: var(--bc-space-4);
+    padding: var(--bc-space-3);
+    border: var(--bc-border-width) solid var(--bc-gold);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+  }
+  .cash {
+    width: min(100% - 2 * var(--bc-gutter), 28rem);
+    padding: var(--bc-space-6);
+    background: var(--bc-surface);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-card);
+    color: var(--bc-ink);
+  }
+  .cash::backdrop {
+    background: rgb(12 8 6 / 0.72);
+  }
+  .cash h2 {
+    margin: 0 0 var(--bc-space-3);
+    font-size: var(--bc-text-card-title);
+  }
+  .cash__label {
+    display: block;
+    margin-bottom: var(--bc-space-2);
+    font-weight: 700;
+  }
+  .cash__input {
+    width: 100%;
+    min-height: var(--bc-staff-target);
+    padding: 0 var(--bc-space-3);
+    background: var(--bc-bg);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font: inherit;
+    font-size: 1.25rem;
+  }
+  .cash__quick {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-2);
+    margin: var(--bc-space-3) 0;
+  }
+  .cash__error {
+    color: var(--bc-ink);
+    border-left: 3px solid var(--bc-accent);
+    padding-left: var(--bc-space-3);
+  }
+</style>

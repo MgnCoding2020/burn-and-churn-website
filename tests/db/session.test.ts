@@ -12,7 +12,7 @@ import {
   tokenFromCookieHeader,
 } from '../../src/lib/session';
 import { upsertUser } from '../../src/lib/users';
-import { cleanUp } from '../../src/server/scheduled';
+import { cleanUp, ORDER_RETENTION_MS } from '../../src/server/scheduled';
 import { testDb } from '../setup/db';
 
 const db = await testDb();
@@ -205,6 +205,40 @@ describe('scheduled clean-up (ADR-0028)', () => {
       .all<{ state_hash: string }>();
     expect(logins.results.map((r) => r.state_hash)).toEqual(['fresh-login']);
     expect((await audit())!.n).toBe(auditBefore);
+  });
+
+  it('deletes orders (and their lines) older than 90 days, keeps newer ones', async () => {
+    const userId = await staff('sub-retention');
+    const now = Date.now();
+    const order = (id: string, createdAt: number, day: string) =>
+      db.batch([
+        db
+          .prepare(
+            `INSERT INTO orders (id, business_day, number, channel, tender, total_cents, tendered_cents,
+               change_cents, taken_by, idempotency_key, created_at, updated_at)
+             VALUES (?, ?, 1, 'counter', 'cash', 400, 400, 0, ?, ?, ?, ?)`,
+          )
+          .bind(id, day, userId, crypto.randomUUID(), createdAt, createdAt),
+        db
+          .prepare(
+            `INSERT INTO order_items (order_id, line, item_id, variant_id, name, variant_label, qty, unit_price_cents)
+             VALUES (?, 1, 'americano', '16oz', 'Americano', '16 oz', 1, 400)`,
+          )
+          .bind(id),
+      ]);
+    await order('00000000-0000-4000-8000-0000000000a1', now - ORDER_RETENTION_MS - 1, '2020-01-01');
+    await order('00000000-0000-4000-8000-0000000000a2', now - 1000, '2020-01-02');
+    const removed = await cleanUp(db, now);
+    expect(removed.orders).toBe(1);
+    const left = await db
+      .prepare(`SELECT id FROM orders WHERE id LIKE '00000000-0000-4000-8000-0000000000a%'`)
+      .all<{ id: string }>();
+    expect(left.results.map((r) => r.id)).toEqual(['00000000-0000-4000-8000-0000000000a2']);
+    const lines = await db
+      .prepare(`SELECT COUNT(*) AS n FROM order_items WHERE order_id = ?`)
+      .bind('00000000-0000-4000-8000-0000000000a1')
+      .first<{ n: number }>();
+    expect(lines!.n).toBe(0);
   });
 });
 

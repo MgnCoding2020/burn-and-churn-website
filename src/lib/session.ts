@@ -17,13 +17,16 @@ export const SESSION_COOKIE = '__Host-bc_session';
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
 
-/** Lifetimes per directory (plan §4.3). Register screens tighten idle to 15 minutes later. */
+/** Lifetimes per directory (plan §4.3). Register screens tighten a session's idle limit (below). */
 export const LIFETIMES = {
   workforce: { absoluteMs: 8 * HOUR, idleMs: 1 * HOUR },
   customer: { absoluteMs: 14 * DAY, idleMs: 2 * DAY },
 } as const;
 
 export type Idp = keyof typeof LIFETIMES;
+
+/** Idle limit once a session has used a register screen: a shared counter tablet (plan §4.1, ADR-0031). */
+export const REGISTER_IDLE_MS = 15 * 60 * 1000;
 
 export interface NewSession {
   userId: string;
@@ -116,12 +119,15 @@ export async function createSession(
  * a valid one has its idle limit moved forward, unless `touch` is false (a
  * status check that mustn't count as activity, or a polling page would never
  * be signed out).
+ *
+ * `idleCapMs` tightens the session for good: its idle window becomes at most
+ * that long from now on (register screens, ADR-0031). It never loosens.
  */
 export async function readSession(
   db: D1Database,
   token: string | undefined,
   now = Date.now(),
-  { touch = true }: { touch?: boolean } = {},
+  { touch = true, idleCapMs }: { touch?: boolean; idleCapMs?: number } = {},
 ): Promise<SessionUser | undefined> {
   if (!token || !TOKEN_SHAPE.test(token)) return undefined;
   const idHash = await hashToken(token);
@@ -140,11 +146,16 @@ export async function readSession(
   }
 
   let idleExpiresAt = row.idle_expires_at;
-  if (touch) {
-    idleExpiresAt = Math.min(now + row.idle_ms, row.expires_at);
+  const idleMs = idleCapMs ? Math.min(row.idle_ms, idleCapMs) : row.idle_ms;
+  if (touch || idleMs !== row.idle_ms) {
+    idleExpiresAt = Math.min(
+      touch ? now + idleMs : row.idle_expires_at,
+      now + idleMs,
+      row.expires_at,
+    );
     await db
-      .prepare('UPDATE sessions SET idle_expires_at = ? WHERE id_hash = ?')
-      .bind(idleExpiresAt, idHash)
+      .prepare('UPDATE sessions SET idle_expires_at = ?, idle_ms = ? WHERE id_hash = ?')
+      .bind(idleExpiresAt, idleMs, idHash)
       .run();
   }
 

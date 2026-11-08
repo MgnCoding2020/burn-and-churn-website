@@ -4,7 +4,7 @@ import { cacheControlFor } from '../lib/cache-policy';
 import { checkEnv, isMaintenance } from '../lib/env';
 import { problem } from '../lib/problem';
 import { securityHeaders } from '../lib/security-headers';
-import { readSession, tokenFromCookieHeader } from '../lib/session';
+import { readSession, REGISTER_IDLE_MS, tokenFromCookieHeader } from '../lib/session';
 import type { AppEnv } from './types';
 
 export interface BuildOptions {
@@ -31,8 +31,10 @@ const RETRY_AFTER_SECONDS = '600';
 
 /** Where the session cookie is looked up. */
 const SESSION_PATHS = [`${API_BASE}/`, '/staff/'];
-/** Reports the time left without counting as activity (the timeout warning polls it). */
-export const SESSION_STATUS_PATH = `${API_BASE}/staff/session`;
+/** Reads that don't count as activity: the timeout warning's check and the order board's polling. */
+const PASSIVE_READS = [`${API_BASE}/staff/session`, `${API_BASE}/staff/orders`];
+/** Register screens and their API: using them tightens the session to 15 minutes idle (ADR-0031). */
+const REGISTER_PATHS = ['/staff/register/', '/staff/orders/', `${API_BASE}/staff/orders`];
 
 /**
  * A prerendered page from the asset store, sent with a given status and never
@@ -163,9 +165,12 @@ export function buildApp({ csp = true, log = true, tail }: BuildOptions = {}) {
   app.use(async (c, next) => {
     const db = (c.env as unknown as { DB?: D1Database } | undefined)?.DB;
     if (db && SESSION_PATHS.some((p) => c.req.path.startsWith(p))) {
-      const touch = !(c.req.method === 'GET' && c.req.path === SESSION_STATUS_PATH);
+      const path = c.req.path;
+      const touch = !(c.req.method === 'GET' && PASSIVE_READS.includes(path));
+      const register = REGISTER_PATHS.some((p) => path === p || path.startsWith(`${p}/`));
       const user = await readSession(db, tokenFromCookieHeader(c.req.header('Cookie')), undefined, {
         touch,
+        ...(register ? { idleCapMs: REGISTER_IDLE_MS } : {}),
       });
       if (user) c.set('user', user);
     }

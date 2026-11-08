@@ -36,3 +36,4 @@ Each record captures one significant decision: the context, what was decided, an
 | [0028](0028-session-timeout-warning-and-clean-up.md) | Session timeout warning and scheduled clean-up                     | Accepted                             | 2026-11-07 |
 | [0029](0029-rate-limits.md)                          | Rate limits with Cloudflare's Rate Limiting binding                | Accepted                             | 2026-11-07 |
 | [0030](0030-no-anonymous-database-writes.md)         | No anonymous request writes to the database                        | Accepted                             | 2026-11-07 |
+| [0031](0031-counter-register-and-order-board.md)     | Counter register and order board                                   | Accepted                             | 2026-11-08 |

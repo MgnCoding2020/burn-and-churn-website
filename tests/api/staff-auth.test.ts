@@ -159,7 +159,12 @@ describe('route principals', () => {
   it('declares every staff auth route', () => {
     const { routes } = createApi();
     expect(
-      routes.filter((r) => r.path.includes('/auth/staff/') || r.path.startsWith('/staff/')),
+      routes.filter(
+        (r) =>
+          r.path.includes('/auth/staff/') ||
+          r.path.startsWith('/staff/me') ||
+          r.path.startsWith('/staff/session'),
+      ),
     ).toEqual([
       { method: 'GET', path: '/auth/staff/login', principal: 'public' },
       { method: 'GET', path: '/auth/staff/callback', principal: 'public' },

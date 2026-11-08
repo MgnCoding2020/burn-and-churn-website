@@ -52,6 +52,11 @@
     location.assign(SIGNED_OUT_URL);
   }
 
+  const originalTitle = document.title;
+  dialog.addEventListener('close', () => {
+    document.title = originalTitle;
+  });
+
   function show() {
     for (const part of dialog.querySelectorAll('[data-timeout-variant]')) {
       part.hidden = part.dataset.timeoutVariant !== ending;
@@ -62,6 +67,8 @@
     if (!dialog.open) {
       status.textContent = '';
       dialog.showModal();
+      // Visible in the tab bar too, when the person is looking at another tab.
+      document.title = `Signing out soon · ${originalTitle}`;
     }
   }
 
