@@ -34,12 +34,14 @@ Neither that page nor [Workers limits](https://developers.cloudflare.com/workers
 
 ## Verification so far (2026-11-07)
 
-| Where                                        | Test                                        | Result                                                                                       |
-| -------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Local runtime (`wrangler dev`, built Worker) | 140 requests to `/api/v1/health`            | Wrangler lists both limiters; **120 answered 200, the next 20 answered 429**: the code works |
-| Preview deploy (`feat-rate-limits`)          | 31 sign-in starts, then 140 health requests | **No 429**: the preview build deployed, but the limiters didn't take effect there            |
+| Where                                        | Test                                                     | Result                                                                                       |
+| -------------------------------------------- | -------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Local runtime (`wrangler dev`, built Worker) | 140 requests to `/api/v1/health`                         | Wrangler lists both limiters; **120 answered 200, the next 20 answered 429**: the code works |
+| Preview deploy (`feat-rate-limits`)          | 31 sign-in starts, then 140 health requests              | **No 429**: the preview build deployed, but the limiters didn't take effect there            |
+| Preview, newest deploy                       | Cloudflare dashboard (Michael)                           | **Both limiters listed as attached bindings**                                                |
+| Preview, newest deploy                       | 300 parallel health requests, 60 parallel sign-in starts | **No 429**                                                                                   |
 
-Still to find out (Michael, Cloudflare dashboard): whether the preview's build log lists the two Rate Limit bindings. If it does, the binding is attached but not counting in previews; if it doesn't, previews (an open-beta feature, ADR-0010) or the Free plan don't provide it. Production is tested with the same burst after merge. Until production shows 429s, the security page doesn't claim rate limits.
+**Cause: a known Cloudflare bug, not this code.** [workers-sdk issue #16097](https://github.com/cloudflare/workers-sdk/issues/16097) (opened 2026-10-06, open on 2026-11-07, labelled as needing Cloudflare platform support on 2026-11-04) reports the same thing on workers.dev with Workers Free accounts: the binding returns `success: true` far past its limit, while `wrangler dev` enforces correctly. So on this account the limiters are attached but don't limit, today. Until production shows 429s, the security page doesn't claim rate limits.
 
 ## Consequences
 
