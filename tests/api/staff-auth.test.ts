@@ -79,15 +79,54 @@ async function startLogin(query = '') {
   const res = await call(`${API_BASE}/auth/staff/login${query}`);
   expect(res.status).toBe(302);
   const target = new URL(res.headers.get('Location')!);
-  return { res, target, state: cookieValue(res, LOGIN_COOKIE)! };
+  return {
+    res,
+    target,
+    state: target.searchParams.get('state')!,
+    sealed: cookieValue(res, LOGIN_COOKIE)!,
+  };
+}
+
+/** Row counts of every table that anonymous requests must never write to. */
+async function tableCounts() {
+  const n = async (table: string) =>
+    (await db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).first<{ n: number }>())!.n;
+  return {
+    users: await n('users'),
+    sessions: await n('sessions'),
+    audit_log: await n('audit_log'),
+    oidc_logins: await n('oidc_logins'),
+  };
+}
+
+/** Captures the request-log warnings written during `fn`. */
+async function warningsDuring(fn: () => Promise<unknown>) {
+  const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  try {
+    await fn();
+    return warn.mock.calls.map((args) => JSON.parse(String(args[0])) as Record<string, unknown>);
+  } finally {
+    warn.mockRestore();
+  }
 }
 
 /** Stands in for Entra's token endpoint, recording what the site sent it. */
 function stubTokenEndpoint(claims: Record<string, unknown>) {
   const sent: URLSearchParams[] = [];
+  const redeemed = new Set<string>();
   vi.stubGlobal('fetch', async (url: string | URL | Request, init?: RequestInit) => {
     expect(String(url)).toBe(`https://login.microsoftonline.com/${TENANT}/oauth2/v2.0/token`);
-    sent.push(new URLSearchParams(String(init?.body)));
+    const body = new URLSearchParams(String(init?.body));
+    sent.push(body);
+    // Like Entra: an authorization code is accepted once (RFC 6749 section 4.1.2).
+    const code = body.get('code')!;
+    if (redeemed.has(code)) {
+      return new Response(JSON.stringify({ error: 'invalid_grant' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    redeemed.add(code);
     const now = Math.floor(Date.now() / 1000);
     const idToken = [
       b64url({ alg: 'RS256', typ: 'JWT' }),
@@ -159,8 +198,12 @@ describe('GET /auth/staff/login', () => {
     expect(p.get('code_challenge_method')).toBe('S256');
     expect(p.get('code_challenge')).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(p.get('nonce')).toMatch(/^[A-Za-z0-9_-]{43}$/);
-    expect(p.get('state')).toBe(state);
+    expect(state).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(p.get('prompt')).toBe('select_account');
+    // The cookie is sealed: none of the attempt's values appear in it.
+    const sealed = cookieValue(res, LOGIN_COOKIE)!;
+    expect(sealed).toMatch(/^v1\./);
+    for (const v of [state, p.get('nonce')!]) expect(sealed).not.toContain(v);
     const cookie = res.headers.getSetCookie().find((c) => c.startsWith(LOGIN_COOKIE))!;
     expect(cookie).toContain('HttpOnly');
     expect(cookie).toContain('Secure');
@@ -173,11 +216,17 @@ describe('GET /auth/staff/login', () => {
     const { target } = await startLogin('?switch=1');
     expect(target.searchParams.get('prompt')).toBe('login');
   });
+
+  it('writes nothing to the database (ADR-0030)', async () => {
+    const before = await tableCounts();
+    for (let i = 0; i < 5; i++) await startLogin();
+    expect(await tableCounts()).toEqual(before);
+  });
 });
 
 describe('GET /auth/staff/callback', () => {
   it('signs in a barista: session cookie, user row and audit entry; nothing sensitive in the redirect', async () => {
-    const { target, state } = await startLogin();
+    const { target, state, sealed } = await startLogin();
     const sent = stubTokenEndpoint({
       nonce: target.searchParams.get('nonce'),
       tid: TENANT,
@@ -187,7 +236,7 @@ describe('GET /auth/staff/callback', () => {
     });
 
     const res = await call(`${API_BASE}/auth/staff/callback?code=one-time-code&state=${state}`, {
-      headers: { Cookie: `${LOGIN_COOKIE}=${state}` },
+      headers: { Cookie: `${LOGIN_COOKIE}=${sealed}` },
     });
     expect(res.status).toBe(303);
     expect(res.headers.get('Location')).toBe(PORTAL_PATH);
@@ -216,8 +265,8 @@ describe('GET /auth/staff/callback', () => {
     expect(audit).toMatchObject({ action: 'auth.staff.sign_in', actor_role: 'Staff.Barista' });
   });
 
-  it('uses each sign-in attempt once: a replayed callback is refused', async () => {
-    const { target, state } = await startLogin();
+  it('a replayed callback is refused: the code was already redeemed, and nothing is stored', async () => {
+    const { target, state, sealed } = await startLogin();
     stubTokenEndpoint({
       nonce: target.searchParams.get('nonce'),
       tid: TENANT,
@@ -226,42 +275,92 @@ describe('GET /auth/staff/callback', () => {
     });
     const replay = () =>
       call(`${API_BASE}/auth/staff/callback?code=c&state=${state}`, {
-        headers: { Cookie: `${LOGIN_COOKIE}=${state}` },
+        headers: { Cookie: `${LOGIN_COOKIE}=${sealed}` },
       });
-    expect((await replay()).headers.get('Location')).toBe(PORTAL_PATH);
-    const second = await replay();
-    expect(second.headers.get('Location')).toBe(PROBLEM_PAGE);
-    expect(JSON.parse((await lastAudit())!.after!)).toEqual({ reason: 'unknown_or_expired_state' });
+    const first = await replay();
+    expect(first.headers.get('Location')).toBe(PORTAL_PATH);
+    expect(cookieValue(first, LOGIN_COOKIE)).toBe('');
+    const before = await tableCounts();
+    const logged = await warningsDuring(async () => {
+      expect((await replay()).headers.get('Location')).toBe(PROBLEM_PAGE);
+    });
+    expect(logged).toContainEqual(expect.objectContaining({ reason: 'token_error' }));
+    expect(await tableCounts()).toEqual(before);
   });
+
+  /** Breaks a sealed cookie by changing one character inside its ciphertext. */
+  const altered = (sealed: string) => {
+    const i = sealed.length - 5;
+    return sealed.slice(0, i) + (sealed[i] === 'A' ? 'B' : 'A') + sealed.slice(i + 1);
+  };
 
   it.each([
     [
       'no login cookie (started in another browser)',
-      (s: string) => ({ query: `code=c&state=${s}`, cookie: '' }),
+      (state: string) => ({ query: `code=c&state=${state}`, cookie: '' }),
       'no_login_cookie',
     ],
     [
+      'an altered login cookie',
+      (state: string, sealed: string) => ({
+        query: `code=c&state=${state}`,
+        cookie: altered(sealed),
+      }),
+      'bad_login_cookie',
+    ],
+    [
       'a state that does not match the cookie',
-      (s: string) => ({ query: `code=c&state=${'x'.repeat(43)}`, cookie: s }),
+      (_state: string, sealed: string) => ({
+        query: `code=c&state=${'x'.repeat(43)}`,
+        cookie: sealed,
+      }),
       'state_mismatch',
     ],
     [
       'an error from Entra',
-      (s: string) => ({ query: `error=access_denied&state=${s}`, cookie: s }),
+      (state: string, sealed: string) => ({
+        query: `error=access_denied&state=${state}`,
+        cookie: sealed,
+      }),
       'authorization_error',
     ],
-  ])('refuses %s, and records why', async (_label, make, reason) => {
-    const { state } = await startLogin();
-    const { query, cookie } = make(state);
-    const res = await call(`${API_BASE}/auth/staff/callback?${query}`, {
-      headers: cookie ? { Cookie: `${LOGIN_COOKIE}=${cookie}` } : {},
-    });
-    expect(res.status).toBe(303);
-    expect(res.headers.get('Location')).toBe(PROBLEM_PAGE);
-    expect(cookieValue(res, SESSION_COOKIE)).toBeUndefined();
-    const audit = await lastAudit();
-    expect(audit?.action).toBe('auth.staff.sign_in_refused');
-    expect(JSON.parse(audit!.after!)).toEqual({ reason });
+  ])(
+    'refuses %s: logged with the reason, nothing written to the database',
+    async (_label, make, reason) => {
+      const { state, sealed } = await startLogin();
+      const { query, cookie } = make(state, sealed);
+      const before = await tableCounts();
+      let res: Response | undefined;
+      const logged = await warningsDuring(async () => {
+        res = await call(`${API_BASE}/auth/staff/callback?${query}`, {
+          headers: cookie ? { Cookie: `${LOGIN_COOKIE}=${cookie}` } : {},
+        });
+      });
+      expect(res!.status).toBe(303);
+      expect(res!.headers.get('Location')).toBe(PROBLEM_PAGE);
+      expect(cookieValue(res!, SESSION_COOKIE)).toBeUndefined();
+      expect(logged).toContainEqual(
+        expect.objectContaining({ event: 'auth.staff.sign_in_refused', reason }),
+      );
+      expect(await tableCounts()).toEqual(before);
+    },
+  );
+
+  it('refuses an attempt more than 10 minutes old', async () => {
+    const { state, sealed } = await startLogin();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.now() + 11 * 60 * 1000);
+    try {
+      const logged = await warningsDuring(async () => {
+        const res = await call(`${API_BASE}/auth/staff/callback?code=c&state=${state}`, {
+          headers: { Cookie: `${LOGIN_COOKIE}=${sealed}` },
+        });
+        expect(res.headers.get('Location')).toBe(PROBLEM_PAGE);
+      });
+      expect(logged).toContainEqual(expect.objectContaining({ reason: 'expired_login' }));
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it.each([
@@ -271,30 +370,40 @@ describe('GET /auth/staff/callback', () => {
       { tid: '00000000-0000-4000-8000-000000000000', roles: ['Staff.Owner'] },
       'wrong_tenant',
     ],
-  ])('refuses %s', async (_label, extra, reason) => {
-    const { target, state } = await startLogin();
-    stubTokenEndpoint({ nonce: target.searchParams.get('nonce'), tid: TENANT, oid: OID, ...extra });
-    const res = await call(`${API_BASE}/auth/staff/callback?code=c&state=${state}`, {
-      headers: { Cookie: `${LOGIN_COOKIE}=${state}` },
-    });
-    expect(res.headers.get('Location')).toBe(PROBLEM_PAGE);
-    expect(cookieValue(res, SESSION_COOKIE)).toBeUndefined();
-    expect(JSON.parse((await lastAudit())!.after!)).toEqual({ reason });
-  });
+  ])(
+    'refuses %s, and audits it (Entra vouched for a real account)',
+    async (_label, extra, reason) => {
+      const { target, state, sealed } = await startLogin();
+      stubTokenEndpoint({
+        nonce: target.searchParams.get('nonce'),
+        tid: TENANT,
+        oid: OID,
+        ...extra,
+      });
+      const res = await call(`${API_BASE}/auth/staff/callback?code=c&state=${state}`, {
+        headers: { Cookie: `${LOGIN_COOKIE}=${sealed}` },
+      });
+      expect(res.headers.get('Location')).toBe(PROBLEM_PAGE);
+      expect(cookieValue(res, SESSION_COOKIE)).toBeUndefined();
+      expect(JSON.parse((await lastAudit())!.after!)).toEqual({ reason });
+    },
+  );
 
   it('refuses an ID token whose nonce does not match', async () => {
-    const { state } = await startLogin();
+    const { state, sealed } = await startLogin();
     stubTokenEndpoint({
       nonce: 'someone-elses-nonce',
       tid: TENANT,
       oid: OID,
       roles: ['Staff.Owner'],
     });
-    const res = await call(`${API_BASE}/auth/staff/callback?code=c&state=${state}`, {
-      headers: { Cookie: `${LOGIN_COOKIE}=${state}` },
+    const logged = await warningsDuring(async () => {
+      const res = await call(`${API_BASE}/auth/staff/callback?code=c&state=${state}`, {
+        headers: { Cookie: `${LOGIN_COOKIE}=${sealed}` },
+      });
+      expect(res.headers.get('Location')).toBe(PROBLEM_PAGE);
     });
-    expect(res.headers.get('Location')).toBe(PROBLEM_PAGE);
-    expect(JSON.parse((await lastAudit())!.after!)).toEqual({ reason: 'token_error' });
+    expect(logged).toContainEqual(expect.objectContaining({ reason: 'token_error' }));
   });
 });
 

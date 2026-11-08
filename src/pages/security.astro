@@ -73,7 +73,7 @@ const controls: Array<{
   },
   {
     area: 'Staff sign-in',
-    what: 'Microsoft Entra ID with OIDC, PKCE, state and nonce, run on the server; hashed server-side sessions with 8-hour and 1-hour limits and a warning before sign-out; roles from Entra; every sign-in, sign-out and refusal in an insert-only audit log',
+    what: 'Microsoft Entra ID with OIDC, PKCE, state and nonce, run on the server; hashed server-side sessions with 8-hour and 1-hour limits and a warning before sign-out; roles from Entra; sign-ins, sign-outs and refusals of real accounts in an insert-only audit log; nothing written to the database before Entra has vouched for someone',
     status: 'In place',
     ref: ['ADR-0027', 'docs/adr/0027-staff-sign-in-flow.md'],
   },

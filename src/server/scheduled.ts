@@ -2,10 +2,10 @@ import { purgeExpiredSessions } from '../lib/session';
 
 /**
  * Hourly clean-up (Cron Trigger in wrangler.jsonc, ADR-0028): expired
- * sessions and abandoned sign-in attempts are deleted, so nothing is kept
- * past its limit (plan §9, privacy: sessions purged on expiry). Expired rows
- * are already refused when presented; this removes the ones never presented
- * again. The audit log is never touched.
+ * sessions are deleted, and any rows left in the retired `oidc_logins` table
+ * (ADR-0030), so nothing is kept past its limit (plan §9, privacy: sessions
+ * purged on expiry). Expired sessions are already refused when presented;
+ * this removes the ones never presented again. The audit log is never touched.
  */
 
 export interface CleanUpResult {

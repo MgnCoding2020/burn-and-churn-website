@@ -10,12 +10,12 @@ import {
   staffIdentity,
   type StaffSignInConfig,
 } from '../lib/entra';
+import { openLoginAttempt, sealLoginAttempt } from '../lib/login-cookie';
 import { problem } from '../lib/problem';
 import {
   clearedSessionCookie,
   createSession,
   destroySession,
-  hashToken,
   LIFETIMES,
   sessionCookie,
   tokenFromCookieHeader,
@@ -25,33 +25,47 @@ import type { AppEnv } from '../server/types';
 import type { Define } from './app';
 
 /**
- * Staff sign-in routes (plan §4.3, ADR-0027): authorization code flow with
- * PKCE, state and nonce, run entirely on the server. The browser never sees
- * a token; it gets only the session cookie.
+ * Staff sign-in routes (plan §4.3, ADR-0027, ADR-0030): authorization code
+ * flow with PKCE, state and nonce, run entirely on the server. The browser
+ * never sees a token; it gets only the session cookie.
+ *
+ * No anonymous request writes to D1 (ADR-0030): the attempt in flight lives
+ * in an encrypted cookie, and refusals before Entra has vouched for someone
+ * go to the request log, not the audit log.
  */
 
 export const LOGIN_COOKIE = '__Host-bc_login';
 const LOGIN_TTL_MS = 10 * 60 * 1000;
-const STATE_SHAPE = /^[A-Za-z0-9_-]{43}$/;
 
 export const PORTAL_PATH = '/staff/';
 export const PROBLEM_PAGE = '/staff/sign-in-problem/';
 export const SIGNED_OUT_PAGE = '/staff/signed-out/';
+
+/** Refused before Entra vouched for anyone: anyone can cause these, so they're logged, not audited. */
+type AnonymousRefusal =
+  | 'no_login_cookie'
+  | 'bad_login_cookie'
+  | 'expired_login'
+  | 'state_mismatch'
+  | 'authorization_error'
+  | 'token_error';
+/** Refused after Entra issued a valid token: a real account, so these are audited. */
+type IdentifiedRefusal = 'wrong_tenant' | 'no_object_id' | 'no_staff_role';
 
 function bindings(c: Context<AppEnv>) {
   const env = c.env as unknown as Record<string, unknown> | undefined;
   return { db: env?.DB as D1Database | undefined, cfg: staffConfig(env) };
 }
 
-function loginCookie(state: string): string {
-  return `${LOGIN_COOKIE}=${state}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${LOGIN_TTL_MS / 1000}`;
+function loginCookie(value: string): string {
+  return `${LOGIN_COOKIE}=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${LOGIN_TTL_MS / 1000}`;
 }
 const clearedLoginCookie = `${LOGIN_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 
-function loginStateFromCookie(header: string | undefined): string | undefined {
+function loginCookieValue(header: string | undefined): string | undefined {
   for (const part of (header ?? '').split(';')) {
-    const [name, value] = part.trim().split('=');
-    if (name === LOGIN_COOKIE && value && STATE_SHAPE.test(value)) return value;
+    const [name, ...rest] = part.trim().split('=');
+    if (name === LOGIN_COOKIE && rest.length) return rest.join('=') || undefined;
   }
   return undefined;
 }
@@ -62,15 +76,32 @@ function notConfigured(c: Context<AppEnv>) {
   return problem(c, 503, 'Service unavailable', 'Staff sign-in is not configured here yet.');
 }
 
-/** A refused or failed sign-in: audited with a reason code, then a plain page for the person. */
-async function refuse(c: Context<AppEnv>, db: D1Database, reason: string) {
+function toProblemPage(c: Context<AppEnv>) {
+  c.header('Set-Cookie', clearedLoginCookie, { append: true });
+  return c.redirect(PROBLEM_PAGE, 303);
+}
+
+/** A refusal anyone could cause: one request-log line with the reason, nothing stored. */
+function refuseAnonymous(c: Context<AppEnv>, reason: AnonymousRefusal) {
+  console.warn(
+    JSON.stringify({
+      level: 'warn',
+      requestId: c.get('requestId'),
+      event: 'auth.staff.sign_in_refused',
+      reason,
+    }),
+  );
+  return toProblemPage(c);
+}
+
+/** A refusal of an account Entra vouched for: audited with the reason code. */
+async function refuseIdentified(c: Context<AppEnv>, db: D1Database, reason: IdentifiedRefusal) {
   await writeAudit(db, {
     requestId: c.get('requestId'),
     action: 'auth.staff.sign_in_refused',
     after: { reason },
   });
-  c.header('Set-Cookie', clearedLoginCookie, { append: true });
-  return c.redirect(PROBLEM_PAGE, 303);
+  return toProblemPage(c);
 }
 
 async function completeSignIn(
@@ -79,41 +110,38 @@ async function completeSignIn(
   cfg: StaffSignInConfig,
 ): Promise<Response> {
   const url = new URL(c.req.url);
-  const state = loginStateFromCookie(c.req.header('Cookie'));
-  if (!state) return refuse(c, db, 'no_login_cookie');
-
-  // Single use: the row is deleted as it's read.
-  const pending = await db
-    .prepare(
-      `DELETE FROM oidc_logins WHERE state_hash = ? AND idp = 'workforce'
-       RETURNING code_verifier, nonce, expires_at`,
-    )
-    .bind(await hashToken(state))
-    .first<{ code_verifier: string; nonce: string; expires_at: number }>();
-  if (!pending || pending.expires_at <= Date.now())
-    return refuse(c, db, 'unknown_or_expired_state');
+  const sealed = loginCookieValue(c.req.header('Cookie'));
+  if (!sealed) return refuseAnonymous(c, 'no_login_cookie');
+  const attempt = await openLoginAttempt(sealed, cfg.privateKeyPem);
+  if (!attempt) return refuseAnonymous(c, 'bad_login_cookie');
+  if (attempt.expiresAt <= Date.now()) return refuseAnonymous(c, 'expired_login');
 
   const as = authorizationServer(cfg.tenantId);
   const client: oauth.Client = { client_id: cfg.clientId };
   let params: URLSearchParams;
   try {
-    params = oauth.validateAuthResponse(as, client, url, state);
+    params = oauth.validateAuthResponse(as, client, url, attempt.state);
   } catch {
-    return refuse(c, db, url.searchParams.has('error') ? 'authorization_error' : 'state_mismatch');
+    return refuseAnonymous(
+      c,
+      url.searchParams.has('error') ? 'authorization_error' : 'state_mismatch',
+    );
   }
 
   let claims: Record<string, unknown>;
   try {
+    // Entra accepts each authorization code once and only with this attempt's
+    // PKCE verifier, so a replayed callback fails here.
     const response = await oauth.authorizationCodeGrantRequest(
       as,
       client,
       await clientAuth(cfg),
       params,
       redirectUri(c),
-      pending.code_verifier,
+      attempt.verifier,
     );
     const result = await oauth.processAuthorizationCodeResponse(as, client, response, {
-      expectedNonce: pending.nonce,
+      expectedNonce: attempt.nonce,
       requireIdToken: true,
     });
     claims = (oauth.getValidatedIdTokenClaims(result) ?? {}) as Record<string, unknown>;
@@ -122,11 +150,11 @@ async function completeSignIn(
     console.error(
       JSON.stringify({ level: 'warn', requestId: c.get('requestId'), signIn: (err as Error).name }),
     );
-    return refuse(c, db, 'token_error');
+    return refuseAnonymous(c, 'token_error');
   }
 
   const checked = staffIdentity(claims, cfg.tenantId);
-  if (!checked.ok) return refuse(c, db, checked.reason);
+  if (!checked.ok) return refuseIdentified(c, db, checked.reason);
 
   const userId = await upsertUser(db, checked.identity);
   const session = await createSession(db, {
@@ -150,6 +178,7 @@ async function completeSignIn(
 
 export function registerStaffAuth(define: Define) {
   // Starts a sign-in. `?switch=1` makes Entra ask for the account again (shared counter tablet).
+  // Writes nothing to D1: the attempt goes into an encrypted cookie (ADR-0030).
   define({ method: 'GET', path: '/auth/staff/login', principal: 'public' }, async (c) => {
     const { db, cfg } = bindings(c);
     if (!db || !cfg) return notConfigured(c);
@@ -157,14 +186,10 @@ export function registerStaffAuth(define: Define) {
     const state = oauth.generateRandomState();
     const nonce = oauth.generateRandomNonce();
     const verifier = oauth.generateRandomCodeVerifier();
-    const now = Date.now();
-    await db
-      .prepare(
-        `INSERT INTO oidc_logins (state_hash, idp, code_verifier, nonce, created_at, expires_at)
-         VALUES (?, 'workforce', ?, ?, ?, ?)`,
-      )
-      .bind(await hashToken(state), verifier, nonce, now, now + LOGIN_TTL_MS)
-      .run();
+    const sealed = await sealLoginAttempt(
+      { state, verifier, nonce, expiresAt: Date.now() + LOGIN_TTL_MS },
+      cfg.privateKeyPem,
+    );
 
     const target = new URL(authorizationServer(cfg.tenantId).authorization_endpoint!);
     target.search = new URLSearchParams({
@@ -179,7 +204,7 @@ export function registerStaffAuth(define: Define) {
       code_challenge_method: 'S256',
       prompt: c.req.query('switch') === '1' ? 'login' : 'select_account',
     }).toString();
-    c.header('Set-Cookie', loginCookie(state), { append: true });
+    c.header('Set-Cookie', loginCookie(sealed), { append: true });
     return c.redirect(target.toString(), 302);
   });
 
@@ -191,6 +216,7 @@ export function registerStaffAuth(define: Define) {
   });
 
   // Signing out is a POST (a link can't sign someone out) and always succeeds.
+  // Only a real session's sign-out is audited, so anonymous calls write nothing.
   define({ method: 'POST', path: '/auth/staff/logout', principal: 'public' }, async (c) => {
     const { db } = bindings(c);
     const user = c.get('user');

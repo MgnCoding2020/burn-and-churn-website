@@ -1,6 +1,6 @@
 # ADR-0027: Staff sign-in flow
 
-- **Status:** Accepted
+- **Status:** Accepted; sign-in attempts in D1 and the auditing of every refusal superseded by ADR-0030
 - **Date:** 2026-11-07
 
 ## Context
