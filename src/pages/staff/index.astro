@@ -1,4 +1,5 @@
 ---
+import SessionTimeout from '../../components/staff/SessionTimeout.astro';
 import Base from '../../layouts/Base.astro';
 
 // Rendered per request: it shows who is signed in.
@@ -17,6 +18,9 @@ if (!user || user.idp !== 'workforce' || !user.role) {
 }
 Astro.response.headers.set('Cache-Control', 'no-store');
 const role = ROLE_LABELS[user.role];
+const now = Date.now();
+const idleMsLeft = Math.max(0, (user.idleExpiresAt ?? now) - now);
+const absoluteMsLeft = Math.max(0, (user.expiresAt ?? now) - now);
 ---
 
 <Base title="Staff portal" description="Burn and Churn Coffee staff portal (fictional business).">
@@ -44,8 +48,12 @@ const role = ROLE_LABELS[user.role];
         </button>
       </form>
     </div>
-    <p class="portal__note">Signed-in sessions end after 8 hours, or after 1 hour without use.</p>
+    <p class="portal__note">
+      Signed-in sessions end after 8 hours, or after 1 hour without use. You'll get a warning two
+      minutes before, with a button to stay signed in.
+    </p>
   </section>
+  <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
 </Base>
 
 <style>

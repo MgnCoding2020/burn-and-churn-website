@@ -48,10 +48,12 @@ test('the site makes no third-party requests (as the privacy page says)', async 
   expect(external).toEqual([]);
 });
 
-test('security page marks planned controls as planned, not in place', async ({ page }) => {
+test('security page: staff sign-in in place, unbuilt controls still planned', async ({ page }) => {
   await page.goto('/security/');
-  const signIn = page.getByRole('row', { name: /Sign-in/ });
-  await expect(signIn).toContainText('Planned');
+  await expect(page.getByRole('row', { name: /^Staff sign-in/ })).toContainText('In place');
+  for (const area of [/^Customer sign-in/, /^Refunds/, /^Payments/]) {
+    await expect(page.getByRole('row', { name: area })).toContainText('Planned');
+  }
 });
 
 test('the Story link in the header goes to the about page', async ({ page }) => {

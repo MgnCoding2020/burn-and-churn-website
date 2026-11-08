@@ -113,12 +113,15 @@ export async function createSession(
 
 /**
  * Looks up a session. Expired sessions are deleted and treated as signed out;
- * a valid one has its idle limit moved forward.
+ * a valid one has its idle limit moved forward, unless `touch` is false (a
+ * status check that mustn't count as activity, or a polling page would never
+ * be signed out).
  */
 export async function readSession(
   db: D1Database,
   token: string | undefined,
   now = Date.now(),
+  { touch = true }: { touch?: boolean } = {},
 ): Promise<SessionUser | undefined> {
   if (!token || !TOKEN_SHAPE.test(token)) return undefined;
   const idHash = await hashToken(token);
@@ -136,17 +139,22 @@ export async function readSession(
     return undefined;
   }
 
-  const nextIdle = Math.min(now + row.idle_ms, row.expires_at);
-  await db
-    .prepare('UPDATE sessions SET idle_expires_at = ? WHERE id_hash = ?')
-    .bind(nextIdle, idHash)
-    .run();
+  let idleExpiresAt = row.idle_expires_at;
+  if (touch) {
+    idleExpiresAt = Math.min(now + row.idle_ms, row.expires_at);
+    await db
+      .prepare('UPDATE sessions SET idle_expires_at = ? WHERE id_hash = ?')
+      .bind(idleExpiresAt, idHash)
+      .run();
+  }
 
   return {
     id: row.user_id,
     idp: row.idp,
     displayName: row.display_name,
     ...(row.role ? { role: row.role } : {}),
+    expiresAt: row.expires_at,
+    idleExpiresAt,
   };
 }
 
@@ -165,7 +173,7 @@ export async function destroyUserSessions(db: D1Database, userId: string): Promi
   return res.meta.changes ?? 0;
 }
 
-/** Deletes expired sessions (run on a schedule). */
+/** Deletes expired sessions (run on a schedule, see src/server/scheduled.ts). */
 export async function purgeExpiredSessions(db: D1Database, now = Date.now()): Promise<number> {
   const res = await db
     .prepare('DELETE FROM sessions WHERE expires_at <= ? OR idle_expires_at <= ?')

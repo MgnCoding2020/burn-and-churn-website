@@ -2,7 +2,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { API_BASE, createApi } from '../../src/api/app';
 import { LOGIN_COOKIE, PORTAL_PATH, PROBLEM_PAGE, SIGNED_OUT_PAGE } from '../../src/api/staff-auth';
 import { x5t } from '../../src/lib/entra';
-import { createSession, SESSION_COOKIE } from '../../src/lib/session';
+import { createSession, hashToken, SESSION_COOKIE } from '../../src/lib/session';
 import { upsertUser } from '../../src/lib/users';
 import { buildApp } from '../../src/server/app';
 import { testDb } from '../setup/db';
@@ -126,6 +126,8 @@ describe('route principals', () => {
       { method: 'GET', path: '/auth/staff/callback', principal: 'public' },
       { method: 'POST', path: '/auth/staff/logout', principal: 'public' },
       { method: 'GET', path: '/staff/me', principal: 'Staff.Barista' },
+      { method: 'GET', path: '/staff/session', principal: 'Staff.Barista' },
+      { method: 'POST', path: '/staff/session/extend', principal: 'Staff.Barista' },
     ]);
   });
 });
@@ -356,5 +358,94 @@ describe('GET /staff/me (Staff.Barista and up)', () => {
       headers: { Cookie: `${SESSION_COOKIE}=${'A'.repeat(43)}` },
     });
     expect(res.status).toBe(401);
+  });
+});
+
+describe('session time left (ADR-0028, Staff.Barista and up)', () => {
+  const HOUR = 3_600_000;
+
+  async function staffSession(sub: string) {
+    const userId = await upsertUser(db, {
+      idp: 'workforce',
+      sub,
+      displayName: 'Ethan Brooks',
+      role: 'Staff.Barista',
+    });
+    const { token } = await createSession(db, { userId, idp: 'workforce', role: 'Staff.Barista' });
+    return token;
+  }
+
+  /** Puts the session's idle limit `ms` from now. */
+  async function idleIn(token: string, ms: number) {
+    await db
+      .prepare('UPDATE sessions SET idle_expires_at = ? WHERE id_hash = ?')
+      .bind(Date.now() + ms, await hashToken(token))
+      .run();
+  }
+
+  const asStaff = (token: string, init: RequestInit = {}) => ({
+    ...init,
+    headers: { Cookie: `${SESSION_COOKIE}=${token}`, ...init.headers },
+  });
+
+  it('both routes need a sign-in', async () => {
+    expect((await call(`${API_BASE}/staff/session`)).status).toBe(401);
+    const res = await call(`${API_BASE}/staff/session/extend`, {
+      method: 'POST',
+      headers: { Origin: ORIGIN },
+    });
+    expect(res.status).toBe(401);
+  });
+
+  it('both routes refuse a customer session', async () => {
+    const userId = await upsertUser(db, { idp: 'customer', sub: 'cust-t', displayName: 'C' });
+    const { token } = await createSession(db, { userId, idp: 'customer' });
+    expect((await call(`${API_BASE}/staff/session`, asStaff(token))).status).toBe(403);
+    const res = await call(
+      `${API_BASE}/staff/session/extend`,
+      asStaff(token, { method: 'POST', headers: { Origin: ORIGIN } }),
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it('reports the time left without counting as activity', async () => {
+    const token = await staffSession('oid-status');
+    await idleIn(token, 90_000);
+    for (let i = 0; i < 2; i++) {
+      const res = await call(`${API_BASE}/staff/session`, asStaff(token));
+      expect(res.status).toBe(200);
+      expect(res.headers.get('Cache-Control')).toBe('no-store');
+      const times = (await res.json()) as { idleMsLeft: number; absoluteMsLeft: number };
+      expect(times.idleMsLeft).toBeLessThanOrEqual(90_000);
+      expect(times.idleMsLeft).toBeGreaterThan(80_000);
+      expect(times.absoluteMsLeft).toBeGreaterThan(7 * HOUR);
+    }
+  });
+
+  it('"Stay signed in" moves the idle limit back to a full hour', async () => {
+    const token = await staffSession('oid-extend');
+    await idleIn(token, 90_000);
+    const res = await call(
+      `${API_BASE}/staff/session/extend`,
+      asStaff(token, { method: 'POST', headers: { Origin: ORIGIN } }),
+    );
+    expect(res.status).toBe(200);
+    const times = (await res.json()) as { idleMsLeft: number };
+    expect(times.idleMsLeft).toBeGreaterThan(HOUR - 60_000);
+  });
+
+  it('"Stay signed in" is refused from another site (CSRF)', async () => {
+    const token = await staffSession('oid-csrf');
+    const res = await call(
+      `${API_BASE}/staff/session/extend`,
+      asStaff(token, { method: 'POST', headers: { Origin: 'https://evil.example' } }),
+    );
+    expect(res.status).toBe(403);
+  });
+
+  it('an idle-expired session is signed out, and the status check says so', async () => {
+    const token = await staffSession('oid-expired');
+    await idleIn(token, -1);
+    expect((await call(`${API_BASE}/staff/session`, asStaff(token))).status).toBe(401);
   });
 });

@@ -12,6 +12,7 @@ import {
   tokenFromCookieHeader,
 } from '../../src/lib/session';
 import { upsertUser } from '../../src/lib/users';
+import { cleanUp } from '../../src/server/scheduled';
 import { testDb } from '../setup/db';
 
 const db = await testDb();
@@ -72,12 +73,19 @@ describe('sessions (ADR-0024)', () => {
 
   it('reads back the signed-in user and role', async () => {
     const userId = await staff('sub-read');
-    const { token } = await createSession(db, { userId, idp: 'workforce', role: 'Staff.Barista' });
-    expect(await readSession(db, token)).toEqual({
+    const t0 = Date.now();
+    const { token } = await createSession(
+      db,
+      { userId, idp: 'workforce', role: 'Staff.Barista' },
+      t0,
+    );
+    expect(await readSession(db, token, t0 + 1000)).toEqual({
       id: userId,
       idp: 'workforce',
       displayName: 'Test sub-read',
       role: 'Staff.Barista',
+      expiresAt: t0 + LIFETIMES.workforce.absoluteMs,
+      idleExpiresAt: t0 + 1000 + LIFETIMES.workforce.idleMs,
     });
   });
 
@@ -122,6 +130,8 @@ describe('sessions (ADR-0024)', () => {
       id: userId,
       idp: 'customer',
       displayName: 'Customer',
+      expiresAt: t0 + LIFETIMES.customer.absoluteMs,
+      idleExpiresAt: t0 + 47 * HOUR + LIFETIMES.customer.idleMs,
     });
   });
 
@@ -147,6 +157,54 @@ describe('sessions (ADR-0024)', () => {
     expect(tokenFromCookieHeader(`${SESSION_COOKIE}=short`)).toBeUndefined();
     expect(tokenFromCookieHeader(`other=1; ${SESSION_COOKIE}=%27%20OR%201%3D1`)).toBeUndefined();
     expect(await readSession(db, 'x'.repeat(43))).toBeUndefined();
+  });
+});
+
+describe('status reads (ADR-0028)', () => {
+  it('a read with touch: false leaves the idle limit where it was', async () => {
+    const userId = await staff('sub-touch');
+    const now = Date.now();
+    const { token } = await createSession(db, { userId, idp: 'workforce' }, now);
+    const later = now + 10 * 60_000;
+    const quiet = await readSession(db, token, later, { touch: false });
+    expect(quiet?.idleExpiresAt).toBe(now + LIFETIMES.workforce.idleMs);
+    const used = await readSession(db, token, later);
+    expect(used?.idleExpiresAt).toBe(later + LIFETIMES.workforce.idleMs);
+    expect(used?.expiresAt).toBe(now + LIFETIMES.workforce.absoluteMs);
+  });
+});
+
+describe('scheduled clean-up (ADR-0028)', () => {
+  it('deletes expired sessions and sign-in attempts, keeps live ones and the audit log', async () => {
+    const userId = await staff('sub-cleanup');
+    const now = Date.now();
+    const old = await createSession(db, { userId, idp: 'workforce' }, now - 9 * HOUR);
+    const live = await createSession(db, { userId, idp: 'workforce' }, now);
+    const login = (hash: string, expiresAt: number) =>
+      db
+        .prepare(
+          `INSERT INTO oidc_logins (state_hash, idp, code_verifier, nonce, created_at, expires_at)
+           VALUES (?, 'workforce', 'v', 'n', ?, ?)`,
+        )
+        .bind(hash, expiresAt - 600_000, expiresAt)
+        .run();
+    await login('stale-login', now - 1);
+    await login('fresh-login', now + 600_000);
+    await writeAudit(db, { requestId: 'req-cleanup', action: 'test.cleanup' });
+    const audit = () => db.prepare('SELECT COUNT(*) AS n FROM audit_log').first<{ n: number }>();
+    const auditBefore = (await audit())!.n;
+
+    const removed = await cleanUp(db, now);
+
+    expect(removed.sessions).toBeGreaterThanOrEqual(1);
+    expect(removed.logins).toBeGreaterThanOrEqual(1);
+    expect(await stored(old.token)).toBeNull();
+    expect(await stored(live.token)).not.toBeNull();
+    const logins = await db
+      .prepare(`SELECT state_hash FROM oidc_logins WHERE state_hash LIKE '%-login'`)
+      .all<{ state_hash: string }>();
+    expect(logins.results.map((r) => r.state_hash)).toEqual(['fresh-login']);
+    expect((await audit())!.n).toBe(auditBefore);
   });
 });
 

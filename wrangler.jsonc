@@ -19,6 +19,10 @@
     "enabled": true,
     "redact_query_string": true,
   },
+  // Hourly clean-up of expired sessions and sign-in attempts (src/server/scheduled.ts, ADR-0028).
+  "triggers": {
+    "crons": ["17 * * * *"],
+  },
   // Non-secret settings. Secrets go in .dev.vars locally and `wrangler secret put` when deployed.
   "vars": {
     "APP_ENV": "production",
