@@ -3,28 +3,42 @@ import SessionTimeout from '../../components/staff/SessionTimeout.astro';
 import StaffBar from '../../components/staff/StaffBar.astro';
 import Base from '../../layouts/Base.astro';
 import { decide } from '../../api/authz';
-import { menuForToday, openRestockRequests, type RestockRequest } from '../../lib/availability';
+import {
+  canDecide,
+  canUndo,
+  currentMenu,
+  liveRestockRequests,
+  soldOutItems,
+  type RestockRequest,
+  type SoldOutMark,
+} from '../../lib/availability';
 import { getMenuSnapshot } from '../../lib/menu';
 import { STORE_TIME_ZONE } from '../../lib/orders';
 import { staffPageAccess, timeLeft } from '../../lib/staff-page';
 
-// "86" items for today (Shift Lead+) and restock requests (Manager+), ADR-0032.
+// Sold-out items and the restock chain (ADR-0033): anyone marks sold out,
+// Shift Lead+ requests, Manager+ approves (not their own), Shift Lead+ receives.
 export const prerender = false;
 
-const access = staffPageAccess(Astro.locals.user, 'Staff.ShiftLead');
+const access = staffPageAccess(Astro.locals.user, 'Staff.Barista');
 if (!access.ok) return Astro.redirect(access.redirect, access.status);
 const { user } = access;
 Astro.response.headers.set('Cache-Control', 'no-store');
 
 const db = Astro.locals.db;
-const menu = db ? await menuForToday(db) : getMenuSnapshot();
-const canRestock = decide('Staff.Manager', user) === 'allow';
-const requests: RestockRequest[] = db && canRestock ? await openRestockRequests(db) : [];
-const requested = new Set(requests.map((r) => r.itemId));
-const soldOut = new Set(menu.items.filter((i) => !i.available).map((i) => i.id));
+const menu = db ? await currentMenu(db) : getMenuSnapshot();
+const marks: Map<string, SoldOutMark> = db ? await soldOutItems(db) : new Map();
+const isLead = decide('Staff.ShiftLead', user) === 'allow';
+const isManager = decide('Staff.Manager', user) === 'allow';
+const requests: RestockRequest[] = db && isLead ? await liveRestockRequests(db) : [];
+const liveFor = new Map(requests.map((r) => [r.itemId, r]));
+const actor = { userId: user.id, role: user.role };
+const now = Date.now();
 const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
 const time = new Intl.DateTimeFormat('en-US', {
   timeZone: STORE_TIME_ZONE,
+  month: 'short',
+  day: 'numeric',
   hour: 'numeric',
   minute: '2-digit',
 });
@@ -33,42 +47,81 @@ const time = new Intl.DateTimeFormat('en-US', {
 <Base title="Menu" description="Burn and Churn Coffee menu availability (fictional business).">
   <section class="container staff-menu">
     <StaffBar name={user.displayName ?? 'Staff member'} role={user.role} current="/staff/menu/" />
-    <h1>Menu today</h1>
+    <h1>Menu</h1>
     <p class="lede">
-      Mark a drink sold out when it runs out. It comes back by itself tomorrow
-      {canRestock && ', and you can ask for a restock here'}.
+      Mark a drink sold out when it runs out. It stays sold out until its restock is received.
+      Tapped the wrong one? You can undo your own mark for 5 minutes.
     </p>
     <p class="staff-menu__status" role="status" data-menu-status></p>
 
-    {canRestock && (
+    {isLead && (
       <section aria-labelledby="restock-title" class="staff-menu__restock">
-        <h2 id="restock-title">Open restock requests</h2>
+        <h2 id="restock-title">Restock requests</h2>
         {requests.length === 0 ? (
-          <p class="muted">None open.</p>
+          <p class="muted">None waiting.</p>
         ) : (
           <ul class="staff-menu__requests">
             {requests.map((r) => (
               <li>
                 <span>
                   <strong>{r.itemName}</strong>: {r.quantity}
-                  {r.note && ` (${r.note})`} · asked by {r.requestedBy} at{' '}
+                  {r.note && ` (${r.note})`} · asked by {r.requestedBy},{' '}
                   {time.format(new Date(r.requestedAt))}
+                  <br />
+                  <span class="staff-menu__step">
+                    {r.status === 'requested'
+                      ? 'Waiting for a manager to approve'
+                      : `Approved by ${r.decidedBy ?? 'a manager'}, waiting for delivery`}
+                  </span>
                 </span>
-                <button
-                  type="button"
-                  class="btn btn--secondary"
-                  data-restock-done={r.id}
-                  aria-label={
-                    soldOut.has(r.itemId)
-                      ? `Done, back in stock: ${r.itemName}`
-                      : `Mark the ${r.itemName} restock done`
-                  }
-                >
-                  {soldOut.has(r.itemId) ? 'Done, back in stock' : 'Done'}
-                </button>
+                <span class="staff-menu__actions">
+                  {r.status === 'requested' && isManager && canDecide(r, actor) && (
+                    <>
+                      <button
+                        type="button"
+                        class="btn btn--primary"
+                        data-approve={r.id}
+                        aria-label={`Approve the ${r.itemName} restock`}
+                      >
+                        Approve
+                      </button>
+                      <form class="staff-menu__form" data-reject={r.id}>
+                        <label for={`j-${r.id}`}>Reason</label>
+                        <input id={`j-${r.id}`} name="reason" required maxlength="200" />
+                        <button
+                          type="submit"
+                          class="btn btn--secondary"
+                          aria-label={`Reject the ${r.itemName} restock`}
+                        >
+                          Reject
+                        </button>
+                      </form>
+                    </>
+                  )}
+                  {r.status === 'requested' && isManager && !canDecide(r, actor) && (
+                    <span class="muted">
+                      Your request: another manager or the owner decides it.
+                    </span>
+                  )}
+                  {r.status === 'approved' && (
+                    <button
+                      type="button"
+                      class="btn btn--primary"
+                      data-received={r.id}
+                      aria-label={`Received, back on sale: ${r.itemName}`}
+                    >
+                      Received, back on sale
+                    </button>
+                  )}
+                </span>
               </li>
             ))}
           </ul>
+        )}
+        {isManager && (
+          <p>
+            <a href="/staff/restock-history/">Restock history</a>
+          </p>
         )}
       </section>
     )}
@@ -77,49 +130,89 @@ const time = new Intl.DateTimeFormat('en-US', {
       <section aria-labelledby={`m-${c.id}`}>
         <h2 id={`m-${c.id}`}>{c.label}</h2>
         <ul class="staff-menu__items">
-          {c.items.map((item) => (
-            <li class:list={['staff-menu__item', { 'staff-menu__item--out': !item.available }]}>
-              <span class="staff-menu__name">{item.name}</span>
-              <span class="staff-menu__state">
-                {item.available ? 'Available' : 'Sold out today'}
-              </span>
-              <span class="staff-menu__actions">
-                <button
-                  type="button"
-                  class="btn btn--secondary"
-                  data-toggle={item.id}
-                  data-sold-out={item.available ? 'true' : 'false'}
-                  aria-label={
-                    item.available
-                      ? `Mark ${item.name} sold out today`
-                      : `Mark ${item.name} available again`
-                  }
-                >
-                  {item.available ? 'Sold out' : 'Back in stock'}
-                </button>
-                {canRestock && !item.available && !requested.has(item.id) && (
-                  <form class="staff-menu__restock-form" data-restock={item.id}>
-                    <label for={`q-${item.id}`}>Quantity</label>
-                    <input
-                      id={`q-${item.id}`}
-                      name="quantity"
-                      required
-                      maxlength="40"
-                      placeholder="e.g. 2 bags"
-                    />
-                    <label for={`n-${item.id}`}>Note (optional)</label>
-                    <input id={`n-${item.id}`} name="note" maxlength="200" />
-                    <button type="submit" class="btn btn--primary">
-                      Request restock
+          {c.items.map((item) => {
+            const mark = marks.get(item.id);
+            const live = liveFor.get(item.id);
+            return (
+              <li class:list={['staff-menu__item', { 'staff-menu__item--out': !item.available }]}>
+                <span class="staff-menu__name">{item.name}</span>
+                <span class="staff-menu__state">
+                  {item.available
+                    ? 'Available'
+                    : `Sold out${mark ? ` since ${time.format(new Date(mark.soldOutAt))}` : ''}`}
+                </span>
+                <span class="staff-menu__actions">
+                  {item.available && (
+                    <button
+                      type="button"
+                      class="btn btn--secondary"
+                      data-toggle={item.id}
+                      data-sold-out="true"
+                      aria-label={`Mark ${item.name} sold out`}
+                    >
+                      Sold out
                     </button>
-                  </form>
-                )}
-                {canRestock && requested.has(item.id) && (
-                  <span class="muted">Restock requested</span>
-                )}
-              </span>
-            </li>
-          ))}
+                  )}
+                  {mark && canUndo(mark, user.id, now) && (
+                    <button
+                      type="button"
+                      class="btn btn--secondary"
+                      data-toggle={item.id}
+                      data-sold-out="false"
+                      aria-label={`Undo sold out: ${item.name}`}
+                    >
+                      Undo
+                    </button>
+                  )}
+                  {mark && !canUndo(mark, user.id, now) && isManager && (
+                    <form class="staff-menu__form" data-override={item.id}>
+                      <label for={`o-${item.id}`}>Reason</label>
+                      <input
+                        id={`o-${item.id}`}
+                        name="reason"
+                        required
+                        maxlength="200"
+                        placeholder="e.g. marked by mistake"
+                      />
+                      <button
+                        type="submit"
+                        class="btn btn--secondary"
+                        aria-label={`Override: back on sale, ${item.name}`}
+                      >
+                        Override: back on sale
+                      </button>
+                    </form>
+                  )}
+                  {mark && isLead && !live && (
+                    <form class="staff-menu__form" data-restock={item.id}>
+                      <label for={`q-${item.id}`}>Quantity</label>
+                      <input
+                        id={`q-${item.id}`}
+                        name="quantity"
+                        required
+                        maxlength="40"
+                        placeholder="e.g. 2 bags"
+                      />
+                      <label for={`n-${item.id}`}>Note (optional)</label>
+                      <input id={`n-${item.id}`} name="note" maxlength="200" />
+                      <button
+                        type="submit"
+                        class="btn btn--primary"
+                        aria-label={`Request restock: ${item.name}`}
+                      >
+                        Request restock
+                      </button>
+                    </form>
+                  )}
+                  {mark && live && (
+                    <span class="muted">
+                      {live.status === 'requested' ? 'Restock requested' : 'Restock approved'}
+                    </span>
+                  )}
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </section>
     ))}
@@ -161,6 +254,9 @@ const time = new Intl.DateTimeFormat('en-US', {
   .staff-menu__requests li {
     justify-content: space-between;
   }
+  .staff-menu__step {
+    color: var(--bc-ink-muted);
+  }
   .staff-menu__item--out {
     border-color: var(--bc-gold);
   }
@@ -184,17 +280,17 @@ const time = new Intl.DateTimeFormat('en-US', {
   .staff-menu .btn {
     min-height: var(--bc-staff-target);
   }
-  .staff-menu__restock-form {
+  .staff-menu__form {
     display: flex;
     flex-wrap: wrap;
     gap: var(--bc-space-2);
     align-items: end;
   }
-  .staff-menu__restock-form label {
+  .staff-menu__form label {
     font-size: 0.875rem;
     font-weight: 700;
   }
-  .staff-menu__restock-form input {
+  .staff-menu__form input {
     min-height: var(--bc-staff-target);
     padding: 0 var(--bc-space-3);
     background: var(--bc-bg);

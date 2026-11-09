@@ -37,4 +37,5 @@ Each record captures one significant decision: the context, what was decided, an
 | [0029](0029-rate-limits.md)                          | Rate limits with Cloudflare's Rate Limiting binding                | Accepted                             | 2026-11-07 |
 | [0030](0030-no-anonymous-database-writes.md)         | No anonymous request writes to the database                        | Accepted                             | 2026-11-07 |
 | [0031](0031-counter-register-and-order-board.md)     | Counter register and order board                                   | Accepted                             | 2026-11-08 |
-| [0032](0032-sold-out-restock-and-activity.md)        | Sold-out items, restock requests and staff activity                | Accepted                             | 2026-11-08 |
+| [0032](0032-sold-out-restock-and-activity.md)        | Sold-out items, restock requests and staff activity                | Partly superseded by 0033            | 2026-11-08 |
+| [0033](0033-restock-chain.md)                        | The restock chain                                                  | Accepted                             | 2026-11-08 |

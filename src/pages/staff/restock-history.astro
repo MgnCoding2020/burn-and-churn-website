@@ -1,0 +1,133 @@
+---
+import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import StaffBar from '../../components/staff/StaffBar.astro';
+import Base from '../../layouts/Base.astro';
+import { restockHistory, type RestockRequest } from '../../lib/availability';
+import { STORE_TIME_ZONE } from '../../lib/orders';
+import { staffPageAccess, timeLeft } from '../../lib/staff-page';
+
+// Every restock request and who handled each step (ADR-0033): the Manager and
+// Owner review, checked against stock counts once the Inventory list arrives.
+export const prerender = false;
+
+const access = staffPageAccess(Astro.locals.user, 'Staff.Manager');
+if (!access.ok) return Astro.redirect(access.redirect, access.status);
+const { user } = access;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const db = Astro.locals.db;
+const requests: RestockRequest[] = db ? await restockHistory(db) : [];
+const when = new Intl.DateTimeFormat('en-US', {
+  timeZone: STORE_TIME_ZONE,
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+const at = (ms: number | null) => (ms === null ? '' : when.format(new Date(ms)));
+const STATUS: Record<RestockRequest['status'], string> = {
+  requested: 'Waiting for approval',
+  approved: 'Approved, waiting for delivery',
+  rejected: 'Rejected',
+  received: 'Received',
+};
+const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
+---
+
+<Base
+  title="Restock history"
+  description="Burn and Churn Coffee restock requests (fictional business)."
+>
+  <section class="container history">
+    <StaffBar name={user.displayName ?? 'Staff member'} role={user.role} current="/staff/menu/" />
+    <h1>Restock history</h1>
+    <p class="lede">
+      Every restock request, newest first (the last 100), with who requested, decided and received
+      it. <a href="/staff/menu/">Back to the menu</a>.
+    </p>
+
+    {requests.length === 0 ? (
+      <p class="muted">No restock requests yet.</p>
+    ) : (
+      <div class="history__table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Item</th>
+              <th scope="col">Quantity</th>
+              <th scope="col">Requested</th>
+              <th scope="col">Decision</th>
+              <th scope="col">Received</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {requests.map((r) => (
+              <tr>
+                <td>{r.itemName}</td>
+                <td>
+                  {r.quantity}
+                  {r.note && <span class="muted"> ({r.note})</span>}
+                </td>
+                <td>
+                  {r.requestedBy}
+                  <br />
+                  <span class="muted">{at(r.requestedAt)}</span>
+                </td>
+                <td>
+                  {r.decidedBy ?? '—'}
+                  {r.decidedAt !== null && (
+                    <>
+                      <br />
+                      <span class="muted">{at(r.decidedAt)}</span>
+                    </>
+                  )}
+                  {r.decisionReason && (
+                    <>
+                      <br />
+                      <span class="muted">{r.decisionReason}</span>
+                    </>
+                  )}
+                </td>
+                <td>
+                  {r.receivedBy ?? '—'}
+                  {r.receivedAt !== null && (
+                    <>
+                      <br />
+                      <span class="muted">{at(r.receivedAt)}</span>
+                    </>
+                  )}
+                </td>
+                <td>{STATUS[r.status]}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </section>
+  <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
+</Base>
+
+<style>
+  .history {
+    max-width: 72rem;
+  }
+  .history__table {
+    overflow-x: auto;
+  }
+  .history table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .history th,
+  .history td {
+    padding: var(--bc-space-3);
+    border-bottom: var(--bc-border-width) solid var(--bc-border);
+    text-align: left;
+    vertical-align: top;
+  }
+  .history th {
+    color: var(--bc-ink-muted);
+  }
+</style>

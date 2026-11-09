@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { menuForToday } from '../lib/availability';
+import { currentMenu } from '../lib/availability';
 import { createCashOrder, listBoard, moveOrder, priceOrder, STAGES } from '../lib/orders';
 import { problem } from '../lib/problem';
 import type { Define } from './app';
@@ -57,7 +57,7 @@ export function registerStaffOrders(define: Define) {
     const { idempotencyKey, lines, tenderedCents } = parsed.data;
 
     // Today's menu: an item marked sold out (86) can't be sold, even from a stale page.
-    const priced = priceOrder(lines, await menuForToday(db));
+    const priced = priceOrder(lines, await currentMenu(db));
     if (!priced.ok) {
       const detail =
         priced.error === 'unavailable'

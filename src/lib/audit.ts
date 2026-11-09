@@ -41,6 +41,33 @@ export function auditStatement(
     );
 }
 
+/**
+ * Like `auditStatement`, but the row is written only if the statement just
+ * before it in the batch changed a row (SQLite's `changes()`). A guarded update
+ * that lost a race then leaves no audit row behind.
+ */
+export function auditIfChanged(
+  db: D1Database,
+  e: AuditEntry,
+  now = new Date(),
+): D1PreparedStatement {
+  return db
+    .prepare(
+      `INSERT INTO audit_log (at, request_id, actor_user_id, actor_role, action, target, before, after)
+       SELECT ?, ?, ?, ?, ?, ?, ?, ? WHERE changes() > 0`,
+    )
+    .bind(
+      now.toISOString(),
+      e.requestId,
+      e.actorUserId ?? null,
+      e.actorRole ?? null,
+      e.action,
+      e.target ?? null,
+      json(e.before),
+      json(e.after),
+    );
+}
+
 export async function writeAudit(db: D1Database, e: AuditEntry, now = new Date()): Promise<void> {
   await auditStatement(db, e, now).run();
 }

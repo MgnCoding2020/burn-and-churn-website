@@ -1,6 +1,7 @@
-// The staff Menu screen (src/pages/staff/menu.astro, ADR-0032): 86 an item,
-// request or close a restock. Each change goes to the API, then the page
-// reloads to show the server's view. Bundled as an external file (strict CSP).
+// The staff Menu screen (src/pages/staff/menu.astro, ADR-0033): mark sold out,
+// undo or override, and move a restock through request, approval and receipt.
+// Each change goes to the API, then the page reloads to show the server's
+// view. Bundled as an external file (strict CSP).
 
 // A module, so its names stay private to this script.
 export {};
@@ -19,6 +20,9 @@ async function post(url: string, body?: unknown): Promise<void> {
     if (!res.ok) {
       const problem = (await res.json().catch(() => ({}))) as { detail?: string };
       statusEl.textContent = problem.detail ?? 'That change could not be saved. Try again.';
+      document.querySelectorAll<HTMLButtonElement>('.staff-menu button').forEach((b) => {
+        b.disabled = false;
+      });
       return;
     }
     location.reload();
@@ -27,32 +31,44 @@ async function post(url: string, body?: unknown): Promise<void> {
   }
 }
 
+const field = (form: HTMLFormElement, name: string) =>
+  String(new FormData(form).get(name) ?? '').trim();
+
 document.addEventListener('click', (event) => {
-  const target = event.target as Element | null;
-  const toggle = target?.closest<HTMLButtonElement>('[data-toggle]');
-  if (toggle) {
-    toggle.disabled = true;
-    void post(`/api/v1/staff/menu/${toggle.dataset.toggle}/availability`, {
-      soldOut: toggle.dataset.soldOut === 'true',
-    });
-    return;
-  }
-  const done = target?.closest<HTMLButtonElement>('[data-restock-done]');
-  if (done) {
-    done.disabled = true;
-    void post(`/api/v1/staff/restock/${done.dataset.restockDone}/done`);
-  }
+  const button = (event.target as Element | null)?.closest<HTMLButtonElement>('button');
+  if (!button || button.type === 'submit') return;
+  const { toggle, soldOut, approve, received } = button.dataset;
+  let request: [string, unknown?] | undefined;
+  if (toggle)
+    request = [`/api/v1/staff/menu/${toggle}/availability`, { soldOut: soldOut === 'true' }];
+  else if (approve) request = [`/api/v1/staff/restock/${approve}/approve`];
+  else if (received) request = [`/api/v1/staff/restock/${received}/received`];
+  if (!request) return;
+  button.disabled = true;
+  void post(...request);
 });
 
 document.addEventListener('submit', (event) => {
-  const form = (event.target as Element | null)?.closest<HTMLFormElement>('[data-restock]');
+  const form = (event.target as Element | null)?.closest<HTMLFormElement>('form');
   if (!form) return;
+  const { restock, override, reject } = form.dataset;
+  let request: [string, unknown] | undefined;
+  if (restock) {
+    const note = field(form, 'note');
+    request = [
+      '/api/v1/staff/restock',
+      { itemId: restock, quantity: field(form, 'quantity'), ...(note ? { note } : {}) },
+    ];
+  } else if (override) {
+    request = [
+      `/api/v1/staff/menu/${override}/availability`,
+      { soldOut: false, reason: field(form, 'reason') },
+    ];
+  } else if (reject) {
+    request = [`/api/v1/staff/restock/${reject}/reject`, { reason: field(form, 'reason') }];
+  }
+  if (!request) return;
   event.preventDefault();
-  const data = new FormData(form);
-  const note = String(data.get('note') ?? '').trim();
-  void post('/api/v1/staff/restock', {
-    itemId: form.dataset.restock,
-    quantity: String(data.get('quantity') ?? '').trim(),
-    ...(note ? { note } : {}),
-  });
+  form.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled = true;
+  void post(...request);
 });

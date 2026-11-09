@@ -15,7 +15,7 @@ Astro.response.headers.set('Cache-Control', 'no-store');
 const BLURBS: Record<string, string> = {
   '/staff/register/': 'Ring up a counter order and take cash.',
   '/staff/orders/': 'Move orders from New to In progress to Ready.',
-  '/staff/menu/': 'Mark drinks sold out for today; managers request restocks.',
+  '/staff/menu/': 'Mark drinks sold out; shift leads request restocks and managers approve them.',
   '/staff/activity/': 'What you and your team have done.',
 };
 const screens = screensFor(user.role);
