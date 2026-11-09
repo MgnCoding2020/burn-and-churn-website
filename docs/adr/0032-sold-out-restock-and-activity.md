@@ -1,6 +1,6 @@
 # ADR-0032: Sold-out items, restock requests and staff activity
 
-- **Status:** Accepted
+- **Status:** Accepted; the sold-out and restock rules are superseded by [ADR-0033](0033-restock-chain.md) (the activity feed stands)
 - **Date:** 2026-11-08
 
 ## Context

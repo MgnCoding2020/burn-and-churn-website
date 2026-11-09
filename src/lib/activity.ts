@@ -87,11 +87,23 @@ export function describeEvent(e: ActivityEvent): string {
     case 'order.sale':
       return `Sale #${String(a.number ?? '?')}: ${money(a.totalCents)} cash`;
     case 'menu.item.sold_out':
-      return `Marked ${String(a.name ?? e.target)} sold out today`;
+      return `Marked ${String(a.name ?? e.target)} sold out`;
     case 'menu.item.available':
-      return `Marked ${String(a.name ?? e.target)} available again`;
+      return `${String(a.name ?? e.target)} back on sale`;
+    case 'menu.item.undo':
+      return `Undid sold out: ${String(a.name ?? e.target)}`;
+    case 'menu.item.override':
+      return `Override: ${String(a.name ?? e.target)} back on sale (${String(a.reason ?? '')})`;
     case 'restock.requested':
       return `Requested restock: ${String(a.name ?? '')}, ${String(a.quantity ?? '')}`;
+    case 'restock.approved':
+      return `Approved restock: ${String(a.name ?? '')}, ${String(a.quantity ?? '')}`;
+    case 'restock.rejected':
+      return `Rejected restock: ${String(a.name ?? '')} (${String(a.reason ?? '')})`;
+    case 'restock.received':
+      return `Received restock: ${String(a.name ?? '')}, ${String(a.quantity ?? '')}`;
+    case 'restock.decision_refused':
+      return 'Refused: deciding their own restock request';
     case 'restock.done':
       return a.name
         ? `Restock done: ${String(a.name)}, ${String(a.quantity ?? '')}`
