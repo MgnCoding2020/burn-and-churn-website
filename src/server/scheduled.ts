@@ -3,7 +3,8 @@ import { purgeExpiredSessions } from '../lib/session';
 /**
  * Hourly clean-up (Cron Trigger in wrangler.jsonc, ADR-0028), so nothing is
  * kept past its limit (plan §9): expired sessions, any rows left in the
- * retired `oidc_logins` table (ADR-0030), and orders older than 90 days.
+ * retired `oidc_logins` table (ADR-0030), and orders (with their refunds) and
+ * cash drawer counts older than 90 days.
  * Expired sessions are already refused when presented; this removes the ones
  * never presented again. The audit log is never touched.
  */
@@ -12,6 +13,7 @@ export interface CleanUpResult {
   sessions: number;
   logins: number;
   orders: number;
+  drawers: number;
 }
 
 /** Orders are kept for 90 days (plan §9, privacy page). */
@@ -20,20 +22,25 @@ export const ORDER_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 export async function cleanUp(db: D1Database, now = Date.now()): Promise<CleanUpResult> {
   const sessions = await purgeExpiredSessions(db, now);
   const logins = await db.prepare('DELETE FROM oidc_logins WHERE expires_at <= ?').bind(now).run();
-  // Lines first: they belong to the orders being removed.
+  // Children first: refunds and lines belong to the orders being removed.
   const cutoff = now - ORDER_RETENTION_MS;
-  const [, orders] = await db.batch([
+  const old = 'SELECT id FROM orders WHERE created_at < ?';
+  const [, , , orders, drawers] = await db.batch([
+    db.prepare(`DELETE FROM refund_lines WHERE order_id IN (${old})`).bind(cutoff),
+    db.prepare(`DELETE FROM refunds WHERE order_id IN (${old})`).bind(cutoff),
     db
       .prepare(
         'DELETE FROM order_items WHERE order_id IN (SELECT id FROM orders WHERE created_at < ?)',
       )
       .bind(cutoff),
     db.prepare('DELETE FROM orders WHERE created_at < ?').bind(cutoff),
+    db.prepare('DELETE FROM cash_drawers WHERE opened_at < ?').bind(cutoff),
   ]);
   return {
     sessions,
     logins: logins.meta.changes ?? 0,
     orders: orders!.meta.changes ?? 0,
+    drawers: drawers!.meta.changes ?? 0,
   };
 }
 

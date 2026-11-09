@@ -1,0 +1,123 @@
+---
+import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import StaffBar from '../../components/staff/StaffBar.astro';
+import Base from '../../layouts/Base.astro';
+import { formatCents } from '../../lib/menu';
+import { STORE_TIME_ZONE } from '../../lib/orders';
+import { canRefund, recentSales, type RecentSale } from '../../lib/refunds';
+import { staffPageAccess, timeLeft } from '../../lib/staff-page';
+
+// Recent sales to refund from (ADR-0034). Manager+; a sale you took yourself
+// is refunded by another manager or the owner.
+export const prerender = false;
+
+const access = staffPageAccess(Astro.locals.user, 'Staff.Manager');
+if (!access.ok) return Astro.redirect(access.redirect, access.status);
+const { user } = access;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const db = Astro.locals.db;
+const sales: RecentSale[] = db ? await recentSales(db) : [];
+const actor = { userId: user.id, role: user.role };
+const when = new Intl.DateTimeFormat('en-US', {
+  timeZone: STORE_TIME_ZONE,
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
+---
+
+<Base title="Refunds" description="Burn and Churn Coffee refunds (fictional business, test mode).">
+  <section class="container refunds">
+    <StaffBar
+      name={user.displayName ?? 'Staff member'}
+      role={user.role}
+      current="/staff/refunds/"
+    />
+    <h1>Refunds</h1>
+    <p class="lede">
+      The last 50 sales, newest first. Refund a whole sale or some of its drinks. A sale you took
+      yourself is refunded by another manager or the owner.
+    </p>
+
+    {sales.length === 0 ? (
+      <p class="muted">No sales yet.</p>
+    ) : (
+      <div class="refunds__table">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Sale</th>
+              <th scope="col">Taken by</th>
+              <th scope="col">Total</th>
+              <th scope="col">Refunded</th>
+              <th scope="col">
+                <span class="visually-hidden">Action</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {sales.map((s) => (
+              <tr>
+                <td>
+                  #{s.number}
+                  <br />
+                  <span class="muted">{when.format(new Date(s.createdAt))}</span>
+                </td>
+                <td>{s.takenByName ?? 'Unknown'}</td>
+                <td>
+                  {formatCents(s.totalCents)} {s.tender}
+                </td>
+                <td>{s.refundedCents ? formatCents(s.refundedCents) : '—'}</td>
+                <td>
+                  {s.refundedCents >= s.totalCents ? (
+                    <span class="muted">Fully refunded</span>
+                  ) : canRefund(s, actor) ? (
+                    <a
+                      class="btn btn--secondary refunds__go"
+                      href={`/staff/refund/?order=${s.id}`}
+                      aria-label={`Refund sale #${s.number}`}
+                    >
+                      Refund
+                    </a>
+                  ) : (
+                    <span class="muted">Your sale</span>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )}
+  </section>
+  <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
+</Base>
+
+<style>
+  .refunds {
+    max-width: 64rem;
+  }
+  .refunds__table {
+    overflow-x: auto;
+  }
+  .refunds table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .refunds th,
+  .refunds td {
+    padding: var(--bc-space-3);
+    border-bottom: var(--bc-border-width) solid var(--bc-border);
+    text-align: left;
+    vertical-align: middle;
+  }
+  .refunds th {
+    color: var(--bc-ink-muted);
+  }
+  .refunds__go {
+    min-height: var(--bc-staff-target);
+  }
+</style>

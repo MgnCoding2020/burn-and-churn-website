@@ -1,0 +1,235 @@
+---
+import ReasonPicker from '../../components/staff/ReasonPicker.astro';
+import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import StaffBar from '../../components/staff/StaffBar.astro';
+import Base from '../../layouts/Base.astro';
+import { formatCents } from '../../lib/menu';
+import { STORE_TIME_ZONE } from '../../lib/orders';
+import { canRefund, refundableOrder, type RefundableOrder } from '../../lib/refunds';
+import { staffPageAccess, timeLeft } from '../../lib/staff-page';
+
+// Refund one sale (ADR-0034): choose drinks and a reason, review, confirm.
+// Manager+; never a sale you took yourself unless you're the Owner.
+export const prerender = false;
+
+const access = staffPageAccess(Astro.locals.user, 'Staff.Manager');
+if (!access.ok) return Astro.redirect(access.redirect, access.status);
+const { user } = access;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const orderId = Astro.url.searchParams.get('order') ?? '';
+const valid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(orderId);
+const db = Astro.locals.db;
+const order: RefundableOrder | undefined =
+  db && valid ? await refundableOrder(db, orderId) : undefined;
+if (!order) Astro.response.status = 404;
+const allowed = order ? canRefund(order, { userId: user.id, role: user.role }) : false;
+const left = order ? order.totalCents - order.refundedCents : 0;
+const when = new Intl.DateTimeFormat('en-US', {
+  timeZone: STORE_TIME_ZONE,
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
+---
+
+<Base
+  title="Refund a sale"
+  description="Burn and Churn Coffee refund (fictional business, test mode)."
+>
+  <section class="container refund">
+    <StaffBar
+      name={user.displayName ?? 'Staff member'}
+      role={user.role}
+      current="/staff/refunds/"
+    />
+    <p>
+      <a href="/staff/refunds/">Back to refunds</a>
+    </p>
+
+    {!order ? (
+      <>
+        <h1>Sale not found</h1>
+        <p class="lede">It may be older than 90 days, or the link is wrong.</p>
+      </>
+    ) : (
+      <>
+        <h1>Refund sale #{order.number}</h1>
+        <p class="lede">
+          Taken by {order.takenByName ?? 'unknown'} on {when.format(new Date(order.createdAt))}.
+          Total {formatCents(order.totalCents)} {order.tender}
+          {order.refundedCents > 0 && `, ${formatCents(order.refundedCents)} already refunded`}.
+        </p>
+
+        {!allowed ? (
+          <p class="refund__notice">
+            You took this payment, so you can’t refund it. Another manager, or the owner, can.
+          </p>
+        ) : left <= 0 ? (
+          <p class="refund__notice">This sale is fully refunded.</p>
+        ) : (
+          <form class="refund__form" data-refund={order.id} novalidate>
+            <fieldset>
+              <legend>What to refund</legend>
+              <ul class="refund__lines">
+                {order.lines.map((l) => {
+                  const remaining = l.qty - l.refundedQty;
+                  return (
+                    <li>
+                      <label for={`line-${l.line}`}>
+                        {l.name}, {l.variantLabel} · {formatCents(l.unitPriceCents)} each
+                        <span class="muted">
+                          {' '}
+                          (sold {l.qty}
+                          {l.refundedQty > 0 && `, ${l.refundedQty} refunded`})
+                        </span>
+                      </label>
+                      <select
+                        id={`line-${l.line}`}
+                        name="qty"
+                        data-line={l.line}
+                        data-unit={l.unitPriceCents}
+                        data-max={remaining}
+                        disabled={remaining === 0}
+                      >
+                        {Array.from({ length: remaining + 1 }, (_, n) => (
+                          <option value={n}>{n}</option>
+                        ))}
+                      </select>
+                    </li>
+                  );
+                })}
+              </ul>
+              <button
+                type="button"
+                class="btn btn--secondary"
+                disabled
+                data-needs-script
+                data-refund-all
+              >
+                Refund everything left
+              </button>
+            </fieldset>
+
+            <div class="refund__reason">
+              <ReasonPicker kind="refund" id="refund-reason" />
+            </div>
+
+            <p class="refund__total" aria-live="polite">
+              Refund total: <strong data-refund-total>{formatCents(0)}</strong>
+            </p>
+            <button
+              type="submit"
+              disabled
+              data-needs-script
+              class="btn btn--primary"
+              data-refund-review
+            >
+              Review refund
+            </button>
+
+            <div class="refund__confirm" data-refund-confirm hidden>
+              <p data-refund-question tabindex="-1"></p>
+              <button type="button" class="btn btn--primary" data-refund-yes>
+                Confirm refund
+              </button>
+              <button type="button" class="btn btn--secondary" data-refund-no>
+                Change
+              </button>
+            </div>
+          </form>
+        )}
+        <p class="refund__status" role="status" data-refund-status></p>
+      </>
+    )}
+  </section>
+  <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
+</Base>
+
+<script>
+  import '../../scripts/refund';
+</script>
+
+<style>
+  .refund {
+    max-width: 48rem;
+  }
+  .refund__form {
+    display: grid;
+    gap: var(--bc-space-4);
+  }
+  .refund fieldset {
+    display: grid;
+    gap: var(--bc-space-3);
+    margin: 0;
+    padding: var(--bc-space-4);
+    border: var(--bc-border-width) solid var(--bc-border);
+    border-radius: var(--bc-radius-card);
+  }
+  .refund legend {
+    padding: 0 var(--bc-space-2);
+    font-weight: 700;
+  }
+  .refund__lines {
+    display: grid;
+    gap: var(--bc-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .refund__lines li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-3);
+    align-items: center;
+    justify-content: space-between;
+  }
+  .refund select {
+    min-width: 5rem;
+    min-height: var(--bc-staff-target);
+    padding: 0 var(--bc-space-3);
+    background: var(--bc-bg);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font: inherit;
+  }
+  .refund__reason {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-3);
+    align-items: end;
+  }
+  .refund .btn {
+    min-height: var(--bc-staff-target);
+  }
+  .refund__confirm {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-3);
+    align-items: center;
+    padding: var(--bc-space-4);
+    background: var(--bc-surface);
+    border: var(--bc-border-width) solid var(--bc-gold);
+    border-radius: var(--bc-radius-card);
+  }
+  .refund__confirm[hidden] {
+    display: none;
+  }
+  .refund__confirm p {
+    flex-basis: 100%;
+    margin: 0;
+    font-weight: 700;
+  }
+  .refund__notice {
+    padding: var(--bc-space-4);
+    background: var(--bc-surface);
+    border: var(--bc-border-width) solid var(--bc-border);
+    border-radius: var(--bc-radius-card);
+  }
+  .refund__status:empty {
+    display: none;
+  }
+</style>

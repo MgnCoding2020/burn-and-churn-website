@@ -12,6 +12,7 @@ import {
   type Actor,
 } from '../lib/availability';
 import { problem } from '../lib/problem';
+import { reasonSchema, type Reason } from '../lib/reasons';
 import type { AppEnv } from '../server/types';
 import type { Define } from './app';
 
@@ -23,15 +24,16 @@ import type { Define } from './app';
 
 const ITEM_ID = /^[a-z0-9-]{1,40}$/;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const Reason = z.string().trim().min(1).max(200);
-
-const Availability = z.strictObject({ soldOut: z.boolean(), reason: Reason.optional() });
+const Availability = z.strictObject({
+  soldOut: z.boolean(),
+  reason: reasonSchema('override').optional(),
+});
 const Restock = z.strictObject({
   itemId: z.string().regex(ITEM_ID),
   quantity: z.string().trim().min(1).max(40),
   note: z.string().trim().max(200).optional(),
 });
-const Rejection = z.strictObject({ reason: Reason });
+const Rejection = z.strictObject({ reason: reasonSchema('reject') });
 
 const NOT_WAITING = 'This request is no longer waiting for that step. Reload to see where it is.';
 
@@ -135,7 +137,7 @@ export function registerStaffMenu(define: Define) {
         if (!db) return problem(c, 503, 'Service unavailable');
         const id = restockId(c);
         if (!id) return problem(c, 404, 'Not found');
-        let reason: string | undefined;
+        let reason: Reason | undefined;
         if (decision === 'reject') {
           const parsed = Rejection.safeParse(await readJson(c.req.raw));
           if (!parsed.success)

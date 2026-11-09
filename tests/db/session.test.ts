@@ -207,7 +207,7 @@ describe('scheduled clean-up (ADR-0028)', () => {
     expect((await audit())!.n).toBe(auditBefore);
   });
 
-  it('deletes orders (and their lines) older than 90 days, keeps newer ones', async () => {
+  it('deletes orders (with lines and refunds) and cash counts older than 90 days', async () => {
     const userId = await staff('sub-retention');
     const now = Date.now();
     const order = (id: string, createdAt: number, day: string) =>
@@ -228,8 +228,34 @@ describe('scheduled clean-up (ADR-0028)', () => {
       ]);
     await order('00000000-0000-4000-8000-0000000000a1', now - ORDER_RETENTION_MS - 1, '2020-01-01');
     await order('00000000-0000-4000-8000-0000000000a2', now - 1000, '2020-01-02');
+    const old = now - ORDER_RETENTION_MS - 1;
+    await db.batch([
+      db
+        .prepare(
+          `INSERT INTO refunds (id, order_id, amount_cents, tender, reason_code, issued_by,
+             idempotency_key, created_at)
+           VALUES ('refund-old', '00000000-0000-4000-8000-0000000000a1', 400, 'cash', 'quality',
+             ?, ?, ?)`,
+        )
+        .bind(userId, crypto.randomUUID(), old),
+      db.prepare(
+        `INSERT INTO refund_lines (refund_id, order_id, line, qty, amount_cents)
+         VALUES ('refund-old', '00000000-0000-4000-8000-0000000000a1', 1, 1, 400)`,
+      ),
+      db
+        .prepare(
+          `INSERT INTO cash_drawers (id, status, float_cents, opened_by, opened_at)
+           VALUES ('drawer-old', 'closed', 15000, ?, ?)`,
+        )
+        .bind(userId, old),
+    ]);
     const removed = await cleanUp(db, now);
     expect(removed.orders).toBe(1);
+    expect(removed.drawers).toBe(1);
+    const refunds = await db
+      .prepare(`SELECT COUNT(*) AS n FROM refunds WHERE id = 'refund-old'`)
+      .first<{ n: number }>();
+    expect(refunds!.n).toBe(0);
     const left = await db
       .prepare(`SELECT id FROM orders WHERE id LIKE '00000000-0000-4000-8000-0000000000a%'`)
       .all<{ id: string }>();

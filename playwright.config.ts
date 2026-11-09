@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const PORT = 8787;
+const STAFF_DB_SPECS = 'e2e/staff-*.spec.ts';
 
 export default defineConfig({
   testDir: 'tests',
@@ -12,8 +13,16 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'phone', use: { ...devices['Pixel 7'], viewport: { width: 360, height: 780 } } },
+    { name: 'desktop', use: { ...devices['Desktop Chrome'] }, testIgnore: STAFF_DB_SPECS },
+    {
+      name: 'phone',
+      use: { ...devices['Pixel 7'], viewport: { width: 360, height: 780 } },
+      testIgnore: STAFF_DB_SPECS,
+    },
+    // Specs that seed the shared local D1 from outside the server. Two seeding
+    // at once can fail with "Failed to get session commit token", so they run
+    // one file at a time.
+    { name: 'staff', use: { ...devices['Desktop Chrome'] }, testMatch: STAFF_DB_SPECS, workers: 1 },
   ],
   // The built Worker on Cloudflare's local runtime, as deployed.
   webServer: {

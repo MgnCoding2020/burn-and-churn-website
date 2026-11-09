@@ -57,12 +57,13 @@ const cash = (lines: unknown[], tenderedCents: number, key = crypto.randomUUID()
 const latte16 = { itemId: 'americano', variantId: '16oz', qty: 1 }; // $4.00
 
 describe('route principals', () => {
-  it('every order route needs Barista or above', () => {
+  it('order routes need Barista or above; refunds need Manager', () => {
     const { routes } = createApi();
     expect(routes.filter((r) => r.path.startsWith('/staff/orders'))).toEqual([
       { method: 'POST', path: '/staff/orders', principal: 'Staff.Barista' },
       { method: 'GET', path: '/staff/orders', principal: 'Staff.Barista' },
       { method: 'POST', path: '/staff/orders/:id/stage', principal: 'Staff.Barista' },
+      { method: 'POST', path: '/staff/orders/:id/refunds', principal: 'Staff.Manager' },
     ]);
   });
 });
