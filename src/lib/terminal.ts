@@ -48,6 +48,22 @@ export interface TerminalGateway {
   cancel(readerId: string, paymentIntentId: string): Promise<void>;
   /** Where a payment stands, from Stripe: for when a webhook is late or missing. */
   state(paymentIntentId: string): Promise<PaymentState>;
+  /** Refunds part or all of a card payment back to the card (ADR-0037). */
+  refund(input: {
+    paymentIntentId: string;
+    amountCents: number;
+    idempotencyKey: string;
+    refundId: string;
+  }): Promise<{ stripeRefundId: string; status: RefundState }>;
+}
+
+/** Stripe's refund states, as the site records them. */
+export type RefundState = 'pending' | 'succeeded' | 'failed';
+
+export function refundState(status: string | null | undefined): RefundState {
+  if (status === 'succeeded') return 'succeeded';
+  if (status === 'failed' || status === 'canceled') return 'failed';
+  return 'pending';
 }
 
 function mapError(err: unknown): TerminalError {
@@ -127,5 +143,18 @@ export function stripeTerminal(config: StripeConfig): TerminalGateway {
     },
     state: (paymentIntentId) =>
       call(async () => paymentState(await stripe.paymentIntents.retrieve(paymentIntentId))),
+    refund: ({ paymentIntentId, amountCents, idempotencyKey, refundId }) =>
+      call(async () => {
+        const refund = await stripe.refunds.create(
+          {
+            payment_intent: paymentIntentId,
+            amount: amountCents,
+            reason: 'requested_by_customer',
+            metadata: { refund_id: refundId, app: 'bc-website' },
+          },
+          { idempotencyKey: `refund-${idempotencyKey}` },
+        );
+        return { stripeRefundId: refund.id, status: refundState(refund.status) };
+      }),
   };
 }

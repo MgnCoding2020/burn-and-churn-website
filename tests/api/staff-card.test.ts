@@ -19,6 +19,8 @@ const fake = vi.hoisted(() => {
   return {
     state,
     calls,
+    /** What Stripe answers to the next refund (ADR-0037). */
+    refundAnswer: { value: 'succeeded' as 'succeeded' | 'pending' | 'failed' | 'error' },
     failNext: (code?: string) => (failNext = code),
     take: () => {
       const c = failNext;
@@ -62,6 +64,16 @@ vi.mock('../../src/lib/terminal', async (importOriginal) => {
     },
     async state(pi) {
       return fake.state.get(pi) ?? { state: 'waiting' };
+    },
+    async refund({ paymentIntentId, amountCents, refundId }) {
+      fake.calls.push(`refund:${paymentIntentId}:${amountCents}`);
+      const answer = fake.refundAnswer.value;
+      fake.refundAnswer.value = 'succeeded';
+      if (answer === 'error') throw new real.TerminalError('stripe_error');
+      return {
+        stripeRefundId: `re_test_${refundId.replaceAll('-', '').slice(0, 20)}`,
+        status: answer,
+      };
     },
   };
   return { ...real, stripeTerminal: () => gateway };
@@ -376,7 +388,7 @@ describe('guards', () => {
     ).toBe(400);
   });
 
-  it("a card sale is never refunded in cash, and isn't counted in the cash drawer", async () => {
+  it('a card sale is refunded to the card, never from the cash drawer', async () => {
     const barista = await staff('c-barista7');
     const manager = await staff('c-manager', 'Staff.Manager');
     const lead = await staff('c-lead2', 'Staff.ShiftLead');
@@ -396,8 +408,9 @@ describe('guards', () => {
       lines: [{ line: 1, qty: 1 }],
       reason: { code: 'quality' },
     });
-    expect(refund.status).toBe(409);
-    expect(((await refund.json()) as { detail: string }).detail).toContain('card');
+    expect(refund.status).toBe(201);
+    expect(await refund.json()).toMatchObject({ tender: 'card', status: 'succeeded' });
+    expect(fake.calls).toContain(`refund:${pi}:400`);
 
     const counts = {
       '10000': 1,
@@ -417,5 +430,167 @@ describe('guards', () => {
       expectedCents: number;
     };
     expect(closed.expectedCents).toBe(10_000);
+  });
+});
+
+describe('card refunds (ADR-0037)', () => {
+  /** A paid card sale (2 lines: Americano 16 oz $4.00, Latte 12 oz) taken by `token`. */
+  async function paidCardSale(token: string) {
+    const { body } = await start(token);
+    const pi = await intentOf(body.id);
+    await webhook({
+      type: 'payment_intent.succeeded',
+      data: { object: { id: pi, object: 'payment_intent' } },
+    });
+    return { pi, order: (await ordersFor(pi)).results[0]! };
+  }
+  const refundBody = (lines: { line: number; qty: number }[], key = crypto.randomUUID()) => ({
+    idempotencyKey: key,
+    lines,
+    reason: { code: 'quality' },
+  });
+  const refundRow = (orderId: string) =>
+    db
+      .prepare(
+        'SELECT id, status, stripe_refund_id FROM refunds WHERE order_id = ? ORDER BY created_at DESC',
+      )
+      .bind(orderId)
+      .all<{ id: string; status: string; stripe_refund_id: string | null }>();
+  const payment = async (orderId: string) =>
+    (await db.prepare('SELECT payment FROM orders WHERE id = ?').bind(orderId).first<{
+      payment: string;
+    }>())!.payment;
+
+  it('the manager who took the card payment is refused (audited); another manager refunds it', async () => {
+    const taker = await staff('cr-manager', 'Staff.Manager');
+    const other = await staff('cr-manager2', 'Staff.Manager');
+    const { pi, order } = await paidCardSale(taker.token);
+    const own = await post(
+      taker.token,
+      `/staff/orders/${order.id}/refunds`,
+      refundBody([{ line: 1, qty: 1 }]),
+    );
+    expect(own.status).toBe(403);
+    expect(await audits('order.refund_refused', order.id)).toHaveLength(1);
+    expect(fake.calls.some((c) => c.startsWith('refund:'))).toBe(false);
+
+    const ok = await post(
+      other.token,
+      `/staff/orders/${order.id}/refunds`,
+      refundBody([{ line: 1, qty: 1 }]),
+    );
+    expect(ok.status).toBe(201);
+    expect(fake.calls).toContain(`refund:${pi}:400`);
+    const [row] = (await refundRow(order.id)).results;
+    expect(row).toMatchObject({ status: 'succeeded' });
+    expect(row!.stripe_refund_id).toMatch(/^re_test_/);
+  });
+
+  it('pending at Stripe, then succeeded by webhook', async () => {
+    const barista = await staff('cr-barista');
+    const manager = await staff('cr-manager3', 'Staff.Manager');
+    const { order } = await paidCardSale(barista.token);
+    fake.refundAnswer.value = 'pending';
+    const res = await post(
+      manager.token,
+      `/staff/orders/${order.id}/refunds`,
+      refundBody([{ line: 2, qty: 1 }]),
+    );
+    expect(await res.json()).toMatchObject({ status: 'pending' });
+    const [row] = (await refundRow(order.id)).results;
+    await webhook({
+      type: 'refund.updated',
+      data: {
+        object: {
+          id: row!.stripe_refund_id,
+          object: 'refund',
+          status: 'succeeded',
+          metadata: { refund_id: row!.id },
+        },
+      },
+    });
+    expect((await refundRow(order.id)).results[0]).toMatchObject({ status: 'succeeded' });
+  });
+
+  it('Stripe refuses: nothing refunded, the drinks can be refunded again, audited', async () => {
+    const barista = await staff('cr-barista2');
+    const manager = await staff('cr-manager4', 'Staff.Manager');
+    const { order } = await paidCardSale(barista.token);
+    fake.refundAnswer.value = 'error';
+    const res = await post(
+      manager.token,
+      `/staff/orders/${order.id}/refunds`,
+      refundBody([{ line: 1, qty: 1 }]),
+    );
+    expect(res.status).toBe(502);
+    expect(((await res.json()) as { detail: string }).detail).toContain('Nothing was refunded');
+    const [failed] = (await refundRow(order.id)).results;
+    expect(failed).toMatchObject({ status: 'failed' });
+    expect(await audits('order.refund_failed', failed!.id)).toHaveLength(1);
+    // The line was released: refunding it again works.
+    const again = await post(
+      manager.token,
+      `/staff/orders/${order.id}/refunds`,
+      refundBody([{ line: 1, qty: 1 }]),
+    );
+    expect(again.status).toBe(201);
+  });
+
+  it('a full refund that later fails at Stripe puts the sale back to paid and releases the lines', async () => {
+    const barista = await staff('cr-barista3');
+    const manager = await staff('cr-manager5', 'Staff.Manager');
+    const { order } = await paidCardSale(barista.token);
+    fake.refundAnswer.value = 'pending';
+    await post(
+      manager.token,
+      `/staff/orders/${order.id}/refunds`,
+      refundBody([
+        { line: 1, qty: 1 },
+        { line: 2, qty: 1 },
+      ]),
+    );
+    expect(await payment(order.id)).toBe('refunded');
+    const [row] = (await refundRow(order.id)).results;
+    await webhook({
+      type: 'refund.failed',
+      data: {
+        object: {
+          id: row!.stripe_refund_id,
+          object: 'refund',
+          status: 'failed',
+          metadata: { refund_id: row!.id },
+        },
+      },
+    });
+    expect((await refundRow(order.id)).results[0]).toMatchObject({ status: 'failed' });
+    expect(await payment(order.id)).toBe('paid');
+    const lines = await db
+      .prepare('SELECT COUNT(*) AS n FROM refund_lines WHERE refund_id = ?')
+      .bind(row!.id)
+      .first<{ n: number }>();
+    expect(lines!.n).toBe(0);
+  });
+
+  it('the same key refunds once at Stripe; no Stripe set up means no card refund (and never cash)', async () => {
+    const barista = await staff('cr-barista4');
+    const manager = await staff('cr-manager6', 'Staff.Manager');
+    const { pi, order } = await paidCardSale(barista.token);
+    const body = refundBody([{ line: 1, qty: 1 }]);
+    const a = await post(manager.token, `/staff/orders/${order.id}/refunds`, body);
+    const b = await post(manager.token, `/staff/orders/${order.id}/refunds`, body);
+    expect([a.status, b.status]).toEqual([201, 200]);
+    expect(fake.calls.filter((c) => c === `refund:${pi}:400`)).toHaveLength(1);
+
+    const noStripe = { ...env, STRIPE_API_KEY: undefined } as unknown as Env;
+    const res = await post(
+      manager.token,
+      `/staff/orders/${order.id}/refunds`,
+      refundBody([{ line: 2, qty: 1 }]),
+      noStripe,
+    );
+    expect(res.status).toBe(503);
+    expect(((await res.json()) as { detail: string }).detail).toContain(
+      'can’t be refunded in cash',
+    );
   });
 });
