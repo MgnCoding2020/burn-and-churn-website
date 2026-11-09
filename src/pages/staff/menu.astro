@@ -1,4 +1,5 @@
 ---
+import ReasonPicker from '../../components/staff/ReasonPicker.astro';
 import SessionTimeout from '../../components/staff/SessionTimeout.astro';
 import StaffBar from '../../components/staff/StaffBar.astro';
 import Base from '../../layouts/Base.astro';
@@ -86,8 +87,11 @@ const time = new Intl.DateTimeFormat('en-US', {
                         Approve
                       </button>
                       <form class="staff-menu__form" data-reject={r.id}>
-                        <label for={`j-${r.id}`}>Reason</label>
-                        <input id={`j-${r.id}`} name="reason" required maxlength="200" />
+                        <ReasonPicker
+                          kind="reject"
+                          id={`j-${r.id}`}
+                          label={`Reason to reject (${r.itemName})`}
+                        />
                         <button
                           type="submit"
                           class="btn btn--secondary"
@@ -166,13 +170,10 @@ const time = new Intl.DateTimeFormat('en-US', {
                   )}
                   {mark && !canUndo(mark, user.id, now) && isManager && (
                     <form class="staff-menu__form" data-override={item.id}>
-                      <label for={`o-${item.id}`}>Reason</label>
-                      <input
+                      <ReasonPicker
+                        kind="override"
                         id={`o-${item.id}`}
-                        name="reason"
-                        required
-                        maxlength="200"
-                        placeholder="e.g. marked by mistake"
+                        label={`Reason to override (${item.name})`}
                       />
                       <button
                         type="submit"

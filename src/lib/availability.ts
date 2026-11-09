@@ -1,6 +1,7 @@
 import { STAFF_ROLES, type StaffRole } from '../api/authz';
 import { auditIfChanged, writeAudit } from './audit';
 import { getMenuSnapshot, type Menu, type MenuItem } from './menu';
+import { reasonText, type Reason } from './reasons';
 
 /**
  * Sold-out items and the restock chain (plan §4.4, ADR-0033):
@@ -113,7 +114,7 @@ export type BringBackOutcome =
 export async function bringBack(
   db: D1Database,
   itemId: string,
-  reason: string | undefined,
+  reason: Reason | undefined,
   actor: Actor,
   now = Date.now(),
 ): Promise<BringBackOutcome> {
@@ -146,7 +147,9 @@ export async function bringBack(
       after: {
         name: item.name,
         soldOut: false,
-        ...(action === 'menu.item.override' ? { reason } : {}),
+        ...(action === 'menu.item.override' && reason
+          ? { reason: reasonText('override', reason), reasonCode: reason.code }
+          : {}),
       },
     }),
   ]);
@@ -290,7 +293,7 @@ export async function decideRestock(
   db: D1Database,
   id: string,
   decision: 'approve' | 'reject',
-  reason: string | undefined,
+  reason: Reason | undefined,
   actor: Actor,
   now = Date.now(),
 ): Promise<'approved' | 'rejected' | 'not_found' | 'own_request' | 'reason_required'> {
@@ -314,6 +317,7 @@ export async function decideRestock(
   }
   if (decision === 'reject' && !reason) return 'reason_required';
   const status = decision === 'approve' ? 'approved' : 'rejected';
+  const why = decision === 'reject' && reason ? reasonText('reject', reason) : null;
   const name = itemById(row.item_id)?.name ?? row.item_id;
   const [change] = await db.batch([
     db
@@ -322,7 +326,7 @@ export async function decideRestock(
          SET status = ?, decided_by = ?, decided_at = ?, decision_reason = ?
          WHERE id = ? AND status = 'requested'`,
       )
-      .bind(status, actor.userId, now, reason ?? null, id),
+      .bind(status, actor.userId, now, why, id),
     auditIfChanged(db, {
       requestId: actor.requestId,
       actorUserId: actor.userId,
@@ -335,7 +339,7 @@ export async function decideRestock(
         itemId: row.item_id,
         name,
         quantity: row.quantity,
-        ...(reason ? { reason } : {}),
+        ...(why && reason ? { reason: why, reasonCode: reason.code } : {}),
       },
     }),
   ]);

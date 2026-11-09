@@ -3,8 +3,7 @@
 // Each change goes to the API, then the page reloads to show the server's
 // view. Bundled as an external file (strict CSP).
 
-// A module, so its names stay private to this script.
-export {};
+import { reasonFrom } from './reason';
 
 const statusEl = document.querySelector<HTMLElement>('[data-menu-status]')!;
 
@@ -62,10 +61,10 @@ document.addEventListener('submit', (event) => {
   } else if (override) {
     request = [
       `/api/v1/staff/menu/${override}/availability`,
-      { soldOut: false, reason: field(form, 'reason') },
+      { soldOut: false, reason: reasonFrom(form) },
     ];
   } else if (reject) {
-    request = [`/api/v1/staff/restock/${reject}/reject`, { reason: field(form, 'reason') }];
+    request = [`/api/v1/staff/restock/${reject}/reject`, { reason: reasonFrom(form) }];
   }
   if (!request) return;
   event.preventDefault();

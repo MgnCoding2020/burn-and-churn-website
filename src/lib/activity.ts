@@ -104,6 +104,22 @@ export function describeEvent(e: ActivityEvent): string {
       return `Received restock: ${String(a.name ?? '')}, ${String(a.quantity ?? '')}`;
     case 'restock.decision_refused':
       return 'Refused: deciding their own restock request';
+    case 'order.refund':
+      return `Refund on sale #${String(a.number ?? '?')}: ${money(a.amountCents)} ${String(a.tender ?? '')} (${String(a.reason ?? '')})`;
+    case 'order.refund_refused':
+      return `Refused: refunding sale #${String(a.number ?? '?')}, which they took`;
+    case 'cash.drawer_opened':
+      return `Opened the cash drawer with ${money(a.floatCents)}`;
+    case 'cash.drawer_closed': {
+      const v = typeof a.varianceCents === 'number' ? a.varianceCents : 0;
+      return `Closed the cash drawer: counted ${money(a.countedCents)}, ${v === 0 ? 'no difference' : `${v > 0 ? 'over' : 'short'} ${money(Math.abs(v))}`}`;
+    }
+    case 'cash.variance_explained':
+      return `Explained a cash difference: ${String(a.reason ?? '')}`;
+    case 'cash.drawer_reviewed':
+      return 'Reviewed a cash count';
+    case 'cash.review_refused':
+      return 'Refused: reviewing their own cash count';
     case 'restock.done':
       return a.name
         ? `Restock done: ${String(a.name)}, ${String(a.quantity ?? '')}`

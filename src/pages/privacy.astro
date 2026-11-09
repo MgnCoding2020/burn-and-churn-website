@@ -2,7 +2,9 @@
 import Base from '../layouts/Base.astro';
 
 export const prerender = true;
-const UPDATED = '2026-11-07';
+const UPDATED = '2026-11-09';
+// When the log retention below was last checked against Cloudflare's documentation.
+const LOGS_CHECKED = '2026-11-07';
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 ---
 
@@ -92,7 +94,8 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
           <td>Counter orders (staff portal)</td>
           <td>
             For the fictional café's test sales: the drinks, prices, cash handed over and change,
-            and which staff member took the payment. No card details, ever.
+            which staff member took the payment, any refund (amount, reason, who issued it) and each
+            shift's cash count. No card details, ever.
           </td>
           <td>90 days</td>
         </tr>
@@ -100,9 +103,10 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
           <td>Staff audit log</td>
           <td>
             Each staff sign-in and sign-out, each refused sign-in of a real work account (with the
-            reason), each sale, and each sold-out change or restock request, with who did it and the
-            request ID. Staff see their own entries and those of roles below theirs. It can't be
-            edited or deleted, by design. Other failed sign-ins appear only in the request logs.
+            reason), each sale and refund, each sold-out change, restock step and cash count, and
+            each refused refund or review, with who did it and the request ID. Staff see their own
+            entries and those of roles below theirs. It can't be edited or deleted, by design. Other
+            failed sign-ins appear only in the request logs.
           </td>
           <td>Project life</td>
         </tr>
@@ -111,7 +115,7 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
     <p>
       Logs are used only to keep the site working and secure. They're stored in Cloudflare Workers
       Logs, which keeps them for 3 days on the free plan this site uses (checked against
-      Cloudflare's documentation on {UPDATED}).
+      Cloudflare's documentation on {LOGS_CHECKED}).
     </p>
 
     <h2>What this site does not do</h2>

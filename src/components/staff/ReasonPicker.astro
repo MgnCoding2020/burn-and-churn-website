@@ -1,0 +1,56 @@
+---
+import { REASONS, type ReasonKind } from '../../lib/reasons';
+
+// A reason chosen from a fixed list (ADR-0034), with a note that's required
+// only for Other. The server enforces the same rules. The form's script reads
+// the fields `reasonCode` and `reasonNote` (src/scripts/reason.ts).
+interface Props {
+  kind: ReasonKind;
+  /** Unique per page, for the label and field ids. */
+  id: string;
+  /** Says what the reason is for, e.g. "Reason for rejecting the Mocha restock". */
+  label?: string;
+}
+
+const { kind, id, label = 'Reason' } = Astro.props;
+---
+
+<span class="reason" data-reason>
+  <span class="reason__field">
+    <label for={`${id}-code`}>{label}</label>
+    <select id={`${id}-code`} name="reasonCode" required>
+      <option value="">Choose…</option>
+      {REASONS[kind].map((r) => (
+        <option value={r.code}>{r.label}</option>
+      ))}
+    </select>
+  </span>
+  <span class="reason__field">
+    <label for={`${id}-note`}>Note (required for Other)</label>
+    <input id={`${id}-note`} name="reasonNote" maxlength="200" />
+  </span>
+</span>
+
+<style>
+  .reason {
+    display: contents;
+  }
+  .reason__field {
+    display: grid;
+    gap: var(--bc-space-1);
+  }
+  label {
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  select,
+  input {
+    min-height: var(--bc-staff-target);
+    padding: 0 var(--bc-space-3);
+    background: var(--bc-bg);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font: inherit;
+  }
+</style>

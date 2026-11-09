@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 
 export const prerender = true;
-const UPDATED = '2026-11-07';
+const UPDATED = '2026-11-09';
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 const doc = (path: string) => `${repo}/blob/main/${path}`;
 
@@ -83,9 +83,10 @@ const controls: Array<{
     status: 'Planned',
   },
   {
-    area: 'Refunds',
-    what: 'Managers and owners only, never by the person who took the payment (separation of duties), each one audited',
-    status: 'Planned',
+    area: 'Refunds and cash',
+    what: 'Refunds by managers and owners only, never by the person who took the payment (separation of duties), priced from the sale and never above it; a blind end-of-shift cash count reviewed by a different manager; every step and every refusal audited. Cash only until card payments arrive',
+    status: 'In place',
+    ref: ['ADR-0034', 'docs/adr/0034-refunds-cash-count-and-reasons.md'],
   },
   {
     area: 'Payments',

@@ -1,0 +1,353 @@
+---
+import ReasonPicker from '../../components/staff/ReasonPicker.astro';
+import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import StaffBar from '../../components/staff/StaffBar.astro';
+import Base from '../../layouts/Base.astro';
+import {
+  awaitingReview,
+  canExplain,
+  canReview,
+  DEFAULT_FLOAT_CENTS,
+  DENOMINATIONS,
+  needsExplanation,
+  openDrawerNow,
+  recentDrawers,
+  salesOutsideDrawers,
+  VARIANCE_ALLOWED_CENTS,
+  type Drawer,
+} from '../../lib/cash';
+import { formatCents } from '../../lib/menu';
+import { STORE_TIME_ZONE } from '../../lib/orders';
+import { staffPageAccess, timeLeft } from '../../lib/staff-page';
+
+// The cash drawer (ADR-0034): open with a float, close with a blind count,
+// explain a difference over $5, and a manager reviews counts that were off.
+export const prerender = false;
+
+const access = staffPageAccess(Astro.locals.user, 'Staff.ShiftLead');
+if (!access.ok) return Astro.redirect(access.redirect, access.status);
+const { user } = access;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const db = Astro.locals.db;
+const actor = { userId: user.id, role: user.role };
+const open: Drawer | undefined = db ? await openDrawerNow(db) : undefined;
+const drawers: Drawer[] = db ? await recentDrawers(db, actor) : [];
+const outside = db ? await salesOutsideDrawers(db) : 0;
+const when = new Intl.DateTimeFormat('en-US', {
+  timeZone: STORE_TIME_ZONE,
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+const difference = (v: number | null) =>
+  v === null || v === 0 ? 'None' : `${v > 0 ? 'Over' : 'Short'} ${formatCents(Math.abs(v))}`;
+const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
+---
+
+<Base title="Cash" description="Burn and Churn Coffee cash drawer (fictional business, test mode).">
+  <section class="container cash">
+    <StaffBar name={user.displayName ?? 'Staff member'} role={user.role} current="/staff/cash/" />
+    <h1>Cash drawer</h1>
+    <p class="lede">
+      Open the drawer with a float at the start of the shift and count it at the end. The count is
+      blind: you see what was expected only after you save it, and it can’t be redone.
+    </p>
+    <p class="cash__status" role="status" data-cash-status></p>
+
+    {outside > 0 && (
+      <p class="cash__warning">
+        {outside === 1 ? '1 cash sale' : `${outside} cash sales`} today{' '}
+        {outside === 1 ? 'was' : 'were'} taken with no drawer open.
+      </p>
+    )}
+
+    {open ? (
+      <section aria-labelledby="close-title" class="cash__panel">
+        <h2 id="close-title">Close the drawer</h2>
+        <p>
+          Open since {when.format(new Date(open.openedAt))}, opened by{' '}
+          {open.openedByName ?? 'unknown'} with a {formatCents(open.floatCents)} float.
+        </p>
+        <form class="cash__form" data-close={open.id} novalidate>
+          <fieldset>
+            <legend>Count what’s in the drawer</legend>
+            <div class="cash__grid">
+              {DENOMINATIONS.map((d) => (
+                <span class="cash__field">
+                  <label for={`d-${d.cents}`}>{d.label}</label>
+                  <input
+                    id={`d-${d.cents}`}
+                    name={String(d.cents)}
+                    type="number"
+                    inputmode="numeric"
+                    min="0"
+                    max="5000"
+                    step="1"
+                    value="0"
+                    data-cents={d.cents}
+                  />
+                </span>
+              ))}
+            </div>
+          </fieldset>
+          <p aria-live="polite">
+            Counted: <strong data-cash-counted>{formatCents(0)}</strong>
+          </p>
+          <button
+            type="submit"
+            disabled
+            data-needs-script
+            class="btn btn--primary"
+            data-cash-review
+          >
+            Close the drawer
+          </button>
+          <div class="cash__confirm" data-cash-confirm hidden>
+            <p data-cash-question tabindex="-1"></p>
+            <button type="button" class="btn btn--primary" data-cash-yes>
+              Save the count
+            </button>
+            <button type="button" class="btn btn--secondary" data-cash-no>
+              Recount
+            </button>
+          </div>
+        </form>
+      </section>
+    ) : (
+      <section aria-labelledby="open-title" class="cash__panel">
+        <h2 id="open-title">Open the drawer</h2>
+        <form class="cash__form cash__form--row" data-open novalidate>
+          <span class="cash__field">
+            <label for="float">Opening float ($)</label>
+            <input
+              id="float"
+              name="float"
+              inputmode="decimal"
+              value={(DEFAULT_FLOAT_CENTS / 100).toFixed(2)}
+              maxlength="7"
+            />
+          </span>
+          <button type="submit" disabled data-needs-script class="btn btn--primary">
+            Open the drawer
+          </button>
+        </form>
+      </section>
+    )}
+
+    <section aria-labelledby="counts-title">
+      <h2 id="counts-title">Recent counts</h2>
+      <p class="muted">
+        {user.role === 'Staff.ShiftLead'
+          ? 'Drawers you opened or closed. '
+          : 'Every drawer, newest first. '}
+        A difference over {formatCents(VARIANCE_ALLOWED_CENTS)} needs a reason; any difference is
+        reviewed by a manager.
+      </p>
+      {drawers.length === 0 ? (
+        <p class="muted">No counts yet.</p>
+      ) : (
+        <ul class="cash__counts">
+          {drawers.map((d) => (
+            <li>
+              <h3>
+                Closed {when.format(new Date(d.closedAt ?? d.openedAt))} by{' '}
+                {d.closedByName ?? 'unknown'}
+              </h3>
+              <dl>
+                <div>
+                  <dt>Float</dt>
+                  <dd>{formatCents(d.floatCents)}</dd>
+                </div>
+                <div>
+                  <dt>Cash sales</dt>
+                  <dd>{formatCents(d.cashSalesCents ?? 0)}</dd>
+                </div>
+                <div>
+                  <dt>Cash refunds</dt>
+                  <dd>{formatCents(d.cashRefundsCents ?? 0)}</dd>
+                </div>
+                <div>
+                  <dt>Expected</dt>
+                  <dd>{formatCents(d.expectedCents ?? 0)}</dd>
+                </div>
+                <div>
+                  <dt>Counted</dt>
+                  <dd>{formatCents(d.countedCents ?? 0)}</dd>
+                </div>
+                <div>
+                  <dt>Difference</dt>
+                  <dd class:list={[{ cash__off: (d.varianceCents ?? 0) !== 0 }]}>
+                    {difference(d.varianceCents)}
+                  </dd>
+                </div>
+                {d.reason && (
+                  <div>
+                    <dt>Reason</dt>
+                    <dd>{d.reason}</dd>
+                  </div>
+                )}
+                {d.reviewedAt !== null && (
+                  <div>
+                    <dt>Reviewed</dt>
+                    <dd>
+                      {d.reviewedByName ?? 'unknown'}, {when.format(new Date(d.reviewedAt))}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+              {needsExplanation(d) &&
+                (canExplain(d, actor) ? (
+                  <form class="cash__form cash__form--row" data-explain={d.id} novalidate>
+                    <ReasonPicker kind="variance" id={`v-${d.id}`} label="Why was the count off?" />
+                    <button type="submit" disabled data-needs-script class="btn btn--primary">
+                      Save reason
+                    </button>
+                  </form>
+                ) : (
+                  <p class="muted">Waiting for a reason from whoever closed it.</p>
+                ))}
+              {awaitingReview(d) &&
+                !needsExplanation(d) &&
+                (canReview(d, actor) ? (
+                  <button
+                    type="button"
+                    class="btn btn--secondary"
+                    data-review={d.id}
+                    aria-label={`Mark reviewed: count closed ${when.format(new Date(d.closedAt ?? d.openedAt))}`}
+                  >
+                    Mark reviewed
+                  </button>
+                ) : (
+                  <p class="muted">Waiting for a manager’s review.</p>
+                ))}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  </section>
+  <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
+</Base>
+
+<script>
+  import '../../scripts/cash';
+</script>
+
+<style>
+  .cash {
+    max-width: 64rem;
+  }
+  .cash h2 {
+    margin: var(--bc-space-6) 0 var(--bc-space-3);
+    font-size: var(--bc-text-card-title);
+  }
+  .cash h3 {
+    margin: 0 0 var(--bc-space-2);
+    font-family: inherit;
+    font-size: 1rem;
+  }
+  .cash__panel,
+  .cash__counts li {
+    padding: var(--bc-space-4);
+    background: var(--bc-surface);
+    border: var(--bc-border-width) solid var(--bc-border);
+    border-radius: var(--bc-radius-card);
+  }
+  .cash__form {
+    display: grid;
+    gap: var(--bc-space-4);
+  }
+  .cash__form--row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-3);
+    align-items: end;
+  }
+  .cash fieldset {
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .cash legend {
+    margin-bottom: var(--bc-space-3);
+    font-weight: 700;
+  }
+  .cash__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: var(--bc-space-3);
+  }
+  .cash__field {
+    display: grid;
+    gap: var(--bc-space-1);
+  }
+  .cash__field label {
+    font-size: 0.875rem;
+    font-weight: 700;
+  }
+  .cash__field input {
+    min-height: var(--bc-staff-target);
+    padding: 0 var(--bc-space-3);
+    background: var(--bc-bg);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-ink);
+    font: inherit;
+    font-variant-numeric: tabular-nums;
+  }
+  .cash .btn {
+    min-height: var(--bc-staff-target);
+  }
+  .cash__confirm {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-3);
+    align-items: center;
+    padding: var(--bc-space-4);
+    border: var(--bc-border-width) solid var(--bc-gold);
+    border-radius: var(--bc-radius-card);
+  }
+  .cash__confirm[hidden] {
+    display: none;
+  }
+  .cash__confirm p {
+    flex-basis: 100%;
+    margin: 0;
+    font-weight: 700;
+  }
+  .cash__counts {
+    display: grid;
+    gap: var(--bc-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .cash dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: var(--bc-space-2) var(--bc-space-4);
+    margin: 0 0 var(--bc-space-3);
+  }
+  .cash dt {
+    color: var(--bc-ink-muted);
+    font-size: 0.875rem;
+  }
+  .cash dd {
+    margin: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .cash__off {
+    color: var(--bc-gold);
+    font-weight: 700;
+  }
+  .cash__warning {
+    padding: var(--bc-space-3) var(--bc-space-4);
+    border: var(--bc-border-width) solid var(--bc-gold);
+    border-radius: var(--bc-radius-card);
+  }
+  .cash__status:empty {
+    display: none;
+  }
+</style>

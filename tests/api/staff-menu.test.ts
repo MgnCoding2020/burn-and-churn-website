@@ -167,12 +167,25 @@ describe('step 1: mark sold out (everyone)', () => {
     expect(((await refused.json()) as { detail: string }).detail).toContain('manager');
     expect((await post(manager.token, path, { soldOut: false })).status).toBe(400);
     expect((await post(manager.token, path, { soldOut: false, reason: '  ' })).status).toBe(400);
+    // A code from the list only; Other needs a note.
+    expect(
+      (await post(manager.token, path, { soldOut: false, reason: { code: 'because' } })).status,
+    ).toBe(400);
+    expect(
+      (await post(manager.token, path, { soldOut: false, reason: { code: 'other' } })).status,
+    ).toBe(400);
 
-    const ok = await post(manager.token, path, { soldOut: false, reason: 'Marked by mistake' });
+    const ok = await post(manager.token, path, {
+      soldOut: false,
+      reason: { code: 'mistake' },
+    });
     expect(await ok.json()).toMatchObject({ changed: true, how: 'overridden' });
     const audit = await lastAudit('menu.item.override');
     expect(audit).toMatchObject({ actor_user_id: manager.userId, target: 'dark-roast' });
-    expect(JSON.parse(audit!.after!)).toMatchObject({ reason: 'Marked by mistake' });
+    expect(JSON.parse(audit!.after!)).toMatchObject({
+      reason: 'Marked by mistake',
+      reasonCode: 'mistake',
+    });
   });
 
   it('unknown items 404, bad bodies 400, other sites 403', async () => {
@@ -275,9 +288,13 @@ describe('steps 2 to 4: request, approve, receive', () => {
       actor_user_id: manager.userId,
       target: id,
     });
-    expect((await post(manager.token, `/staff/restock/${id}/reject`, { reason: 'x' })).status).toBe(
-      403,
-    );
+    expect(
+      (
+        await post(manager.token, `/staff/restock/${id}/reject`, {
+          reason: { code: 'already-ordered' },
+        })
+      ).status,
+    ).toBe(403);
     expect((await post(otherManager.token, `/staff/restock/${id}/approve`)).status).toBe(200);
 
     // The Owner may decide their own.
@@ -300,11 +317,12 @@ describe('steps 2 to 4: request, approve, receive', () => {
       400,
     );
     const rejected = await post(manager.token, `/staff/restock/${id}/reject`, {
-      reason: 'Seasonal syrup, not reordering',
+      reason: { code: 'not-reordering', note: 'seasonal syrup' },
     });
     expect(await rejected.json()).toEqual({ id, status: 'rejected' });
     expect(JSON.parse((await lastAudit('restock.rejected'))!.after!)).toMatchObject({
-      reason: 'Seasonal syrup, not reordering',
+      reason: 'Not reordering (seasonal or discontinued): seasonal syrup',
+      reasonCode: 'not-reordering',
     });
     expect((await soldOutItems(db)).has('maple-smoke')).toBe(true);
     expect(
