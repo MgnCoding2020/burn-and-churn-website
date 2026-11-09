@@ -65,7 +65,7 @@ test('a shift lead 86s Mocha; the register shows it sold out; the activity feed 
   ).toBeVisible();
 });
 
-test('a manager requests a restock for Mocha, then marks it done and brings Mocha back', async ({
+test('a manager requests a restock for Mocha; marking it done puts Mocha back on sale', async ({
   page,
 }) => {
   await as(page, 'Staff.Manager', 'Test Manager');
@@ -74,8 +74,7 @@ test('a manager requests a restock for Mocha, then marks it done and brings Moch
   await page.getByRole('button', { name: 'Request restock' }).first().click();
   const requests = page.getByRole('region', { name: 'Open restock requests' });
   await expect(requests).toContainText('Mocha: 2 bags');
-  await requests.getByRole('button', { name: 'Mark the Mocha restock done' }).click();
+  await requests.getByRole('button', { name: 'Done, back in stock: Mocha' }).click();
   await expect(requests).toContainText('None open.');
-  await page.getByRole('button', { name: 'Mark Mocha available again' }).click();
   await expect(page.getByRole('button', { name: 'Mark Mocha sold out today' })).toBeVisible();
 });

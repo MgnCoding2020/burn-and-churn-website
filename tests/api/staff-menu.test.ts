@@ -168,6 +168,32 @@ describe('restock requests (Manager+)', () => {
     expect((await lastAudit('restock.done'))?.target).toBe(id);
   });
 
+  it('marking a restock done puts a sold-out item back on sale, audited, in one step', async () => {
+    const lead = await staff('r-lead3', 'Staff.ShiftLead');
+    const manager = await staff('r-manager3', 'Staff.Manager');
+    const availability = '/staff/menu/latte/availability';
+    expect((await post(lead.token, availability, { soldOut: true })).status).toBe(200);
+    const created = await post(manager.token, '/staff/restock', {
+      itemId: 'latte',
+      quantity: '1 case',
+    });
+    const { id } = (await created.json()) as { id: string };
+
+    const done = await post(manager.token, `/staff/restock/${id}/done`);
+    expect(await done.json()).toMatchObject({ id, status: 'done', backInStock: true });
+    expect(await lastAudit('menu.item.available')).toMatchObject({
+      actor_user_id: manager.userId,
+      target: 'latte',
+    });
+    expect(await lastAudit('restock.done')).toMatchObject({ actor_user_id: manager.userId });
+
+    // Already back on sale: Done only closes the request.
+    const again = await post(manager.token, '/staff/restock', { itemId: 'latte', quantity: '1' });
+    const { id: id2 } = (await again.json()) as { id: string };
+    const done2 = await post(manager.token, `/staff/restock/${id2}/done`);
+    expect(await done2.json()).toMatchObject({ backInStock: false });
+  });
+
   it('refuses unknown items and empty quantities', async () => {
     const manager = await staff('r-manager2', 'Staff.Manager');
     expect(
