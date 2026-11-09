@@ -4,5 +4,7 @@ declare namespace App {
     user?: import('./api/authz').SessionUser;
     /** The D1 database, for server-rendered staff pages (undefined at build time). */
     db?: D1Database;
+    /** Card payments are set up in this environment (ADR-0036). */
+    cardsReady?: boolean;
   }
 }

@@ -5,6 +5,7 @@
  */
 import { cf } from '@astrojs/cloudflare/hono';
 import { getFetchState, middleware, notFound, pages } from 'astro/hono';
+import { stripeConfig } from './lib/stripe';
 import { buildApp } from './server/app';
 import { scheduled } from './server/scheduled';
 
@@ -21,6 +22,10 @@ const app = buildApp({
       const locals = getFetchState(c).locals;
       locals.user = c.get('user');
       locals.db = (c.env as unknown as { DB?: D1Database } | undefined)?.DB;
+      // Whether the counter can take cards here (a test key and a simulated reader).
+      locals.cardsReady = Boolean(
+        stripeConfig(c.env as unknown as Record<string, unknown>)?.terminalReaderId,
+      );
       return next();
     });
     app.use(notFound());

@@ -167,7 +167,8 @@ export type RefundOutcome =
   | 'own_sale'
   | 'bad_line'
   | 'over_refund'
-  | 'key_reused';
+  | 'key_reused'
+  | 'card_not_yet';
 
 /**
  * Refunds the chosen lines of a sale. The same idempotency key returns the
@@ -191,6 +192,8 @@ export async function issueRefund(
 
   const order = await refundableOrder(db, input.orderId);
   if (!order) return 'not_found';
+  // Card refunds go back through Stripe (PR 4.3); never pay a card sale back in cash.
+  if (order.tender === 'card') return 'card_not_yet';
   if (!canRefund(order, actor)) {
     await writeAudit(db, {
       requestId: actor.requestId,

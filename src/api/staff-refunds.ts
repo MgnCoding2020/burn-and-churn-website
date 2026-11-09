@@ -74,6 +74,13 @@ export function registerStaffRefunds(define: Define) {
             'Conflict',
             'That is more than is left to refund on this sale. Reload to see what’s left.',
           );
+        case 'card_not_yet':
+          return problem(
+            c,
+            409,
+            'Conflict',
+            'This sale was paid by card. Card refunds go back to the card and arrive in the next update.',
+          );
         case 'key_reused':
           return problem(c, 409, 'Conflict', 'That refund key was already used.');
         default:

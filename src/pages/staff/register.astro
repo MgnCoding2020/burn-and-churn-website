@@ -17,6 +17,7 @@ Astro.response.headers.set('Cache-Control', 'no-store');
 // Today's menu: items marked sold out (86) show as unavailable.
 const menu = Astro.locals.db ? await currentMenu(Astro.locals.db) : getMenuSnapshot();
 const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
+const cardsReady = Astro.locals.cardsReady === true;
 ---
 
 <Base title="Register" description="Burn and Churn Coffee counter register (fictional business).">
@@ -92,8 +93,15 @@ const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
           <button type="button" class="btn btn--primary" data-pay disabled>
             Pay cash
           </button>
+          {cardsReady && (
+            <button type="button" class="btn btn--primary" data-card disabled>
+              Pay by card
+            </button>
+          )}
         </div>
-        <p class="register__note">Pay by card arrives with the card reader (Phase 4).</p>
+        {!cardsReady && (
+          <p class="register__note">Card payments aren’t set up in this environment.</p>
+        )}
         <p class="register__status" role="status" data-status></p>
       </aside>
     </div>
@@ -141,6 +149,44 @@ const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
     </form>
   </dialog>
 
+  {cardsReady && (
+    <dialog class="cash card" id="card-dialog" aria-labelledby="card-title">
+      <div class="cash__form">
+        <h2 id="card-title">Card payment</h2>
+        <p class="cash__row">
+          <span>Total due</span>
+          <strong class="price" data-card-due></strong>
+        </p>
+        <p class="card__state" role="status" aria-live="polite" data-card-state>
+          Sending the payment to the card reader…
+        </p>
+        <div class="card__test" data-card-test hidden>
+          <p class="card__test-label">
+            <span class="card__badge">Test mode</span> No real reader: simulate the customer’s card.
+          </p>
+          <div class="cash__actions">
+            <button type="button" class="btn btn--primary" data-tap="approve">
+              Simulate tap: approved card
+            </button>
+            <button type="button" class="btn btn--secondary" data-tap="decline">
+              Simulate tap: declined card
+            </button>
+          </div>
+        </div>
+        <div class="cash__actions">
+          <button type="button" class="btn btn--primary" data-card-retry hidden>
+            Try another card
+          </button>
+          <button type="button" class="btn btn--secondary" data-card-cancel>
+            Cancel card payment
+          </button>
+          <button type="button" class="btn btn--secondary" data-card-close hidden>
+            Close
+          </button>
+        </div>
+      </div>
+    </dialog>
+  )}
   <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
 </Base>
 
@@ -294,6 +340,10 @@ const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
     flex: 1;
     min-height: var(--bc-staff-target);
   }
+  /* Three buttons with cards: wrap rather than squeeze each label onto three lines. */
+  .register__actions .btn {
+    flex: 1 1 7.5rem;
+  }
   .register__status:empty,
   .cash__error:empty {
     display: none;
@@ -304,6 +354,33 @@ const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
     border: var(--bc-border-width) solid var(--bc-gold);
     border-radius: var(--bc-radius-button);
     color: var(--bc-ink);
+  }
+  .card__state {
+    min-height: 3rem;
+    font-weight: 700;
+  }
+  .card__test {
+    margin: var(--bc-space-4) 0;
+    padding: var(--bc-space-3);
+    border: var(--bc-border-width) dashed var(--bc-gold);
+    border-radius: var(--bc-radius-card);
+  }
+  .card__test[hidden],
+  .card [hidden] {
+    display: none;
+  }
+  .card__test-label {
+    margin: 0 0 var(--bc-space-3);
+    font-size: 0.875rem;
+  }
+  .card__badge {
+    display: inline-block;
+    margin-right: var(--bc-space-2);
+    padding: 0 var(--bc-space-2);
+    border: var(--bc-border-width) solid var(--bc-gold);
+    border-radius: var(--bc-radius-button);
+    color: var(--bc-gold);
+    font-weight: 700;
   }
   .cash {
     width: min(100% - 2 * var(--bc-gutter), 28rem);

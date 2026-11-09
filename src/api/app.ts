@@ -6,6 +6,7 @@ import { rateLimit } from '../lib/rate-limit';
 import type { AppEnv } from '../server/types';
 import { authorize, type Principal } from './authz';
 import { registerStaffAuth } from './staff-auth';
+import { registerStaffCard } from './staff-card';
 import { registerStaffCash } from './staff-cash';
 import { registerStaffMenu } from './staff-menu';
 import { registerStaffOrders } from './staff-orders';
@@ -89,6 +90,7 @@ export function createApi() {
   registerStaffAuth(define);
   registerStaffSession(define);
   registerStaffOrders(define);
+  registerStaffCard(define);
   registerStaffMenu(define);
   registerStaffRefunds(define);
   registerStaffCash(define);
