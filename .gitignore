@@ -23,6 +23,7 @@ CLAUDE.local.md
 # Raw tenant and Stripe exports: redact before anything is committed as evidence
 _raw/
 scripts/tenant/logs/
+scripts/stripe/logs/
 
 # --- Dependencies and build output ---
 node_modules/
