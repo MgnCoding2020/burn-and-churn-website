@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 
 export const prerender = true;
-const UPDATED = '2026-11-07';
+const UPDATED = '2026-11-09';
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 ---
 
@@ -23,7 +23,7 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
     <ul>
       <li>
         Automated accessibility checks (axe) on every page, at desktop and phone sizes, on every
-        change.
+        change. That includes each staff portal screen, signed in as the roles that see it.
       </li>
       <li>
         Keyboard checks: the first Tab reaches "Skip to content"; menus, buttons and drink details
@@ -54,10 +54,11 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
       </li>
       <li>
         <strong>Staff sign-out after a time limit.</strong> For security, the staff portal signs
-        people out after 1 hour without use. Two minutes before, a dialog says when, and one button
-        (or Escape) keeps them signed in. The 8-hour limit on a staff session can't be extended; the
-        same warning appears with a link to sign in again. Customers and public pages have no time
-        limits.
+        people out after 1 hour without use (15 minutes once they've used the register or the order
+        board, which run on a shared counter tablet). Two minutes before, a dialog says when, and
+        one button (or Escape) keeps them signed in. The 8-hour limit on a staff session can't be
+        extended; the same warning appears with a link to sign in again. Customers and public pages
+        have no time limits.
       </li>
       <li>Testing so far is automated plus the owner's own checks; no external audit yet.</li>
     </ul>

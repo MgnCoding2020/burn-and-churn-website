@@ -155,7 +155,7 @@ Staff sign-in (ADR-0024, ADR-0025, ADR-0027). Status "Built" means coded and tes
 | Staff pages                                  | A cached personal page; customers reaching staff pages                                       | `/staff/` rendered per request with `no-store`; requires `idp = workforce` and a role                                                                                                                                                | Built                | page code; `/staff/me` authz tests                                                                                             |
 | Audit log                                    | Missing or altered records of who signed in; the log flooded by anonymous junk               | Sign-in, sign-out and refusals of accounts Entra vouched for (with a reason code) in the insert-only `audit_log`; refusals before identification in the request log only (ADR-0030)                                                  | Built                | sign-in, refusal and "nothing written" tests                                                                                   |
 
-**Accepted for now:** sign-out ends the site's session but not the person's Entra session; on the shared tablet the next person uses "Sign in as someone else" (`prompt=login`). The 15-minute idle limit for register screens comes with the register (Phase 3).
+**Accepted for now:** sign-out ends the site's session but not the person's Entra session; on the shared tablet the next person uses "Sign in as someone else" (`prompt=login`). Register and order-board screens tighten the session to 15 minutes idle (in place since Phase 3, ADR-0031; see §4b).
 
 ## 4b. Phase 3 additions (v1.7, 2026-11-08)
 
