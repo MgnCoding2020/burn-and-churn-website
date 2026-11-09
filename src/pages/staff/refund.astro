@@ -67,6 +67,11 @@ const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
           <p class="refund__notice">
             You took this payment, so you can’t refund it. Another manager, or the owner, can.
           </p>
+        ) : order.tender === 'card' ? (
+          <p class="refund__notice">
+            This sale was paid by card. Card refunds go back to the card through Stripe and arrive
+            in the next update; it can’t be refunded in cash.
+          </p>
         ) : left <= 0 ? (
           <p class="refund__notice">This sale is fully refunded.</p>
         ) : (

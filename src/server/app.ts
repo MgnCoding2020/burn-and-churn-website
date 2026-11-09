@@ -34,7 +34,12 @@ const SESSION_PATHS = [`${API_BASE}/`, '/staff/'];
 /** Reads that don't count as activity: the timeout warning's check and the order board's polling. */
 const PASSIVE_READS = [`${API_BASE}/staff/session`, `${API_BASE}/staff/orders`];
 /** Register screens and their API: using them tightens the session to 15 minutes idle (ADR-0031). */
-const REGISTER_PATHS = ['/staff/register/', '/staff/orders/', `${API_BASE}/staff/orders`];
+const REGISTER_PATHS = [
+  '/staff/register/',
+  '/staff/orders/',
+  `${API_BASE}/staff/orders`,
+  `${API_BASE}/staff/card-payments`,
+];
 
 /**
  * A prerendered page from the asset store, sent with a given status and never
