@@ -21,6 +21,7 @@ const menu = db ? await menuForToday(db) : getMenuSnapshot();
 const canRestock = decide('Staff.Manager', user) === 'allow';
 const requests: RestockRequest[] = db && canRestock ? await openRestockRequests(db) : [];
 const requested = new Set(requests.map((r) => r.itemId));
+const soldOut = new Set(menu.items.filter((i) => !i.available).map((i) => i.id));
 const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
 const time = new Intl.DateTimeFormat('en-US', {
   timeZone: STORE_TIME_ZONE,
@@ -57,9 +58,13 @@ const time = new Intl.DateTimeFormat('en-US', {
                   type="button"
                   class="btn btn--secondary"
                   data-restock-done={r.id}
-                  aria-label={`Mark the ${r.itemName} restock done`}
+                  aria-label={
+                    soldOut.has(r.itemId)
+                      ? `Done, back in stock: ${r.itemName}`
+                      : `Mark the ${r.itemName} restock done`
+                  }
                 >
-                  Done
+                  {soldOut.has(r.itemId) ? 'Done, back in stock' : 'Done'}
                 </button>
               </li>
             ))}

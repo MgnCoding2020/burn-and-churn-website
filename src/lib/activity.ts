@@ -93,7 +93,9 @@ export function describeEvent(e: ActivityEvent): string {
     case 'restock.requested':
       return `Requested restock: ${String(a.name ?? '')}, ${String(a.quantity ?? '')}`;
     case 'restock.done':
-      return 'Marked a restock request done';
+      return a.name
+        ? `Restock done: ${String(a.name)}, ${String(a.quantity ?? '')}`
+        : 'Marked a restock request done';
     default:
       return e.action;
   }

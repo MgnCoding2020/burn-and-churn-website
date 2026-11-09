@@ -145,19 +145,25 @@ export async function openRestockRequests(db: D1Database): Promise<RestockReques
   }));
 }
 
-/** Marks a restock request done (stock arrived). */
+/**
+ * Marks a restock request done (stock arrived). If the item is sold out today
+ * it goes back on sale in the same transaction, audited as its own change.
+ */
 export async function completeRestock(
   db: D1Database,
   id: string,
   actor: Actor,
   now = Date.now(),
-): Promise<'done' | 'not_found'> {
+): Promise<{ backInStock: boolean } | 'not_found'> {
   const row = await db
     .prepare(`SELECT item_id, quantity FROM restock_requests WHERE id = ? AND status = 'open'`)
     .bind(id)
     .first<{ item_id: string; quantity: string }>();
   if (!row) return 'not_found';
-  await db.batch([
+  const name = getMenuSnapshot().items.find((i) => i.id === row.item_id)?.name ?? row.item_id;
+  const day = businessDay(now);
+  const backInStock = (await soldOutToday(db, now)).has(row.item_id);
+  const statements = [
     db
       .prepare(
         `UPDATE restock_requests SET status = 'done', done_by = ?, done_at = ? WHERE id = ? AND status = 'open'`,
@@ -170,8 +176,28 @@ export async function completeRestock(
       action: 'restock.done',
       target: id,
       before: { status: 'open' },
-      after: { status: 'done', itemId: row.item_id, quantity: row.quantity },
+      after: { status: 'done', itemId: row.item_id, name, quantity: row.quantity },
     }),
-  ]);
-  return 'done';
+  ];
+  if (backInStock) {
+    statements.push(
+      db
+        .prepare(
+          `UPDATE item_availability SET sold_out_on = NULL, changed_by = ?, changed_at = ?
+           WHERE item_id = ? AND sold_out_on = ?`,
+        )
+        .bind(actor.userId, now, row.item_id, day),
+      auditStatement(db, {
+        requestId: actor.requestId,
+        actorUserId: actor.userId,
+        actorRole: actor.role,
+        action: 'menu.item.available',
+        target: row.item_id,
+        before: { name, soldOut: true },
+        after: { name, soldOut: false },
+      }),
+    );
+  }
+  await db.batch(statements);
+  return { backInStock };
 }

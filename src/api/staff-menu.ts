@@ -80,7 +80,7 @@ export function registerStaffMenu(define: Define) {
     return c.json(result, 201);
   });
 
-  // Stock arrived: close the request.
+  // Stock arrived: close the request and put the item back on sale.
   define(
     { method: 'POST', path: '/staff/restock/:id/done', principal: 'Staff.Manager' },
     async (c) => {
@@ -90,7 +90,7 @@ export function registerStaffMenu(define: Define) {
       if (!UUID.test(id)) return problem(c, 404, 'Not found');
       const outcome = await completeRestock(db, id, actorOf(c));
       if (outcome === 'not_found') return problem(c, 404, 'Not found');
-      return c.json({ id, status: 'done' });
+      return c.json({ id, status: 'done', backInStock: outcome.backInStock });
     },
   );
 
