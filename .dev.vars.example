@@ -27,9 +27,10 @@ EXTERNAL_ID_CLIENT_SECRET=replace-me
 # A restricted key (rk_test_...) with only the permissions the site uses.
 # The Worker refuses to start with any key that is not a test key.
 STRIPE_API_KEY=rk_test_replace_me
-# From `stripe listen` locally, or the endpoint's signing secret in the Dashboard.
+# Locally: printed by `stripe listen` (docs/runbooks/stripe-setup.md). Production's is set by
+# scripts/stripe/setup-test.mjs straight into the Worker, never shown.
 STRIPE_WEBHOOK_SECRET=whsec_replace_me
-# Printed by scripts/stripe/setup-test.mjs.
+# Printed by scripts/stripe/setup-test.mjs (IDs, not secret).
 STRIPE_TERMINAL_LOCATION_ID=tml_replace_me
 STRIPE_TERMINAL_READER_ID=tmr_replace_me
 

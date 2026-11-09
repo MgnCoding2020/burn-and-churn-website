@@ -11,6 +11,7 @@ import { registerStaffMenu } from './staff-menu';
 import { registerStaffOrders } from './staff-orders';
 import { registerStaffRefunds } from './staff-refunds';
 import { registerStaffSession } from './staff-session';
+import { registerStripeWebhooks, WEBHOOK_MAX_BYTES, WEBHOOK_PATH } from './webhooks-stripe';
 
 export const API_BASE = '/api/v1';
 export const MAX_BODY_BYTES = 16 * 1024;
@@ -33,7 +34,7 @@ const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 /**
  * CSRF defence (§8): state-changing requests must carry an Origin header
- * equal to this site's own origin. Exempt paths (Stripe webhooks, later)
+ * equal to this site's own origin. Exempt paths (the Stripe webhook)
  * are listed explicitly and verified by signature instead.
  */
 export function originCheck(exemptPaths: readonly string[] = []): MiddlewareHandler<AppEnv> {
@@ -62,13 +63,15 @@ export function createApi() {
     await next();
     c.header('Cache-Control', 'no-store');
   });
-  api.use(
-    bodyLimit({
-      maxSize: MAX_BODY_BYTES,
-      onError: (c) => problem(c, 413, 'Payload too large'),
-    }),
+  // Body limits: 16 KB everywhere, larger for Stripe's events.
+  const tooLarge = (c: Context<AppEnv>) => problem(c, 413, 'Payload too large');
+  const apiLimit = bodyLimit({ maxSize: MAX_BODY_BYTES, onError: tooLarge });
+  const webhookLimit = bodyLimit({ maxSize: WEBHOOK_MAX_BYTES, onError: tooLarge });
+  api.use((c, next) =>
+    c.req.path === `${API_BASE}${WEBHOOK_PATH}` ? webhookLimit(c, next) : apiLimit(c, next),
   );
-  api.use(originCheck());
+  // Stripe's webhook carries no browser Origin; its signature is checked instead.
+  api.use(originCheck([`${API_BASE}${WEBHOOK_PATH}`]));
   // Rate limits (ADR-0029): the whole API, and a tighter one on starting and
   // finishing a sign-in, the only public routes that write to the database.
   api.use(rateLimit('API_LIMITER'));
@@ -89,6 +92,7 @@ export function createApi() {
   registerStaffMenu(define);
   registerStaffRefunds(define);
   registerStaffCash(define);
+  registerStripeWebhooks(define);
 
   // Deny by default: anything not defined above is a 404 problem.
   api.all('*', (c) => problem(c, 404, 'Not found'));

@@ -40,3 +40,4 @@ Each record captures one significant decision: the context, what was decided, an
 | [0032](0032-sold-out-restock-and-activity.md)        | Sold-out items, restock requests and staff activity                | Partly superseded by 0033            | 2026-11-08 |
 | [0033](0033-restock-chain.md)                        | The restock chain                                                  | Accepted                             | 2026-11-08 |
 | [0034](0034-refunds-cash-count-and-reasons.md)       | Refunds, the end-of-shift cash count, and reason lists             | Accepted                             | 2026-11-09 |
+| [0035](0035-stripe-library-keys-and-webhooks.md)     | Stripe library, keys and webhooks                                  | Accepted                             | 2026-11-09 |
