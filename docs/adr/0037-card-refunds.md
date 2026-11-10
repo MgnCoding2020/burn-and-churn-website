@@ -27,6 +27,7 @@ PR 4.2 (ADR-0036) blocked refunds of card sales, so a card sale could never be p
   - its lines are **released**, so the drinks can be refunded again;
   - a sale that had been marked fully refunded goes back to **paid**.
   - Failed refunds never count toward "refunded so far" anywhere: the refund screen, the list, or the order's payment state.
+- **Opening the refund of a sale you took counts as an attempt.** Every sale on the Refunds list has a Refund link, marked "Your sale" where it's yours. Opening yours shows "You took this payment…" and records `order.refund_refused`, so the refused attempt is in the audit log, as plan §5 and CR-002 acceptance test 2 require. Before this, the list hid the link, so a refusal could only ever be logged through the API.
 - **Webhooks:** `refund.updated` and `refund.failed` are matched to the site's refund by Stripe's refund ID, or by the site's own ID in the refund's metadata.
 - **Where Stripe isn't set up** (previews, CI without a key), a card sale can't be refunded at all, and never in cash.
 - Stripe groups charges and refunds into one permission, so the Worker key's refund permission also allows creating charges (ADR-0035).

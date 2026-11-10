@@ -89,9 +89,13 @@ test("a manager refunds one drink of a barista's sale, with a reason and a confi
   );
 });
 
-test("a manager can't refund a sale they took", async ({ page, request, baseURL }) => {
+test("a manager can't refund a sale they took; the attempt is in the owner's activity", async ({
+  page,
+  request,
+  baseURL,
+}) => {
   const cookie = session('Staff.Manager', 'Test Manager S');
-  const { id, number } = await sale(request, baseURL!, cookie);
+  const { number } = await sale(request, baseURL!, cookie);
   await page.setExtraHTTPHeaders({ Cookie: cookie });
   await page.goto('/staff/refunds/');
   const row = page
@@ -99,9 +103,16 @@ test("a manager can't refund a sale they took", async ({ page, request, baseURL 
     .filter({ hasText: `#${number}` })
     .first();
   await expect(row).toContainText('Your sale');
-  await page.goto(`/staff/refund/?order=${id}`);
+  await row.getByRole('link', { name: `Refund sale #${number}`, exact: true }).click();
   await expect(page.getByText('You took this payment, so you can’t refund it.')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Review refund' })).toHaveCount(0);
+
+  // AC-5: the refused attempt is recorded.
+  await as(page, 'Staff.Owner', 'Test Owner S');
+  await page.goto('/staff/activity/');
+  await expect(
+    page.getByRole('cell', { name: `Refused: refunding sale #${number}, which they took` }).first(),
+  ).toBeVisible();
 });
 
 test('a shift lead opens the drawer, closes it short with a blind count, and explains why', async ({
