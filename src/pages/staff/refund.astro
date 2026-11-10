@@ -3,6 +3,7 @@ import ReasonPicker from '../../components/staff/ReasonPicker.astro';
 import SessionTimeout from '../../components/staff/SessionTimeout.astro';
 import StaffBar from '../../components/staff/StaffBar.astro';
 import Base from '../../layouts/Base.astro';
+import { writeAudit } from '../../lib/audit';
 import { formatCents } from '../../lib/menu';
 import { STORE_TIME_ZONE } from '../../lib/orders';
 import { canRefund, refundableOrder, type RefundableOrder } from '../../lib/refunds';
@@ -24,6 +25,18 @@ const order: RefundableOrder | undefined =
   db && valid ? await refundableOrder(db, orderId) : undefined;
 if (!order) Astro.response.status = 404;
 const allowed = order ? canRefund(order, { userId: user.id, role: user.role }) : false;
+// Opening the refund of a sale you took is an attempt: refused, and recorded
+// like a refused refund request (AC-5, ADR-0037).
+if (order && !allowed && db) {
+  await writeAudit(db, {
+    requestId: Astro.locals.requestId ?? crypto.randomUUID(),
+    actorUserId: user.id,
+    actorRole: user.role,
+    action: 'order.refund_refused',
+    target: order.id,
+    after: { reason: 'own_sale', number: order.number },
+  });
+}
 const left = order ? order.totalCents - order.refundedCents : 0;
 const when = new Intl.DateTimeFormat('en-US', {
   timeZone: STORE_TIME_ZONE,
@@ -67,15 +80,15 @@ const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
           <p class="refund__notice">
             You took this payment, so you can’t refund it. Another manager, or the owner, can.
           </p>
-        ) : order.tender === 'card' ? (
+        ) : order.tender === 'card' && !Astro.locals.cardsReady ? (
           <p class="refund__notice">
-            This sale was paid by card. Card refunds go back to the card through Stripe and arrive
-            in the next update; it can’t be refunded in cash.
+            This sale was paid by card, and card refunds aren’t set up in this environment. It can’t
+            be refunded in cash.
           </p>
         ) : left <= 0 ? (
           <p class="refund__notice">This sale is fully refunded.</p>
         ) : (
-          <form class="refund__form" data-refund={order.id} novalidate>
+          <form class="refund__form" data-refund={order.id} data-tender={order.tender} novalidate>
             <fieldset>
               <legend>What to refund</legend>
               <ul class="refund__lines">

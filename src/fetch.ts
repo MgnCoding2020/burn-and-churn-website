@@ -21,6 +21,8 @@ const app = buildApp({
     app.use((c, next) => {
       const locals = getFetchState(c).locals;
       locals.user = c.get('user');
+      // For audit rows written by a page, tied to the request like the API's.
+      locals.requestId = c.get('requestId');
       locals.db = (c.env as unknown as { DB?: D1Database } | undefined)?.DB;
       // Whether the counter can take cards here (a test key and a simulated reader).
       locals.cardsReady = Boolean(

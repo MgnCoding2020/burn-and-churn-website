@@ -74,16 +74,17 @@ const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
                 <td>
                   {s.refundedCents >= s.totalCents ? (
                     <span class="muted">Fully refunded</span>
-                  ) : canRefund(s, actor) ? (
-                    <a
-                      class="btn btn--secondary refunds__go"
-                      href={`/staff/refund/?order=${s.id}`}
-                      aria-label={`Refund sale #${s.number}`}
-                    >
-                      Refund
-                    </a>
                   ) : (
-                    <span class="muted">Your sale</span>
+                    <>
+                      <a
+                        class="btn btn--secondary refunds__go"
+                        href={`/staff/refund/?order=${s.id}`}
+                        aria-label={`Refund sale #${s.number}`}
+                      >
+                        Refund
+                      </a>
+                      {!canRefund(s, actor) && <span class="muted"> Your sale</span>}
+                    </>
                   )}
                 </td>
               </tr>

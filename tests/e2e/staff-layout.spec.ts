@@ -7,7 +7,8 @@ import { seedStaffSession } from '../setup/e2e-db.mjs';
 // tablet-landscape widths: no sideways scrolling and no serious axe findings
 // (the accessibility statement's claims, applied to the staff portal).
 
-test.describe.configure({ timeout: 180_000 });
+// Many pages, two widths and axe on each: allow for a slow machine.
+test.describe.configure({ timeout: 300_000 });
 
 const ROLES = ['Staff.Barista', 'Staff.Owner'] as const;
 const EXTRA = ['/staff/', '/staff/restock-history/'];

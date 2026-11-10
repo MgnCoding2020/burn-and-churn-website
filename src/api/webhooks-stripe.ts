@@ -1,6 +1,8 @@
 import type Stripe from 'stripe';
 import { cancelledByStripe, completeCardPayment, declineCardPayment } from '../lib/card-payments';
 import { problem } from '../lib/problem';
+import { updateRefundFromStripe } from '../lib/refunds';
+import { refundState } from '../lib/terminal';
 import { stripeConfig, verifyWebhook } from '../lib/stripe';
 import type { Define } from './app';
 
@@ -10,8 +12,8 @@ import type { Define } from './app';
  * database writes for unauthenticated requests). Each event is recorded once;
  * a replay or a retry of an event already seen is acknowledged and ignored.
  *
- * Counter card payments are handled here (ADR-0036); refunds arrive with
- * PR 4.3. Any other event is recorded as ignored.
+ * Counter card payments (ADR-0036) and card refunds (ADR-0037) are handled
+ * here. Any other event is recorded as ignored.
  */
 
 export const WEBHOOK_PATH = '/webhooks/stripe';
@@ -81,6 +83,17 @@ export async function handle(
       return event.type === 'terminal.reader.action_succeeded'
         ? completeCardPayment(db, id, requestId)
         : declineCardPayment(db, id, action.failure_code ?? 'declined', requestId);
+    }
+    case 'refund.updated':
+    case 'refund.failed': {
+      const refund = event.data.object;
+      return updateRefundFromStripe(
+        db,
+        refund.id,
+        refund.metadata?.refund_id,
+        event.type === 'refund.failed' ? 'failed' : refundState(refund.status),
+        requestId,
+      );
     }
     default:
       return 'ignored';

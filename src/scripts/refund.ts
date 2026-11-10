@@ -8,6 +8,8 @@ const statusEl = document.querySelector<HTMLElement>('[data-refund-status]')!;
 
 if (form) {
   const orderId = form.dataset.refund!;
+  // Card sales go back to the card through Stripe (ADR-0037); cash comes from the drawer.
+  const card = form.dataset.tender === 'card';
   // One key per page: a retry or double-tap can't refund twice.
   const idempotencyKey = crypto.randomUUID();
   const selects = [...form.querySelectorAll('select')].filter((s) => s.dataset.line);
@@ -57,7 +59,9 @@ if (form) {
       statusEl.textContent = 'Choose a reason (and add a note for Other).';
       return;
     }
-    question.textContent = `Refund ${usd.format(total() / 100)} in cash to the customer?`;
+    question.textContent = card
+      ? `Refund ${usd.format(total() / 100)} to the customer’s card?`
+      : `Refund ${usd.format(total() / 100)} in cash to the customer?`;
     confirmBox.hidden = false;
     reviewButton.disabled = true;
     question.focus();
@@ -89,9 +93,12 @@ if (form) {
         yes.disabled = false;
         return;
       }
-      const { amountCents } = (await res.json()) as { amountCents: number };
+      const { amountCents, status } = (await res.json()) as { amountCents: number; status: string };
       form.hidden = true;
-      statusEl.textContent = `Refunded ${usd.format(amountCents / 100)}. Give ${usd.format(amountCents / 100)} in cash back to the customer.`;
+      const amount = usd.format(amountCents / 100);
+      statusEl.textContent = card
+        ? `Refunded ${amount} to the customer’s card${status === 'pending' ? ' (Stripe is still processing it)' : ''}. No cash from the drawer.`
+        : `Refunded ${amount}. Give ${amount} in cash back to the customer.`;
     } catch {
       statusEl.textContent = "Couldn't reach the server. Check the connection and try again.";
       yes.disabled = false;

@@ -112,6 +112,8 @@ export function describeEvent(e: ActivityEvent): string {
       return 'Refused: deciding their own restock request';
     case 'order.refund':
       return `Refund on sale #${String(a.number ?? '?')}: ${money(a.amountCents)} ${String(a.tender ?? '')} (${String(a.reason ?? '')})`;
+    case 'order.refund_failed':
+      return `Card refund failed at Stripe: ${money(a.amountCents)} (nothing refunded)`;
     case 'order.refund_refused':
       return `Refused: refunding sale #${String(a.number ?? '?')}, which they took`;
     case 'cash.drawer_opened':

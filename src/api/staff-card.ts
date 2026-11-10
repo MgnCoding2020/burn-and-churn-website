@@ -75,6 +75,7 @@ const view = (p: CardPayment) => ({
   totalCents: p.totalCents,
   failureCode: p.failureCode,
   orderNumber: p.orderNumber,
+  orderId: p.orderId,
 });
 
 function actionProblem(c: Context<AppEnv>, outcome: ActionOutcome) {
