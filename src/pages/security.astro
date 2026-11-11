@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 
 export const prerender = true;
-const UPDATED = '2026-11-09';
+const UPDATED = '2026-11-10';
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 const doc = (path: string) => `${repo}/blob/main/${path}`;
 
@@ -89,8 +89,14 @@ const controls: Array<{
     ref: ['ADR-0034', 'docs/adr/0034-refunds-cash-count-and-reasons.md'],
   },
   {
-    area: 'Payments',
-    what: 'Stripe Checkout and Terminal in test mode: signed, replay-checked webhooks; prices set on the server',
+    area: 'Card payments at the counter',
+    what: 'Stripe Terminal with a simulated reader, test mode only: prices set on the server, signed and replay-checked webhooks, a restricted Stripe key, card numbers never seen by the site; card refunds back to the card through Stripe, never by the person who took the payment',
+    status: 'In place',
+    ref: ['ADR-0036', 'docs/adr/0036-counter-card-payments.md'],
+  },
+  {
+    area: 'Online payments',
+    what: 'Stripe Checkout in test mode, on Stripe’s own pages: the same signed webhooks; prices set on the server',
     status: 'Planned',
   },
 ];
