@@ -1,0 +1,326 @@
+{
+  "version": 1,
+  "updated": "2026-11-10",
+  "site": {
+    "path": "/sites/bc-operations",
+    "title": "Burn and Churn Operations",
+    "description": "Burn and Churn Coffee (fictional) operations: menu, hours, announcements, shift notes, inventory and schedule.",
+    "template": "sitepagepublishing",
+    "permissions": {
+      "read": ["grp-bc-all-staff"],
+      "edit": ["grp-bc-managers", "grp-bc-owners"]
+    }
+  },
+  "lists": [
+    {
+      "name": "Menu",
+      "displayName": "Menu",
+      "websiteReads": true,
+      "permissions": {
+        "read": ["grp-bc-all-staff"],
+        "edit": ["grp-bc-managers", "grp-bc-owners"]
+      },
+      "title": { "displayName": "Drink", "maxLength": 60 },
+      "columns": [
+        {
+          "name": "ItemId",
+          "displayName": "Item ID",
+          "type": "text",
+          "maxLength": 40,
+          "required": true,
+          "unique": true
+        },
+        {
+          "name": "Category",
+          "displayName": "Category",
+          "type": "choice",
+          "required": true,
+          "choices": [
+            "espresso-bar",
+            "brewed-coffee",
+            "milk-drinks",
+            "cold-coffee",
+            "signature-seasonal"
+          ]
+        },
+        {
+          "name": "Description",
+          "displayName": "Description",
+          "type": "note",
+          "maxLength": 300,
+          "required": true
+        },
+        { "name": "PriceDouble", "displayName": "Double shot ($)", "type": "currency" },
+        { "name": "Price12", "displayName": "12 oz ($)", "type": "currency" },
+        { "name": "Price16", "displayName": "16 oz ($)", "type": "currency" },
+        { "name": "Price20", "displayName": "20 oz ($)", "type": "currency" },
+        { "name": "Tags", "displayName": "Tags", "type": "text", "maxLength": 120 },
+        { "name": "Active", "displayName": "On the menu", "type": "boolean", "required": true },
+        { "name": "ImageKey", "displayName": "Image", "type": "text", "maxLength": 80 },
+        {
+          "name": "SortOrder",
+          "displayName": "Order",
+          "type": "number",
+          "min": 0,
+          "max": 999,
+          "required": true
+        }
+      ],
+      "allowedTags": ["hot", "iced", "dairy", "vegan-option", "caffeine-free", "seasonal"],
+      "seed": "seed/menu.json"
+    },
+    {
+      "name": "StoreHours",
+      "displayName": "Store Hours",
+      "websiteReads": true,
+      "permissions": {
+        "read": ["grp-bc-all-staff"],
+        "edit": ["grp-bc-managers", "grp-bc-owners"]
+      },
+      "title": { "displayName": "Day", "maxLength": 20 },
+      "columns": [
+        {
+          "name": "DayOfWeek",
+          "displayName": "Day number",
+          "type": "number",
+          "min": 1,
+          "max": 7,
+          "required": true,
+          "unique": true
+        },
+        { "name": "Opens", "displayName": "Opens", "type": "text", "maxLength": 5 },
+        { "name": "Closes", "displayName": "Closes", "type": "text", "maxLength": 5 },
+        { "name": "Closed", "displayName": "Closed all day", "type": "boolean", "required": true },
+        { "name": "Note", "displayName": "Note", "type": "text", "maxLength": 120 }
+      ],
+      "seedRows": [
+        { "Title": "Monday", "DayOfWeek": 1, "Opens": "07:00", "Closes": "20:00", "Closed": false },
+        {
+          "Title": "Tuesday",
+          "DayOfWeek": 2,
+          "Opens": "07:00",
+          "Closes": "20:00",
+          "Closed": false
+        },
+        {
+          "Title": "Wednesday",
+          "DayOfWeek": 3,
+          "Opens": "07:00",
+          "Closes": "20:00",
+          "Closed": false
+        },
+        {
+          "Title": "Thursday",
+          "DayOfWeek": 4,
+          "Opens": "07:00",
+          "Closes": "20:00",
+          "Closed": false
+        },
+        { "Title": "Friday", "DayOfWeek": 5, "Opens": "07:00", "Closes": "20:00", "Closed": false },
+        {
+          "Title": "Saturday",
+          "DayOfWeek": 6,
+          "Opens": "07:00",
+          "Closes": "20:00",
+          "Closed": false
+        },
+        { "Title": "Sunday", "DayOfWeek": 7, "Opens": "07:00", "Closes": "20:00", "Closed": false }
+      ]
+    },
+    {
+      "name": "Announcements",
+      "displayName": "Announcements",
+      "websiteReads": true,
+      "permissions": {
+        "read": ["grp-bc-all-staff"],
+        "edit": ["grp-bc-managers", "grp-bc-owners"]
+      },
+      "title": { "displayName": "Headline", "maxLength": 80 },
+      "columns": [
+        {
+          "name": "Body",
+          "displayName": "Message",
+          "type": "note",
+          "maxLength": 500,
+          "required": true
+        },
+        {
+          "name": "Audience",
+          "displayName": "Audience",
+          "type": "choice",
+          "required": true,
+          "choices": ["public", "staff"]
+        },
+        { "name": "StartsOn", "displayName": "Show from", "type": "date", "required": true },
+        { "name": "EndsOn", "displayName": "Show until", "type": "date" }
+      ]
+    },
+    {
+      "name": "ShiftNotes",
+      "displayName": "Shift Notes",
+      "websiteReads": true,
+      "permissions": {
+        "read": ["grp-bc-baristas"],
+        "edit": ["grp-bc-shift-leads", "grp-bc-managers", "grp-bc-owners"]
+      },
+      "title": { "displayName": "Summary", "maxLength": 80 },
+      "columns": [
+        { "name": "ShiftDate", "displayName": "Date", "type": "date", "required": true },
+        {
+          "name": "Shift",
+          "displayName": "Shift",
+          "type": "choice",
+          "required": true,
+          "choices": ["open", "mid", "close"]
+        },
+        {
+          "name": "Note",
+          "displayName": "Note",
+          "type": "note",
+          "maxLength": 1000,
+          "required": true
+        }
+      ]
+    },
+    {
+      "name": "Inventory",
+      "displayName": "Inventory",
+      "websiteReads": true,
+      "permissions": {
+        "read": ["grp-bc-baristas"],
+        "edit": ["grp-bc-shift-leads", "grp-bc-managers", "grp-bc-owners"]
+      },
+      "title": { "displayName": "Supply", "maxLength": 60 },
+      "columns": [
+        {
+          "name": "Unit",
+          "displayName": "Unit",
+          "type": "text",
+          "maxLength": 20,
+          "required": true
+        },
+        {
+          "name": "ParLevel",
+          "displayName": "Par level",
+          "type": "number",
+          "min": 0,
+          "max": 999,
+          "required": true
+        },
+        {
+          "name": "OnHand",
+          "displayName": "On hand",
+          "type": "number",
+          "min": 0,
+          "max": 9999,
+          "required": true
+        },
+        { "name": "MenuItems", "displayName": "Used in", "type": "text", "maxLength": 200 }
+      ],
+      "seedRows": [
+        {
+          "Title": "House espresso beans",
+          "Unit": "kg",
+          "ParLevel": 5,
+          "OnHand": 12,
+          "MenuItems": "espresso,americano,red-eye,latte,cappuccino,mocha,vanilla-latte,caramel-latte,iced-americano,iced-latte,iced-mocha,burn-churn-latte,maple-smoke,campfire-mocha"
+        },
+        {
+          "Title": "Night Shift dark roast beans",
+          "Unit": "kg",
+          "ParLevel": 3,
+          "OnHand": 6,
+          "MenuItems": "dark-roast"
+        },
+        {
+          "Title": "Single-origin beans",
+          "Unit": "kg",
+          "ParLevel": 2,
+          "OnHand": 4,
+          "MenuItems": "single-origin"
+        },
+        {
+          "Title": "Whole milk",
+          "Unit": "gallon",
+          "ParLevel": 6,
+          "OnHand": 10,
+          "MenuItems": "latte,cappuccino,mocha,vanilla-latte,caramel-latte,iced-latte,iced-mocha,burn-churn-latte,maple-smoke,campfire-mocha"
+        },
+        { "Title": "Oat milk", "Unit": "carton", "ParLevel": 6, "OnHand": 8 },
+        {
+          "Title": "Heavy cream",
+          "Unit": "quart",
+          "ParLevel": 4,
+          "OnHand": 6,
+          "MenuItems": "cream-cold-brew"
+        },
+        {
+          "Title": "Vanilla syrup",
+          "Unit": "bottle",
+          "ParLevel": 2,
+          "OnHand": 4,
+          "MenuItems": "vanilla-latte"
+        },
+        {
+          "Title": "Caramel syrup",
+          "Unit": "bottle",
+          "ParLevel": 2,
+          "OnHand": 3,
+          "MenuItems": "caramel-latte"
+        },
+        {
+          "Title": "Mocha sauce",
+          "Unit": "bottle",
+          "ParLevel": 2,
+          "OnHand": 3,
+          "MenuItems": "mocha,iced-mocha,campfire-mocha"
+        },
+        {
+          "Title": "Maple syrup",
+          "Unit": "bottle",
+          "ParLevel": 1,
+          "OnHand": 2,
+          "MenuItems": "maple-smoke"
+        },
+        { "Title": "Hot cups 16 oz", "Unit": "sleeve of 50", "ParLevel": 4, "OnHand": 10 },
+        { "Title": "Cold cups 16 oz", "Unit": "sleeve of 50", "ParLevel": 4, "OnHand": 8 }
+      ]
+    },
+    {
+      "name": "Schedule",
+      "displayName": "Schedule",
+      "websiteReads": true,
+      "permissions": {
+        "read": [],
+        "edit": ["grp-bc-shift-leads", "grp-bc-managers", "grp-bc-owners"]
+      },
+      "title": { "displayName": "Shift", "maxLength": 60 },
+      "columns": [
+        { "name": "Staff", "displayName": "Staff member", "type": "person", "required": true },
+        { "name": "ShiftDate", "displayName": "Date", "type": "date", "required": true },
+        {
+          "name": "Starts",
+          "displayName": "Starts",
+          "type": "text",
+          "maxLength": 5,
+          "required": true
+        },
+        { "name": "Ends", "displayName": "Ends", "type": "text", "maxLength": 5, "required": true },
+        {
+          "name": "Position",
+          "displayName": "Position",
+          "type": "choice",
+          "required": true,
+          "choices": ["barista", "shift-lead", "manager"]
+        },
+        { "name": "Note", "displayName": "Note", "type": "text", "maxLength": 120 }
+      ]
+    }
+  ],
+  "alsoReads": [
+    {
+      "name": "User Information List",
+      "why": "Graph returns only a lookup ID for the Schedule's person column; the email comes from this hidden list. Verify on trial day 1 (T-SP-05)."
+    }
+  ]
+}

@@ -43,3 +43,4 @@ Each record captures one significant decision: the context, what was decided, an
 | [0035](0035-stripe-library-keys-and-webhooks.md)     | Stripe library, keys and webhooks                                  | Accepted                             | 2026-11-09 |
 | [0036](0036-counter-card-payments.md)                | Card payments at the counter (Stripe Terminal, simulated reader)   | Accepted                             | 2026-11-09 |
 | [0037](0037-card-refunds.md)                         | Card refunds through Stripe                                        | Accepted                             | 2026-11-09 |
+| [0038](0038-trial-sharepoint-and-access-design.md)   | SharePoint, sync access and Conditional Access for the trial       | Accepted                             | 2026-11-10 |
