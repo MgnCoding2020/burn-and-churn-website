@@ -23,7 +23,12 @@ function actorOf(c: Context<AppEnv>): Actor {
 
 export function registerStaffSharePoint(define: Define) {
   define(
-    { method: 'POST', path: '/staff/sharepoint/publish', principal: 'Staff.Manager' },
+    {
+      method: 'POST',
+      path: '/staff/sharepoint/publish',
+      principal: 'Staff.Manager',
+      limit: 'publish',
+    },
     async (c) => {
       const db = dbOf(c);
       if (!db) return problem(c, 503, 'Service unavailable');

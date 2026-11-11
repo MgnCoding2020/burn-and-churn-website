@@ -43,7 +43,12 @@ async function readJson(req: Request): Promise<unknown> {
 
 export function registerStaffRefunds(define: Define) {
   define(
-    { method: 'POST', path: '/staff/orders/:id/refunds', principal: 'Staff.Manager' },
+    {
+      method: 'POST',
+      path: '/staff/orders/:id/refunds',
+      principal: 'Staff.Manager',
+      limit: 'payments',
+    },
     async (c) => {
       const db = dbOf(c.env);
       if (!db) return problem(c, 503, 'Service unavailable');

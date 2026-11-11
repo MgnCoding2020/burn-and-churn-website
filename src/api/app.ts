@@ -3,6 +3,7 @@ import { bodyLimit } from 'hono/body-limit';
 import { isMaintenance } from '../lib/env';
 import { problem } from '../lib/problem';
 import { rateLimit } from '../lib/rate-limit';
+import { strictLimit, type LimitName } from '../lib/strict-limit';
 import type { AppEnv } from '../server/types';
 import { authorize, type Principal } from './authz';
 import { registerStaffAuth } from './staff-auth';
@@ -25,6 +26,8 @@ export interface RouteSpec {
   method: Method;
   path: string;
   principal: Principal;
+  /** A strict limit for routes that cost something (ADR-0040), after authorization. */
+  limit?: LimitName;
 }
 
 type Handler = (c: Context<AppEnv>) => Response | Promise<Response>;
@@ -58,7 +61,8 @@ export function createApi() {
   /** The only way to add a route: it must declare its principal. */
   const define: Define = (spec, handler) => {
     routes.push(spec);
-    api.on(spec.method, spec.path, authorize(spec.principal), handler);
+    const limits = spec.limit ? [strictLimit(spec.limit)] : [];
+    api.on(spec.method, spec.path, authorize(spec.principal), ...limits, handler);
   };
 
   api.use(async (c, next) => {

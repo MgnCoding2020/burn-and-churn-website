@@ -45,3 +45,4 @@ Each record captures one significant decision: the context, what was decided, an
 | [0037](0037-card-refunds.md)                         | Card refunds through Stripe                                        | Accepted                             | 2026-11-09 |
 | [0038](0038-trial-sharepoint-and-access-design.md)   | SharePoint, sync access and Conditional Access for the trial       | Accepted                             | 2026-11-10 |
 | [0039](0039-sharepoint-sync.md)                      | The SharePoint sync and Publish                                    | Accepted                             | 2026-11-11 |
+| [0040](0040-strict-rate-limits-durable-object.md)    | Strict rate limits in a Durable Object                             | Accepted                             | 2026-11-11 |

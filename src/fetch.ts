@@ -39,6 +39,9 @@ const app = buildApp({
   },
 });
 
+// The strict rate limiter's Durable Object (ADR-0040).
+export { RateLimiterDO } from './server/limiter-do';
+
 // Requests go to the Hono pipeline; Cron Triggers run the clean-up and the SharePoint sync.
 export default {
   fetch: app.fetch,

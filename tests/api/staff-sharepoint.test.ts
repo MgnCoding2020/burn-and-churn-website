@@ -108,7 +108,12 @@ describe('route principals', () => {
     const { routes } = createApi();
     const mine = routes.filter((r) => r.path.startsWith('/staff/sharepoint/'));
     expect(mine).toEqual([
-      { method: 'POST', path: '/staff/sharepoint/publish', principal: 'Staff.Manager' },
+      {
+        method: 'POST',
+        path: '/staff/sharepoint/publish',
+        principal: 'Staff.Manager',
+        limit: 'publish',
+      },
       { method: 'GET', path: '/staff/sharepoint/runs', principal: 'Staff.Manager' },
     ]);
   });

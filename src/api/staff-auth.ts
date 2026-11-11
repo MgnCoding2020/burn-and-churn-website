@@ -179,41 +179,47 @@ async function completeSignIn(
 export function registerStaffAuth(define: Define) {
   // Starts a sign-in. `?switch=1` makes Entra ask for the account again (shared counter tablet).
   // Writes nothing to D1: the attempt goes into an encrypted cookie (ADR-0030).
-  define({ method: 'GET', path: '/auth/staff/login', principal: 'public' }, async (c) => {
-    const { db, cfg } = bindings(c);
-    if (!db || !cfg) return notConfigured(c);
+  define(
+    { method: 'GET', path: '/auth/staff/login', principal: 'public', limit: 'signin' },
+    async (c) => {
+      const { db, cfg } = bindings(c);
+      if (!db || !cfg) return notConfigured(c);
 
-    const state = oauth.generateRandomState();
-    const nonce = oauth.generateRandomNonce();
-    const verifier = oauth.generateRandomCodeVerifier();
-    const sealed = await sealLoginAttempt(
-      { state, verifier, nonce, expiresAt: Date.now() + LOGIN_TTL_MS },
-      cfg.privateKeyPem,
-    );
+      const state = oauth.generateRandomState();
+      const nonce = oauth.generateRandomNonce();
+      const verifier = oauth.generateRandomCodeVerifier();
+      const sealed = await sealLoginAttempt(
+        { state, verifier, nonce, expiresAt: Date.now() + LOGIN_TTL_MS },
+        cfg.privateKeyPem,
+      );
 
-    const target = new URL(authorizationServer(cfg.tenantId).authorization_endpoint!);
-    target.search = new URLSearchParams({
-      client_id: cfg.clientId,
-      response_type: 'code',
-      response_mode: 'query',
-      redirect_uri: redirectUri(c),
-      scope: STAFF_SCOPE,
-      state,
-      nonce,
-      code_challenge: await oauth.calculatePKCECodeChallenge(verifier),
-      code_challenge_method: 'S256',
-      prompt: c.req.query('switch') === '1' ? 'login' : 'select_account',
-    }).toString();
-    c.header('Set-Cookie', loginCookie(sealed), { append: true });
-    return c.redirect(target.toString(), 302);
-  });
+      const target = new URL(authorizationServer(cfg.tenantId).authorization_endpoint!);
+      target.search = new URLSearchParams({
+        client_id: cfg.clientId,
+        response_type: 'code',
+        response_mode: 'query',
+        redirect_uri: redirectUri(c),
+        scope: STAFF_SCOPE,
+        state,
+        nonce,
+        code_challenge: await oauth.calculatePKCECodeChallenge(verifier),
+        code_challenge_method: 'S256',
+        prompt: c.req.query('switch') === '1' ? 'login' : 'select_account',
+      }).toString();
+      c.header('Set-Cookie', loginCookie(sealed), { append: true });
+      return c.redirect(target.toString(), 302);
+    },
+  );
 
   // Entra sends the person back here with a one-time code.
-  define({ method: 'GET', path: '/auth/staff/callback', principal: 'public' }, async (c) => {
-    const { db, cfg } = bindings(c);
-    if (!db || !cfg) return notConfigured(c);
-    return completeSignIn(c, db, cfg);
-  });
+  define(
+    { method: 'GET', path: '/auth/staff/callback', principal: 'public', limit: 'signin' },
+    async (c) => {
+      const { db, cfg } = bindings(c);
+      if (!db || !cfg) return notConfigured(c);
+      return completeSignIn(c, db, cfg);
+    },
+  );
 
   // Signing out is a POST (a link can't sign someone out) and always succeeds.
   // Only a real session's sign-out is audited, so anonymous calls write nothing.

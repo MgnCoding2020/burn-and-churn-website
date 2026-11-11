@@ -72,7 +72,12 @@ describe('route principal', () => {
   it('refunds need Manager', () => {
     const { routes } = createApi();
     expect(routes.filter((r) => r.path.includes('refund'))).toEqual([
-      { method: 'POST', path: '/staff/orders/:id/refunds', principal: 'Staff.Manager' },
+      {
+        method: 'POST',
+        path: '/staff/orders/:id/refunds',
+        principal: 'Staff.Manager',
+        limit: 'payments',
+      },
     ]);
   });
 });
