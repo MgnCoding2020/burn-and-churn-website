@@ -16,6 +16,7 @@ export const STAFF_SCREENS = [
   { href: '/staff/menu/', label: 'Menu', min: 'Staff.Barista' },
   { href: '/staff/cash/', label: 'Cash', min: 'Staff.ShiftLead' },
   { href: '/staff/refunds/', label: 'Refunds', min: 'Staff.Manager' },
+  { href: '/staff/publish/', label: 'Publish', min: 'Staff.Manager' },
   { href: '/staff/activity/', label: 'Activity', min: 'Staff.Barista' },
 ] as const satisfies readonly { href: string; label: string; min: StaffRole }[];
 

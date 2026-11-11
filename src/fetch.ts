@@ -5,6 +5,7 @@
  */
 import { cf } from '@astrojs/cloudflare/hono';
 import { getFetchState, middleware, notFound, pages } from 'astro/hono';
+import { graphConfig } from './lib/graph';
 import { stripeConfig } from './lib/stripe';
 import { buildApp } from './server/app';
 import { scheduled } from './server/scheduled';
@@ -28,6 +29,8 @@ const app = buildApp({
       locals.cardsReady = Boolean(
         stripeConfig(c.env as unknown as Record<string, unknown>)?.terminalReaderId,
       );
+      // Whether Publish can reach SharePoint here (ADR-0039).
+      locals.syncReady = Boolean(graphConfig(c.env as unknown as Record<string, unknown>, []));
       return next();
     });
     app.use(notFound());
@@ -36,7 +39,7 @@ const app = buildApp({
   },
 });
 
-// Requests go to the Hono pipeline; Cron Triggers run the clean-up.
+// Requests go to the Hono pipeline; Cron Triggers run the clean-up and the SharePoint sync.
 export default {
   fetch: app.fetch,
   scheduled,

@@ -1,0 +1,170 @@
+---
+import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import StaffBar from '../../components/staff/StaffBar.astro';
+import Base from '../../layouts/Base.astro';
+import { STORE_TIME_ZONE } from '../../lib/orders';
+import { SYNCED_LISTS, type SyncedList } from '../../lib/sharepoint';
+import { staffPageAccess, timeLeft } from '../../lib/staff-page';
+import { recentSyncRuns, snapshotStatus, type SyncRun } from '../../lib/sync';
+
+// Publishing from SharePoint (plan §5, ADR-0039): what the website last took from
+// each list, how recent syncs went (with rejected rows and why), and Publish now.
+export const prerender = false;
+
+const access = staffPageAccess(Astro.locals.user, 'Staff.Manager');
+if (!access.ok) return Astro.redirect(access.redirect, access.status);
+const { user } = access;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const db = Astro.locals.db;
+const ready = Astro.locals.syncReady === true;
+const snapshots = db ? await snapshotStatus(db) : [];
+const runs: SyncRun[] = db ? await recentSyncRuns(db) : [];
+const LABELS: Record<SyncedList, string> = {
+  Menu: 'Menu',
+  StoreHours: 'Store Hours',
+  Announcements: 'Announcements',
+  ShiftNotes: 'Shift Notes',
+  Inventory: 'Inventory',
+};
+const lists = Object.keys(SYNCED_LISTS) as SyncedList[];
+const when = new Intl.DateTimeFormat('en-US', {
+  timeZone: STORE_TIME_ZONE,
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+const at = (ms: number) => when.format(new Date(ms));
+const STATUS: Record<SyncRun['status'], string> = {
+  running: 'Running',
+  ok: 'Published',
+  partial: 'Published, with problems',
+  failed: 'Failed: nothing published',
+};
+const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
+---
+
+<Base
+  title="Publish from SharePoint"
+  description="Burn and Churn Coffee: publish SharePoint lists to the website (fictional business)."
+>
+  <section class="container publish">
+    <StaffBar
+      name={user.displayName ?? 'Staff member'}
+      role={user.role}
+      current="/staff/publish/"
+    />
+    <h1>Publish from SharePoint</h1>
+    <p class="lede">
+      The menu, hours, announcements, shift notes and inventory are edited in SharePoint. The
+      website takes a copy every 15 minutes, or now when you publish. Rows that break a rule are
+      skipped and listed below; a list with nothing valid keeps its last good copy.
+    </p>
+
+    {ready ? (
+      <form class="publish__form" data-publish>
+        <button type="submit" class="btn btn--primary" disabled>
+          Publish now
+        </button>
+      </form>
+    ) : (
+      <p class="publish__warning">
+        Publishing from SharePoint isn’t set up in this environment, so the website shows its
+        built-in copy.
+      </p>
+    )}
+    <p class="publish__status" role="status" data-publish-status></p>
+
+    <h2>What the website shows</h2>
+    <ul class="publish__lists">
+      {lists.map((list) => {
+        const s = snapshots.find((x) => x.list === list);
+        return (
+          <li>
+            <strong>{LABELS[list]}</strong>:{' '}
+            {s ? (
+              <>
+                {s.itemCount} {s.itemCount === 1 ? 'row' : 'rows'}, synced {at(s.syncedAt)}
+              </>
+            ) : (
+              <span class="muted">not synced yet (built-in copy)</span>
+            )}
+          </li>
+        );
+      })}
+    </ul>
+
+    <h2>Recent syncs</h2>
+    {runs.length === 0 ? (
+      <p class="muted">No syncs yet.</p>
+    ) : (
+      <ol class="publish__runs">
+        {runs.map((run) => (
+          <li class="publish__run">
+            <p>
+              <strong>{STATUS[run.status]}</strong>
+              <span class="muted">
+                {' '}
+                · {at(run.startedAt)} ·{' '}
+                {run.triggerKind === 'publish'
+                  ? `Published by ${run.triggeredBy ?? 'a manager'}`
+                  : 'Every 15 minutes'}
+              </span>
+            </p>
+            {run.summary && (
+              <ul>
+                {lists.map((list) => {
+                  const l = run.summary?.[list];
+                  if (!l) return null;
+                  return (
+                    <li>
+                      {LABELS[list]}:{' '}
+                      {l.error
+                        ? `${l.error}; kept the last good copy`
+                        : `${l.published} of ${l.read} published`}
+                      {l.rejected.length > 0 && (
+                        <ul class="publish__rejected">
+                          {l.rejected.map((r) => (
+                            <li>
+                              Skipped “{r.title || `item ${r.itemId}`}”: {r.reason}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </li>
+        ))}
+      </ol>
+    )}
+  </section>
+  <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
+</Base>
+
+<script>
+  import '../../scripts/publish';
+</script>
+
+<style>
+  .publish {
+    max-width: 60rem;
+  }
+  .publish__warning {
+    color: var(--bc-gold);
+  }
+  .publish__lists,
+  .publish__runs {
+    padding-left: var(--bc-space-5);
+  }
+  .publish__run {
+    margin-bottom: var(--bc-space-4);
+    overflow-wrap: anywhere;
+  }
+  .publish__rejected {
+    color: var(--bc-ink-muted);
+  }
+</style>

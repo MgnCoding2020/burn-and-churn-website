@@ -19,9 +19,10 @@
     "enabled": true,
     "redact_query_string": true,
   },
-  // Hourly clean-up of expired sessions and sign-in attempts (src/server/scheduled.ts, ADR-0028).
+  // Hourly clean-up (ADR-0028) and the SharePoint sync every 15 minutes (ADR-0039), both in
+  // src/server/scheduled.ts. The sync does nothing where Graph isn't set up.
   "triggers": {
-    "crons": ["17 * * * *"],
+    "crons": ["17 * * * *", "*/15 * * * *"],
   },
   // Rate limits per client IP, counted per Cloudflare location (src/lib/rate-limit.ts, ADR-0029).
   // Namespace IDs are this account's own numbering; previews use separate ones below.

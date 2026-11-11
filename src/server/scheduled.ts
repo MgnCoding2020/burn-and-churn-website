@@ -1,11 +1,15 @@
+import { graphConfig, graphReader } from '../lib/graph';
 import { purgeExpiredSessions } from '../lib/session';
+import { SYNCED_LISTS } from '../lib/sharepoint';
+import { runSync, SYNC_RUN_RETENTION_MS } from '../lib/sync';
 
 /**
  * Hourly clean-up (Cron Trigger in wrangler.jsonc, ADR-0028), so nothing is
  * kept past its limit (plan §9): expired sessions, any rows left in the
  * retired `oidc_logins` table (ADR-0030), and orders (with their refunds) and
  * cash drawer counts older than 90 days, and Stripe event IDs (replay protection)
- * and card payment attempts after 90 days (Stripe's retries stop long before).
+ * and card payment attempts after 90 days (Stripe's retries stop long before),
+ * and SharePoint sync runs after 90 days.
  * Expired sessions are already refused when presented; this removes the ones
  * never presented again. The audit log is never touched.
  */
@@ -17,6 +21,7 @@ export interface CleanUpResult {
   drawers: number;
   stripeEvents: number;
   cardPayments: number;
+  syncRuns: number;
 }
 
 /** Orders are kept for 90 days (plan §9, privacy page). */
@@ -28,7 +33,7 @@ export async function cleanUp(db: D1Database, now = Date.now()): Promise<CleanUp
   // Children first: refunds and lines belong to the orders being removed.
   const cutoff = now - ORDER_RETENTION_MS;
   const old = 'SELECT id FROM orders WHERE created_at < ?';
-  const [, , , orders, drawers, stripeEvents, cardPayments] = await db.batch([
+  const [, , , orders, drawers, stripeEvents, cardPayments, syncRuns] = await db.batch([
     db.prepare(`DELETE FROM refund_lines WHERE order_id IN (${old})`).bind(cutoff),
     db.prepare(`DELETE FROM refunds WHERE order_id IN (${old})`).bind(cutoff),
     db
@@ -40,6 +45,7 @@ export async function cleanUp(db: D1Database, now = Date.now()): Promise<CleanUp
     db.prepare('DELETE FROM cash_drawers WHERE opened_at < ?').bind(cutoff),
     db.prepare('DELETE FROM stripe_events WHERE received_at < ?').bind(cutoff),
     db.prepare('DELETE FROM card_payments WHERE created_at < ?').bind(cutoff),
+    db.prepare('DELETE FROM sync_runs WHERE started_at < ?').bind(now - SYNC_RUN_RETENTION_MS),
   ]);
   return {
     sessions,
@@ -48,12 +54,29 @@ export async function cleanUp(db: D1Database, now = Date.now()): Promise<CleanUp
     drawers: drawers!.meta.changes ?? 0,
     stripeEvents: stripeEvents!.meta.changes ?? 0,
     cardPayments: cardPayments!.meta.changes ?? 0,
+    syncRuns: syncRuns!.meta.changes ?? 0,
   };
 }
 
-export async function scheduled(_controller: ScheduledController, env: Env): Promise<void> {
+/** The SharePoint sync's Cron Trigger (wrangler.jsonc, ADR-0039); any other runs the clean-up. */
+export const SYNC_CRON = '*/15 * * * *';
+
+export async function scheduled(controller: ScheduledController, env: Env): Promise<void> {
   const db = (env as unknown as { DB?: D1Database }).DB;
   if (!db) return;
+  if (controller.cron === SYNC_CRON) {
+    const cfg = graphConfig(env as unknown as Record<string, unknown>, Object.keys(SYNCED_LISTS));
+    if (!cfg) return; // not set up here (previews, local)
+    const result = await runSync(db, graphReader(cfg), cfg.lists, { kind: 'cron' });
+    // The status only; per-list detail is in sync_runs.
+    console.log(
+      JSON.stringify({
+        job: 'sharepoint-sync',
+        status: result === 'busy' ? 'busy' : result.status,
+      }),
+    );
+    return;
+  }
   const removed = await cleanUp(db);
   // Counts only, never IDs.
   console.log(JSON.stringify({ job: 'clean-up', removed }));

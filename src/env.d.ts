@@ -8,5 +8,7 @@ declare namespace App {
     requestId?: string;
     /** Card payments are set up in this environment (ADR-0036). */
     cardsReady?: boolean;
+    /** The SharePoint sync is set up in this environment (ADR-0039). */
+    syncReady?: boolean;
   }
 }
