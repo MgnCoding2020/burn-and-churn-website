@@ -178,6 +178,10 @@ const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
     display: grid;
     gap: var(--bc-space-4);
   }
+  /* The class's display would otherwise override the hidden attribute after a refund. */
+  .refund__form[hidden] {
+    display: none;
+  }
   .refund fieldset {
     display: grid;
     gap: var(--bc-space-3);
