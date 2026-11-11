@@ -12,6 +12,7 @@ import { registerStaffMenu } from './staff-menu';
 import { registerStaffOrders } from './staff-orders';
 import { registerStaffRefunds } from './staff-refunds';
 import { registerStaffSession } from './staff-session';
+import { registerStaffSharePoint } from './staff-sharepoint';
 import { registerStripeWebhooks, WEBHOOK_MAX_BYTES, WEBHOOK_PATH } from './webhooks-stripe';
 
 export const API_BASE = '/api/v1';
@@ -94,6 +95,7 @@ export function createApi() {
   registerStaffMenu(define);
   registerStaffRefunds(define);
   registerStaffCash(define);
+  registerStaffSharePoint(define);
   registerStripeWebhooks(define);
 
   // Deny by default: anything not defined above is a 404 problem.

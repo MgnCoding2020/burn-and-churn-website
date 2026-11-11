@@ -69,7 +69,7 @@ describe('seed rows pass the sync rules', () => {
     expect(new Set(rows.map((r) => r.ItemId)).size).toBe(rows.length);
     for (const r of rows) {
       expect(choices).toContain(r.Category);
-      expect(String(r.Description).length).toBeLessThanOrEqual(300);
+      expect(String(r.Description).length).toBeLessThanOrEqual(160);
       expect(String(r.Title).length).toBeLessThanOrEqual(60);
       const prices = ['PriceDouble', 'Price12', 'Price16', 'Price20'].filter(
         (p) => r[p] !== undefined,

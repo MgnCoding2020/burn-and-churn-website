@@ -47,7 +47,7 @@
           "name": "Description",
           "displayName": "Description",
           "type": "note",
-          "maxLength": 300,
+          "maxLength": 160,
           "required": true
         },
         { "name": "PriceDouble", "displayName": "Double shot ($)", "type": "currency" },
