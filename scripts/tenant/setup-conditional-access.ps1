@@ -36,7 +36,8 @@
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [ValidateSet('ReportOnly', 'On', 'Off')]
-    [string]$State
+    [string]$State,
+    [string]$HubPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -73,12 +74,24 @@ function Get-BcPolicies([string]$AppId, [string]$StaffGroupId, [string[]]$Exclud
     )
 }
 
+# The tenant to sign in to, from the hub's git-ignored .env (as setup-staff-app.ps1 does).
+# Without it, sign-in can land on the personal Microsoft account page.
+function Get-TenantId([string]$Hub) {
+    if (-not $Hub) { $Hub = Join-Path (Split-Path (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path -Parent) 'grc-paper-project-coffee-shop' }
+    $envFile = Join-Path $Hub '.env'
+    if (-not (Test-Path $envFile)) { throw "Missing $envFile. Pass -HubPath, or copy .env.example to .env in the hub." }
+    foreach ($line in Get-Content $envFile) {
+        if ($line -match '^\s*ENTRA_TENANT_ID\s*=\s*(.+?)\s*$') { return $Matches[1] }
+    }
+    throw "ENTRA_TENANT_ID is not set in $envFile."
+}
+
 if ($MyInvocation.InvocationName -eq '.') { return }
 
 $mode = if ($WhatIfPreference) { 'WHAT IF: nothing is changed' } else { 'changes are made' }
 Write-Host "Conditional Access for Burn and Churn ($mode)"
 $scopes = if ($WhatIfPreference) { 'Policy.Read.All', 'Application.Read.All', 'Group.Read.All' } else { 'Policy.ReadWrite.ConditionalAccess', 'Policy.Read.All', 'Application.Read.All', 'Group.Read.All' }
-Connect-MgGraph -Scopes $scopes -NoWelcome
+Connect-MgGraph -TenantId (Get-TenantId $HubPath) -Scopes $scopes -NoWelcome
 function Invoke-Graph([string]$Method, [string]$Uri, $Body) {
     if ($null -ne $Body) { return Invoke-MgGraphRequest -Method $Method -Uri $Uri -Body ($Body | ConvertTo-Json -Depth 10) -ContentType 'application/json' }
     return Invoke-MgGraphRequest -Method $Method -Uri $Uri
