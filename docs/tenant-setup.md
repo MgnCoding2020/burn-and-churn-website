@@ -110,6 +110,29 @@ Graph can't set SharePoint permissions for groups, so this step is done in the b
 - The hub's CR-002 log: the trial started, licences, the site, the sync app, Conditional Access report-only.
 - `docs/secrets-inventory.md`: the `bc-website-sync` certificate and its expiry.
 
+## Days 2 to 4: the extras (Michael, 2026-11-11)
+
+One sitting each; tests in the plan (`T-SH`, `T-DEF`, `T-PUR`). These are company-wide controls, so their evidence goes to the hub (`07-evidence-pack/artifacts/tenant/`) as well as being ticked here.
+
+1. **Check what the licence includes first** (`T-LIC-03`): Billing → Licenses → the product → its service list. If Teams isn't there, skip Shifts and keep the SharePoint Schedule.
+2. **Teams Shifts** (`T-SH-01`, `T-SH-02`):
+   - create the team **BC Staff**;
+   - make the Shift Leads, managers and the owner its owners;
+   - publish one week as Mia;
+   - look at it as Ethan on the phone;
+   - try a swap request.
+   - Then decide, and record the decision in ADR-0038.
+3. **Defender for Business** (`T-DEF-01`, `T-DEF-02`):
+   - onboard the laptop;
+   - wait until it shows in Device inventory;
+   - run Microsoft's EICAR antivirus test, following Microsoft's own page, and check the alert.
+4. **Purview** (`T-PUR-01` to `T-PUR-03`):
+   - the "Confidential – Management" label, published to managers and owners;
+   - a DLP policy from the PCI template, **simulation mode first**, then on;
+   - test with Stripe's test card number only.
+
+Microsoft's portals change often: follow the current menu names and note any difference next to the test.
+
 ## Later in the trial
 
 The Phase 7 code (sync, Publish, My shifts, low stock) is tested against these lists as it's built. See the test plan.
