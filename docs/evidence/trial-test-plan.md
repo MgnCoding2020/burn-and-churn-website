@@ -6,10 +6,11 @@ Status: ☐ not run · ✅ passed (date, evidence) · ❌ failed (finding)
 
 ## Licences
 
-| ID       | Test                                        | Expected                                                                | Status |
-| -------- | ------------------------------------------- | ----------------------------------------------------------------------- | ------ |
-| T-LIC-01 | Trial started; recurring billing turned off | Product page shows the trial, its end date, recurring billing **Off**   | ☐      |
-| T-LIC-02 | `provision-users.ps1 -AssignLicenses`       | 21 of 25 licences used; no admin, break-glass or guest account licensed | ☐      |
+| ID       | Test                                                                                              | Expected                                                                                                                                                      | Status |
+| -------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| T-LIC-01 | Trial started; recurring billing turned off                                                       | Product page shows the trial, its end date, recurring billing **Off**                                                                                         | ☐      |
+| T-LIC-02 | `provision-users.ps1 -AssignLicenses`                                                             | 21 of 25 licences used; no admin, break-glass or guest account licensed                                                                                       | ☐      |
+| T-LIC-03 | Admin centre → Billing → Licenses → Microsoft 365 Business Premium: the list of included services | 📸 the authoritative list of what this trial includes (Teams or not, Intune, Defender for Business, Purview, Entra ID P1). Plan from this, not from summaries | ☐      |
 
 ## SharePoint and the website's access
 
@@ -22,7 +23,7 @@ Status: ☐ not run · ✅ passed (date, evidence) · ❌ failed (finding)
 | T-SP-05 | The Schedule's person column through the sync app                                                     | The app can read the User Information List (200 in T-SP-03) and resolve a schedule row's person to an email. **If not:** switch to the contract's fallback (a Choice column of employee IDs) and record why          | ☐      |
 | T-SP-06 | (Phase 7 code) Change a price in SharePoint as Daniel (Manager), then **Publish** in the staff portal | Public menu and register show the new price; the run is in `sync_runs`                                                                                                                                               | ☐      |
 | T-SP-07 | (Phase 7 code) Put an invalid row in Menu (no price)                                                  | That row is skipped and reported; the rest publish; the site keeps the last good copy of it                                                                                                                          | ☐      |
-| T-SP-08 | (Phase 7 code) A barista opens **My shifts**                                                          | Only their own shifts; a change request goes to a Shift Lead, who can't approve their own                                                                                                                            | ☐      |
+| T-SP-08 | (Phase 7 code, **only if** T-SH-01 keeps the SharePoint Schedule) A barista opens **My shifts**       | Only their own shifts; a change request goes to a Shift Lead, who can't approve their own                                                                                                                            | ☐      |
 
 ## Identity
 
@@ -48,6 +49,28 @@ Status: ☐ not run · ✅ passed (date, evidence) · ❌ failed (finding)
 | ID       | Test                                                   | Expected                                                                        | Status |
 | -------- | ------------------------------------------------------ | ------------------------------------------------------------------------------- | ------ |
 | T-INT-01 | Enrol the laptop; create the minimal compliance policy | Device listed in Intune as **Compliant**; policy assigned to `grp-bc-all-staff` | ☐      |
+
+## Teams Shifts (decides the Schedule)
+
+| ID      | Test                                                                                                                                                                                                                   | Expected                                                                                                                                                                                                                                                                                                                                                                                 | Status |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| T-SH-01 | T-LIC-03 shows Teams? If yes: create a team **BC Staff** from `grp-bc-all-staff`'s members, open **Shifts**, publish a week's schedule as Mia (Shift Lead) with Ethan on two shifts; sign in as Ethan on the phone app | Record exactly what Ethan sees (only his shifts, or everyone's) and whether he can request a **swap** or **time off** that Mia approves. **Decision:** Shifts replaces the SharePoint Schedule list and the planned "My shifts" page if a barista can request changes and a lead approves them; record the decision in ADR-0038. If the trial has no Teams, keep the SharePoint Schedule | ☐      |
+| T-SH-02 | If Shifts is chosen: who can manage the schedule                                                                                                                                                                       | Only Shift Leads and up are team owners (schedule managers); baristas are members. The website doesn't read Shifts (Graph would need tenant-wide `Schedule.Read.All`); the staff portal links to it                                                                                                                                                                                      | ☐      |
+
+## Defender for Business
+
+| ID       | Test                                                                                                                                            | Expected                                                                                                                                         | Status |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| T-DEF-01 | Onboard the Intune-enrolled laptop to Defender for Business (Defender portal → **Settings → Endpoints → Onboarding**, or the Intune connection) | The laptop appears in the Defender portal **Device inventory** with an onboarding status of Onboarded and a risk level                           | ☐      |
+| T-DEF-02 | Microsoft's harmless antivirus test: the **EICAR** test file (Microsoft's own "test Microsoft Defender Antivirus" instructions)                 | Detected and quarantined; an alert in the Defender portal; evidence of a working endpoint control (NIST SI-3, SI-4). Never a real malware sample | ☐      |
+
+## Purview: labels and data loss prevention
+
+| ID       | Test                                                                                                                                                                | Expected                                                                                                                                                                                                                                         | Status |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
+| T-PUR-01 | Create a sensitivity label **Confidential – Management** (Purview portal → Information Protection → Labels) and publish it to `grp-bc-managers` and `grp-bc-owners` | Daniel (Manager) can apply it to a file in the management area; Ethan (Barista) doesn't see the label. The label shows in the file's properties                                                                                                  | ☐      |
+| T-PUR-02 | A DLP policy from Purview's **PCI** (credit card) template for Exchange, SharePoint and OneDrive, **in simulation mode first**                                      | Simulation shows matches without blocking; then turned on with a policy tip                                                                                                                                                                      | ☐      |
+| T-PUR-03 | With the policy on, put Stripe's published test card number (4242 4242 4242 4242) in a Word file in SharePoint and in an email between two staff accounts           | A **policy tip** warns the sender; the match appears in DLP reports / Activity explorer. Test card only, never a real one (plan §1). Evidence that card numbers can't quietly sit in company files, which supports the PCI scope (VRA-V013:F-02) | ☐      |
 
 ## Audit and logs
 

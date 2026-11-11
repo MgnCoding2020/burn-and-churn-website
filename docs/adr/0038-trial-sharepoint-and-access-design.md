@@ -52,6 +52,16 @@ The Microsoft 365 Business Premium trial starts on **2026-11-14**. It's 30 days,
 - The hub's CR-001/CR-003 cutover stays on Sunday 2026-11-15.
 - Phase 5 (customers, Checkout, the site's own rate limiter) moves after the trial prep.
 
+### Amendment, 2026-11-11: Business Premium extras
+
+Michael added three items to the trial (tests in the plan):
+
+- **Teams Shifts**, if the trial includes Teams. If a barista can request a change that a lead approves, it **replaces** the SharePoint Schedule list and the planned "My shifts" page; the website doesn't read Shifts (that would need tenant-wide `Schedule.Read.All`) and the portal links to it.
+- **Defender for Business** on the laptop.
+- **Purview**: a "Confidential – Management" label, and DLP from the PCI template, using Stripe's test card number only.
+
+The plan is built from the trial's own licence page (`T-LIC-03`), not from third-party summaries: Microsoft sells Business Premium with and without Teams.
+
 ## Consequences
 
 - **Break-glass first:** `grp-bc-break-glass` must exist, holding the tenant's break-glass accounts, before any policy is turned On. It's a pre-Saturday check, because no script creates it.
