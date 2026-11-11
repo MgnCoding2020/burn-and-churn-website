@@ -97,7 +97,7 @@ function actionProblem(c: Context<AppEnv>, outcome: ActionOutcome) {
 export function registerStaffCard(define: Define) {
   // Start a card payment: price the order on the server and send it to the reader.
   define(
-    { method: 'POST', path: '/staff/card-payments', principal: 'Staff.Barista' },
+    { method: 'POST', path: '/staff/card-payments', principal: 'Staff.Barista', limit: 'payments' },
     async (c) => {
       const db = dbOf(c);
       if (!db) return problem(c, 503, 'Service unavailable');
@@ -147,7 +147,12 @@ export function registerStaffCard(define: Define) {
 
   // Test mode: the simulated reader "sees" a Stripe test card (approved or declined).
   define(
-    { method: 'POST', path: '/staff/card-payments/:id/simulate-tap', principal: 'Staff.Barista' },
+    {
+      method: 'POST',
+      path: '/staff/card-payments/:id/simulate-tap',
+      principal: 'Staff.Barista',
+      limit: 'payments',
+    },
     async (c) => {
       const db = dbOf(c);
       if (!db) return problem(c, 503, 'Service unavailable');
@@ -165,7 +170,12 @@ export function registerStaffCard(define: Define) {
 
   // After a decline: ask for another card on the same payment.
   define(
-    { method: 'POST', path: '/staff/card-payments/:id/retry', principal: 'Staff.Barista' },
+    {
+      method: 'POST',
+      path: '/staff/card-payments/:id/retry',
+      principal: 'Staff.Barista',
+      limit: 'payments',
+    },
     async (c) => {
       const db = dbOf(c);
       if (!db) return problem(c, 503, 'Service unavailable');
@@ -181,7 +191,12 @@ export function registerStaffCard(define: Define) {
 
   // Stop: the customer changed their mind or pays another way.
   define(
-    { method: 'POST', path: '/staff/card-payments/:id/cancel', principal: 'Staff.Barista' },
+    {
+      method: 'POST',
+      path: '/staff/card-payments/:id/cancel',
+      principal: 'Staff.Barista',
+      limit: 'payments',
+    },
     async (c) => {
       const db = dbOf(c);
       if (!db) return problem(c, 503, 'Service unavailable');

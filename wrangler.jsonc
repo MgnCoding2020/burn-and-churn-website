@@ -30,6 +30,13 @@
     { "name": "API_LIMITER", "namespace_id": "1001", "simple": { "limit": 120, "period": 60 } },
     { "name": "SIGNIN_LIMITER", "namespace_id": "1002", "simple": { "limit": 20, "period": 60 } },
   ],
+  // Strict per-person limits on routes that cost something (src/lib/strict-limit.ts, ADR-0040):
+  // one Durable Object per scope and caller, counting in memory (SQLite class, as the Free
+  // plan requires; nothing is written to its storage).
+  "durable_objects": {
+    "bindings": [{ "name": "LIMITER", "class_name": "RateLimiterDO" }],
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RateLimiterDO"] }],
   // Non-secret settings. Secrets go in .dev.vars locally and `wrangler secret put` when deployed.
   "vars": {
     "APP_ENV": "production",
@@ -56,6 +63,10 @@
       { "name": "API_LIMITER", "namespace_id": "1101", "simple": { "limit": 120, "period": 60 } },
       { "name": "SIGNIN_LIMITER", "namespace_id": "1102", "simple": { "limit": 20, "period": 60 } },
     ],
+    // Declared again so previews get the binding (each preview has its own objects).
+    "durable_objects": {
+      "bindings": [{ "name": "LIMITER", "class_name": "RateLimiterDO" }],
+    },
     "d1_databases": [
       {
         "binding": "DB",
