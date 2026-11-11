@@ -4,7 +4,7 @@
     and grants it read on exactly those lists.
 
 .DESCRIPTION
-    Trial day 1 (plan §5; docs/contracts/sharepoint-lists.md; docs/tenant-setup.md). One app
+    Trial day 1 (plan section 5; docs/contracts/sharepoint-lists.md; docs/tenant-setup.md). One app
     per job: bc-website-staff signs people in; this app only reads lists, app-only.
 
       1. Certificate   With -NewCertificate, an RSA 2048 key pair (one year) made with openssl

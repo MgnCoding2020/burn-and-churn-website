@@ -4,7 +4,7 @@
     from docs/contracts/sharepoint-lists.json. Optionally seeds them.
 
 .DESCRIPTION
-    Trial day 1 (plan §3.2, §5; docs/tenant-setup.md). Needs SharePoint, so the Microsoft
+    Trial day 1 (plan section 3.2, section 5; docs/tenant-setup.md). Needs SharePoint, so the Microsoft
     365 Business Premium trial must be running. Runs on Windows PowerShell 5.1 with only
     the Microsoft.Graph.Authentication module (Invoke-MgGraphRequest); no PnP.
 

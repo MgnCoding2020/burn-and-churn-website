@@ -4,7 +4,7 @@
     other policy already in the tenant.
 
 .DESCRIPTION
-    Trial (plan §4.1; docs/tenant-setup.md step 6; trial tests T-CA-*). Needs Entra ID P1,
+    Trial (plan section 4.1; docs/tenant-setup.md step 6; trial tests T-CA-*). Needs Entra ID P1,
     which the Business Premium trial brings. Policies are named "BC - ..." and target the
     Burn and Churn groups only, because the tenant is shared:
 
@@ -13,7 +13,7 @@
       BC - Staff portal - Sign-in every 8 hours        bc-website-staff; grp-bc-all-staff
       BC - Staff portal - Require compliant device    bc-website-staff; grp-bc-all-staff (Intune)
 
-    Every policy excludes grp-bc-break-glass (plan §4.1). The device policy also excludes
+    Every policy excludes grp-bc-break-glass (plan section 4.1). The device policy also excludes
     grp-bc-testers, if it exists, so an outside reviewer's own laptop isn't blocked.
 
     -State sets all four at once: ReportOnly (default for new ones), On, or Off. Without
@@ -24,19 +24,33 @@
     -WhatIf signs in read-only and lists every change without making it.
 
 .PARAMETER State
-    ReportOnly, On or Off for the four BC policies.
+    ReportOnly, On or Off for the BC policies (all four, or those named by -Only).
+
+.PARAMETER Only
+    Limit the run to these policies: mfa, legacy, frequency, device. The others are left
+    exactly as they are. For example, -State On -Only mfa,legacy at the switch from security
+    defaults (docs/tenant-setup.md step 8a), while the 8-hour and device policies stay
+    report-only.
+
+.PARAMETER LegacyForAllUsers
+    Make the legacy-sign-in block cover every account in the tenant, not only Burn and Churn
+    staff, still excluding grp-bc-break-glass. Security defaults blocked legacy sign-in for
+    everyone; this keeps that after it is turned off.
 
 .EXAMPLE
     .\scripts\tenant\setup-conditional-access.ps1 -WhatIf
 .EXAMPLE
     .\scripts\tenant\setup-conditional-access.ps1
 .EXAMPLE
-    .\scripts\tenant\setup-conditional-access.ps1 -State On
+    .\scripts\tenant\setup-conditional-access.ps1 -State On -Only mfa,legacy -LegacyForAllUsers
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
     [ValidateSet('ReportOnly', 'On', 'Off')]
     [string]$State,
+    [ValidateSet('mfa', 'legacy', 'frequency', 'device')]
+    [string[]]$Only,
+    [switch]$LegacyForAllUsers,
     [string]$HubPath
 )
 
@@ -46,27 +60,32 @@ $Groups = @{ staff = 'grp-bc-all-staff'; breakGlass = 'grp-bc-break-glass'; test
 $StateValue = @{ ReportOnly = 'enabledForReportingButNotEnforced'; On = 'enabled'; Off = 'disabled' }
 
 # The four policies, given the resolved IDs. Pure: tested by dot-sourcing.
-function Get-BcPolicies([string]$AppId, [string]$StaffGroupId, [string[]]$Excluded, [string[]]$DeviceExcluded) {
+function Get-BcPolicies([string]$AppId, [string]$StaffGroupId, [string[]]$Excluded, [string[]]$DeviceExcluded, [switch]$LegacyForAllUsers) {
     $users = @{ includeGroups = @($StaffGroupId); excludeGroups = @($Excluded) }
     $deviceUsers = @{ includeGroups = @($StaffGroupId); excludeGroups = @($DeviceExcluded) }
+    $legacyUsers = if ($LegacyForAllUsers) { @{ includeUsers = @('All'); excludeGroups = @($Excluded) } } else { $users }
     $portal = @{ includeApplications = @($AppId) }
     return @(
         [ordered]@{
+            key = 'mfa'
             displayName = 'BC - Staff portal - Require MFA'
             conditions = @{ users = $users; applications = $portal; clientAppTypes = @('all') }
             grantControls = @{ operator = 'OR'; builtInControls = @('mfa') }
         }
         [ordered]@{
+            key = 'legacy'
             displayName = 'BC - Block legacy authentication'
-            conditions = @{ users = $users; applications = @{ includeApplications = @('All') }; clientAppTypes = @('exchangeActiveSync', 'other') }
+            conditions = @{ users = $legacyUsers; applications = @{ includeApplications = @('All') }; clientAppTypes = @('exchangeActiveSync', 'other') }
             grantControls = @{ operator = 'OR'; builtInControls = @('block') }
         }
         [ordered]@{
+            key = 'frequency'
             displayName = 'BC - Staff portal - Sign-in every 8 hours'
             conditions = @{ users = $users; applications = $portal; clientAppTypes = @('all') }
             sessionControls = @{ signInFrequency = @{ isEnabled = $true; type = 'hours'; value = 8; frequencyInterval = 'timeBased'; authenticationType = 'primaryAndSecondaryAuthentication' } }
         }
         [ordered]@{
+            key = 'device'
             displayName = 'BC - Staff portal - Require compliant device'
             conditions = @{ users = $deviceUsers; applications = $portal; clientAppTypes = @('all') }
             grantControls = @{ operator = 'OR'; builtInControls = @('compliantDevice') }
@@ -104,7 +123,7 @@ $staff = Find-Group $Groups.staff
 if (-not $staff) { throw "$($Groups.staff) not found: run the hub's provision-users.ps1 first." }
 $breakGlass = Find-Group $Groups.breakGlass
 $testers = Find-Group $Groups.testers
-if (-not $breakGlass) { Write-Warning "$($Groups.breakGlass) not found. Break-glass accounts must be excluded before any policy is turned On (plan §4.1)." }
+if (-not $breakGlass) { Write-Warning "$($Groups.breakGlass) not found. Break-glass accounts must be excluded before any policy is turned On (plan section 4.1)." }
 if (-not $testers) { Write-Host "  note       $($Groups.testers) doesn't exist yet; the device policy has no tester exclusion (hub CR-004 guest pattern)." }
 $excluded = @($breakGlass.id | Where-Object { $_ })
 $deviceExcluded = @(@($breakGlass.id, $testers.id) | Where-Object { $_ })
@@ -114,7 +133,11 @@ foreach ($p in ($existing | Where-Object { $_.displayName -notlike 'BC - *' })) 
     Write-Host ("  other      {0} ({1}): not changed" -f $p.displayName, $p.state)
 }
 
-foreach ($policy in (Get-BcPolicies $app.appId $staff.id $excluded $deviceExcluded)) {
+foreach ($policy in (Get-BcPolicies $app.appId $staff.id $excluded $deviceExcluded -LegacyForAllUsers:$LegacyForAllUsers)) {
+    $key = $policy.key
+    $policy.Remove('key')
+    if ($Only -and $Only -notcontains $key) { Write-Host "  skipped    $($policy.displayName) (not in -Only)"; continue }
+    if ($State -eq 'On' -and -not $breakGlass) { throw "Refusing to turn $($policy.displayName) On: $($Groups.breakGlass) doesn't exist (plan section 4.1)." }
     $found = $existing | Where-Object { $_.displayName -eq $policy.displayName } | Select-Object -First 1
     if ($State) { $policy.state = $StateValue[$State] }
     if (-not $found) {
