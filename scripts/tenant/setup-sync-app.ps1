@@ -157,7 +157,7 @@ if (-not $app) {
 }
 
 if ($app -and $cert) {
-    $match = @($app.keyCredentials) | Where-Object { $_.customKeyIdentifier -and ([BitConverter]::ToString([Convert]::FromBase64String($_.customKeyIdentifier)) -replace '-', '') -eq $cert.Thumbprint }
+    $match = @($app.keyCredentials) | Where-Object { Test-SameCertificate $_ $cert }
     if ($match) { Write-Step 'exists' 'credential' 'certificate already uploaded' }
     elseif ($PSCmdlet.ShouldProcess($AppName, 'Upload certificate')) {
         Invoke-Graph PATCH "v1.0/applications/$($app.id)" @{ keyCredentials = @(@{ type = 'AsymmetricX509Cert'; usage = 'Verify'; key = [Convert]::ToBase64String($cert.RawData); displayName = "CN=$CertName" }) } | Out-Null
