@@ -4,7 +4,7 @@
     from docs/contracts/sharepoint-lists.json. Optionally seeds them.
 
 .DESCRIPTION
-    Trial day 1 (plan §3.2, §5; docs/tenant-setup.md). Needs SharePoint, so the Microsoft
+    Trial day 1 (plan section 3.2, section 5; docs/tenant-setup.md). Needs SharePoint, so the Microsoft
     365 Business Premium trial must be running. Runs on Windows PowerShell 5.1 with only
     the Microsoft.Graph.Authentication module (Invoke-MgGraphRequest); no PnP.
 
@@ -35,7 +35,8 @@
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
-    [switch]$Seed
+    [switch]$Seed,
+    [string]$HubPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -70,6 +71,18 @@ function Get-GraphFacet([string]$Type) {
     }
 }
 
+# The tenant to sign in to, from the hub's git-ignored .env (as setup-staff-app.ps1 does).
+# Without it, sign-in can land on the personal Microsoft account page.
+function Get-TenantId([string]$Hub) {
+    if (-not $Hub) { $Hub = Join-Path (Split-Path (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path -Parent) 'grc-paper-project-coffee-shop' }
+    $envFile = Join-Path $Hub '.env'
+    if (-not (Test-Path $envFile)) { throw "Missing $envFile. Pass -HubPath, or copy .env.example to .env in the hub." }
+    foreach ($line in Get-Content $envFile) {
+        if ($line -match '^\s*ENTRA_TENANT_ID\s*=\s*(.+?)\s*$') { return $Matches[1] }
+    }
+    throw "ENTRA_TENANT_ID is not set in $envFile."
+}
+
 # Dot-sourcing (tests) loads the helpers above and stops here
 if ($MyInvocation.InvocationName -eq '.') { return }
 
@@ -90,7 +103,7 @@ Write-Host "SharePoint set-up for $($contract.site.path) ($mode)"
 # ---------------------------------------------------------------- sign in
 
 $scopes = if ($WhatIfPreference) { @('Sites.Read.All') } else { @('Sites.Manage.All', 'Sites.Create.All') }
-Connect-MgGraph -Scopes $scopes -NoWelcome
+Connect-MgGraph -TenantId (Get-TenantId $HubPath) -Scopes $scopes -NoWelcome
 $account = (Get-MgContext).Account
 function Invoke-Graph([string]$Method, [string]$Uri, $Body) {
     $request = @{ Method = $Method; Uri = $Uri; OutputType = 'PSObject' }

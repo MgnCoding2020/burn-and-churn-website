@@ -23,6 +23,16 @@ For Michael. Plan §3, §4.1, §5; ADR-0038; the list contract `docs/contracts/s
 | P5  | In the hub's `.env`, leave `BC_LICENSE_SKU` empty until the trial exists (step 3 fills it)                                   |                                                                                                                                                                                |
 | P6  | Pick your devices for Intune: this laptop, and your phone if you want it                                                     | The device-compliance test (T-CA-05)                                                                                                                                           |
 
+### Found on 2026-11-11 (P1, P2)
+
+- **Security defaults: ON** for the whole tenant: MFA for everyone, legacy sign-in blocked.
+- **Conditional Access policies already in the tenant**, all **report-only**, from the cyber-homelab:
+  - `require-mfa-all-users`, which excludes Michael's own Global Admin account (homelab notes);
+  - `risk-based-signin-mfa`;
+  - `require-phishing-resistant-mfa-privileged-roles`.
+- **No break-glass accounts exist yet.** The hub defines `bg-admin-01` and `bg-admin-02` (`roles.md`), but they were never created; the homelab excluded Michael's own admin account instead. `grp-bc-break-glass` doesn't exist.
+- The scripts can read Conditional Access on Entra ID Free (P1 ran).
+
 ## Saturday: day 1
 
 ### 1. Start the trial and turn off auto-renewal
@@ -103,7 +113,42 @@ Graph can't set SharePoint permissions for groups, so this step is done in the b
    - In the **Intune admin centre → Devices → Compliance → Create policy (Windows 10 and later)**: a minimal policy, for example require a password and a supported OS. Assign it to `grp-bc-all-staff`.
 3. **Device check in the browser:** Chrome passes the device state to Entra only with Microsoft's **"Microsoft Single Sign On"** extension (or use Edge), and **not in Incognito**, where extensions are off. Re-check Microsoft's current requirement before `T-CA-05`.
 4. **Audit:** the Purview portal → **Audit**. If it offers **Start recording user and admin activity**, start it. Search 24 hours later for today's SharePoint changes (`T-AUD-01`).
-5. **Next day:** Entra → **Sign-in logs**, filter app `bc-website-staff`, tab **Report-only**. Then `setup-conditional-access.ps1 -State On` (`T-CA-01` to `T-CA-05`).
+5. **Next day:** Entra → **Sign-in logs**, filter app `bc-website-staff`, tab **Report-only** (`T-CA-01`). Then do **step 8a** (the switch from security defaults); the 8-hour and device policies go On after it (`T-CA-04`, `T-CA-05`).
+
+### 8a. Switch from security defaults to Conditional Access (one sitting, about 20 minutes)
+
+Microsoft doesn't let Conditional Access policies be **On** while security defaults is on. Turning security defaults off removes MFA and the legacy sign-in block **for every account in the tenant**, not only Burn and Churn. So whatever replaces it goes **On within minutes, in the same sitting**. The decisions on the homelab's policies are Michael's; the recommendation is marked.
+
+**Before you start (all must be true):**
+
+1. `bg-admin-01` and `bg-admin-02` exist as Global Administrators, each has signed in once in a private window, and both are in `grp-bc-break-glass`. Their passwords are sealed offline.
+2. The four BC policies exist in report-only (step 8.1). If creating them was refused because security defaults is on, that's expected: create them right after step 4 below.
+3. You know how to undo it: turn security defaults back on (Entra → Overview → Properties). Microsoft asks for policies to be off first.
+
+**The homelab's three policies, with P1 (Business Premium):**
+
+| Policy                                            | Recommendation                                                                                | Why                                                                                                                                                                         |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `require-mfa-all-users`                           | **Change its exclusion** from your own admin account to **`grp-bc-break-glass`**, then **On** | It replaces security defaults' MFA for everyone, including your admin account, which then has MFA enforced like everyone else                                               |
+| `require-phishing-resistant-mfa-privileged-roles` | **Report-only** until your admin account has a passkey or security key registered; then On    | On without a phishing-resistant method registered would lock your admin account out                                                                                         |
+| `risk-based-signin-mfa`                           | **Leave report-only** (or Off)                                                                | Sign-in risk comes from Entra ID Protection, which needs **P2**. Business Premium has P1, so the risk condition doesn't work. Check the policy's page for a licence warning |
+
+**Legacy sign-in:** security defaults also blocked it tenant-wide. The BC policy only covers Burn and Churn staff. To keep the tenant-wide block, change `BC - Block legacy authentication` to **All users**, excluding `grp-bc-break-glass` (recommended), or add the same policy for everyone else.
+
+**The switch:**
+
+1. Entra → Overview → Properties → **Manage security defaults → Disabled**. Microsoft asks why; choose "My organization is using Conditional Access".
+2. **Straight away:**
+   - `require-mfa-all-users` (with the new exclusion) → **On**;
+   - `BC - Staff portal - Require MFA` → **On**;
+   - `BC - Block legacy authentication` → **On**.
+   - For the two BC policies: `.\scripts\tenant\setup-conditional-access.ps1 -State On -Only mfa,legacy -LegacyForAllUsers`. The 8-hour and device policies stay report-only; they go On later (T-CA-04, T-CA-05). The script refuses to turn anything On while `grp-bc-break-glass` doesn't exist.
+3. **Check, in a private window:**
+   - sign in as a staff member (MFA asked);
+   - sign in as your admin account (MFA asked);
+   - sign in as `bg-admin-01`: allowed, and the sign-in log shows the policies "Not applied" (excluded).
+4. 📸 Security defaults Disabled; each policy's state; the three sign-in log entries (`T-CA-02`).
+5. Record the time in the table at the end of this file, and in the hub's CR-002 log.
 
 ### 9. Record it
 

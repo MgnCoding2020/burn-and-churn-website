@@ -145,6 +145,26 @@ function Find-OpenSsl {
     return @($candidates)[0]
 }
 
+# Whether an app's key credential is this certificate. Graph never returns the key itself,
+# and customKeyIdentifier has been seen as the thumbprint's bytes or as its hex text (or
+# missing), so accept either, and fall back to the same name and expiry date.
+function Test-SameCertificate($Key, $Cert) {
+    $id = [string]$Key.customKeyIdentifier
+    if ($id) {
+        if ($id -eq $Cert.Thumbprint) { return $true }
+        try {
+            $bytes = [Convert]::FromBase64String($id)
+            if (([BitConverter]::ToString($bytes) -replace '-', '') -eq $Cert.Thumbprint) { return $true }
+            if ([Text.Encoding]::ASCII.GetString($bytes) -eq $Cert.Thumbprint) { return $true }
+        } catch { }
+    }
+    if ($Key.endDateTime -and $Key.displayName -eq $Cert.Subject) {
+        $end = ([datetime]$Key.endDateTime).ToUniversalTime()
+        if ([math]::Abs(($end - $Cert.NotAfter.ToUniversalTime()).TotalMinutes) -lt 2) { return $true }
+    }
+    return $false
+}
+
 # Dot-sourcing (tests) loads the helpers above and stops here
 if ($MyInvocation.InvocationName -eq '.') { return }
 
@@ -287,7 +307,7 @@ if (-not $app) {
 # Certificate credential
 if ($app -and $cert) {
     $keys = @($app.keyCredentials)
-    $match = $keys | Where-Object { $_.customKeyIdentifier -and ([BitConverter]::ToString([Convert]::FromBase64String($_.customKeyIdentifier)) -replace '-', '') -eq $cert.Thumbprint }
+    $match = $keys | Where-Object { Test-SameCertificate $_ $cert }
     $keyBody = @{ keyCredentials = @(@{ type = 'AsymmetricX509Cert'; usage = 'Verify'; key = [Convert]::ToBase64String($cert.RawData); displayName = "CN=$CertName" }) }
     if ($match) {
         Write-Step 'exists' 'credential' 'certificate already uploaded'

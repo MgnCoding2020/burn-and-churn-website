@@ -4,7 +4,7 @@
     and grants it read on exactly those lists.
 
 .DESCRIPTION
-    Trial day 1 (plan §5; docs/contracts/sharepoint-lists.md; docs/tenant-setup.md). One app
+    Trial day 1 (plan section 5; docs/contracts/sharepoint-lists.md; docs/tenant-setup.md). One app
     per job: bc-website-staff signs people in; this app only reads lists, app-only.
 
       1. Certificate   With -NewCertificate, an RSA 2048 key pair (one year) made with openssl
@@ -157,7 +157,7 @@ if (-not $app) {
 }
 
 if ($app -and $cert) {
-    $match = @($app.keyCredentials) | Where-Object { $_.customKeyIdentifier -and ([BitConverter]::ToString([Convert]::FromBase64String($_.customKeyIdentifier)) -replace '-', '') -eq $cert.Thumbprint }
+    $match = @($app.keyCredentials) | Where-Object { Test-SameCertificate $_ $cert }
     if ($match) { Write-Step 'exists' 'credential' 'certificate already uploaded' }
     elseif ($PSCmdlet.ShouldProcess($AppName, 'Upload certificate')) {
         Invoke-Graph PATCH "v1.0/applications/$($app.id)" @{ keyCredentials = @(@{ type = 'AsymmetricX509Cert'; usage = 'Verify'; key = [Convert]::ToBase64String($cert.RawData); displayName = "CN=$CertName" }) } | Out-Null
