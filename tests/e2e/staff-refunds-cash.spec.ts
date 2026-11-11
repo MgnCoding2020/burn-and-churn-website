@@ -87,6 +87,9 @@ test("a manager refunds one drink of a barista's sale, with a reason and a confi
   await expect(page.locator('[data-refund-status]')).toContainText(
     'Refunded $4.00. Give $4.00 in cash back',
   );
+  // The form is gone: nothing left to press twice.
+  await expect(page.getByRole('button', { name: 'Confirm refund' })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Review refund' })).toBeHidden();
 });
 
 test("a manager can't refund a sale they took; the attempt is in the owner's activity", async ({
