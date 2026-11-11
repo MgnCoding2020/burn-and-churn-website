@@ -182,11 +182,31 @@ describe('routes', () => {
   it('every card route is for Barista and up', () => {
     const { routes } = createApi();
     expect(routes.filter((r) => r.path.startsWith('/staff/card-payments'))).toEqual([
-      { method: 'POST', path: '/staff/card-payments', principal: 'Staff.Barista' },
+      {
+        method: 'POST',
+        path: '/staff/card-payments',
+        principal: 'Staff.Barista',
+        limit: 'payments',
+      },
       { method: 'GET', path: '/staff/card-payments/:id', principal: 'Staff.Barista' },
-      { method: 'POST', path: '/staff/card-payments/:id/simulate-tap', principal: 'Staff.Barista' },
-      { method: 'POST', path: '/staff/card-payments/:id/retry', principal: 'Staff.Barista' },
-      { method: 'POST', path: '/staff/card-payments/:id/cancel', principal: 'Staff.Barista' },
+      {
+        method: 'POST',
+        path: '/staff/card-payments/:id/simulate-tap',
+        principal: 'Staff.Barista',
+        limit: 'payments',
+      },
+      {
+        method: 'POST',
+        path: '/staff/card-payments/:id/retry',
+        principal: 'Staff.Barista',
+        limit: 'payments',
+      },
+      {
+        method: 'POST',
+        path: '/staff/card-payments/:id/cancel',
+        principal: 'Staff.Barista',
+        limit: 'payments',
+      },
     ]);
   });
 

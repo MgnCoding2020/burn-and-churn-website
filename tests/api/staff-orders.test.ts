@@ -63,7 +63,12 @@ describe('route principals', () => {
       { method: 'POST', path: '/staff/orders', principal: 'Staff.Barista' },
       { method: 'GET', path: '/staff/orders', principal: 'Staff.Barista' },
       { method: 'POST', path: '/staff/orders/:id/stage', principal: 'Staff.Barista' },
-      { method: 'POST', path: '/staff/orders/:id/refunds', principal: 'Staff.Manager' },
+      {
+        method: 'POST',
+        path: '/staff/orders/:id/refunds',
+        principal: 'Staff.Manager',
+        limit: 'payments',
+      },
     ]);
   });
 });
