@@ -123,6 +123,8 @@ $dir = $null
 if ($prov.registrationState -eq 'Registered') {
     $all = @((Invoke-Arm GET "$Sub/providers/Microsoft.AzureActiveDirectory/ciamDirectories?api-version=$CiamApi").value)
     $other = $all | Where-Object { $_.name -ne $Name }
+    $failed = $other | Where-Object { $_.properties.provisioningState -in 'Failed', 'Canceled' }
+    if ($failed) { throw "A failed attempt ($(($failed | ForEach-Object { $_.name }) -join ', ')) is still listed. Delete it first: Invoke-AzRestMethod -Method DELETE -Path '<its id>?api-version=$CiamApi'. Nothing was changed." }
     if ($other) { throw "This subscription already has a customer directory ($(@($other).Count)): $(($other | ForEach-Object { $_.name }) -join ', '). Nothing was changed." }
     # The list may leave out tenantId and domainName; read the directory itself.
     if ($all | Where-Object { $_.name -eq $Name }) { $dir = Invoke-Arm GET "$DirPath`?api-version=$CiamApi" }
@@ -165,7 +167,12 @@ if (-not $WhatIfPreference -and $dir) {
     }
     switch ($dir.properties.provisioningState) {
         'Succeeded' { }
-        { $_ -in 'Failed', 'Canceled' } { throw "Directory creation ended: $_. Check the resource group in the Azure portal." }
+        { $_ -in 'Failed', 'Canceled' } {
+            # Seen 2026-11-12: a common prefix fails within seconds, tenant ID all zeros, because
+            # <prefix>.onmicrosoft.com is taken worldwide. The failed entry blocks a new attempt.
+            throw ("Directory creation ended: $_. Most often $Name.onmicrosoft.com is already taken. Delete the failed entry, then run again with a more distinctive -DomainPrefix:`n" +
+                "  Invoke-AzRestMethod -Method DELETE -Path '$DirPath`?api-version=$CiamApi'")
+        }
         default { throw "Still creating after $WaitMinutes minutes. Run the script again later; it will wait for this same directory." }
     }
 }

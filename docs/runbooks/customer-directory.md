@@ -33,13 +33,32 @@ Answer **Y** if asked to trust the PowerShell Gallery or install NuGet.
 - **Domain prefix:** 1 to 26 letters or digits, for example something with `bc` and `customers`. It becomes `<prefix>.onmicrosoft.com` and **can't be changed later**. Keep it out of the repo and chat.
 - **Alert email:** where budget alerts go.
 
-**Dry run first:**
+**Make the prefix distinctive.** A common word such as `customer` is already taken worldwide: creation then fails within seconds (seen 2026-11-12), and the failed entry must be deleted before trying again (the script prints the command).
+
+**Type the values one line at a time.** Pasting all three `Read-Host` lines at once skips the prompts:
 
 ```powershell
-.\scripts\tenant\setup-customer-directory.ps1 -SubscriptionId <id> -DomainPrefix <prefix> -AlertEmail <you@...> -WhatIf
+$sub = Read-Host 'Subscription ID'
+$prefix = Read-Host 'Domain prefix'
+$email = Read-Host 'Budget alert email'
 ```
 
-- **Signing in:** a sign-in window opens. Use your admin account, the one that owns the subscription. Not a break-glass account.
+**Sign in to the staff tenant by name.** Without a tenant, Windows can open the personal-account page, where a work account "doesn't exist":
+
+```powershell
+Connect-AzAccount -Tenant <staff-tenant>.onmicrosoft.com -Subscription $sub.Trim()
+```
+
+- At the account picker, choose **Work or school account**, not "Microsoft account".
+- Use your admin account, the one that owns the subscription. Not a break-glass account.
+- If asked to "sign in to all apps", choose **No, this app only**.
+
+**Dry run first.** It reuses that sign-in:
+
+```powershell
+.\scripts\tenant\setup-customer-directory.ps1 -SubscriptionId $sub.Trim() -DomainPrefix $prefix.Trim() -AlertEmail $email.Trim() -WhatIf
+```
+
 - **What you should see:** your subscription's name, then a "What if" line for each step.
 
 **Then for real**, the same command without `-WhatIf`. It prints a line every 30 seconds while the directory is created, which can take up to 30 minutes. If it stops waiting first, run it again: it picks up the same directory.
