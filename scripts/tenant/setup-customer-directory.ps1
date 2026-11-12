@@ -36,6 +36,10 @@
 .PARAMETER AlertEmail
     Where the budget alerts go. Used in the request only.
 
+.PARAMETER SignInTenant
+    The staff tenant's domain (<name>.onmicrosoft.com) or ID, to sign in to. Not needed if
+    Connect-AzAccount already signed in to this subscription in this terminal.
+
 .EXAMPLE
     .\scripts\tenant\setup-customer-directory.ps1 -SubscriptionId <id> -DomainPrefix <prefix> -AlertEmail <you@...> -WhatIf
 .EXAMPLE
@@ -46,6 +50,7 @@ param(
     [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$')][string]$SubscriptionId,
     [Parameter(Mandatory)][ValidatePattern('^[a-zA-Z0-9]{1,26}$')][string]$DomainPrefix,
     [Parameter(Mandatory)][ValidatePattern('^[^@\s]+@[^@\s]+\.[^@\s]+$')][string]$AlertEmail,
+    [string]$SignInTenant,
     [int]$WaitMinutes = 40
 )
 
@@ -84,7 +89,13 @@ if ($MyInvocation.InvocationName -eq '.') { return }
 
 $mode = if ($WhatIfPreference) { 'WHAT IF: nothing is changed' } else { 'changes are made' }
 Write-Host "Customer directory ($mode)"
-& { $WhatIfPreference = $false; Connect-AzAccount -Subscription $SubscriptionId | Out-Null }
+# Reuse a sign-in already on this subscription. Otherwise sign in to the named tenant: without one,
+# Windows can offer the personal Microsoft account page, where a work account "doesn't exist".
+$ctx = Get-AzContext
+if (-not $ctx -or $ctx.Subscription.Id -ne $SubscriptionId) {
+    if (-not $SignInTenant) { throw 'Sign in first: Connect-AzAccount -Tenant <your-tenant>.onmicrosoft.com -Subscription <subscription ID>, or pass -SignInTenant.' }
+    & { $WhatIfPreference = $false; Connect-AzAccount -Tenant $SignInTenant -Subscription $SubscriptionId | Out-Null }
+}
 
 $s = Invoke-Arm GET "$Sub`?api-version=2022-12-01"
 if ($s.state -ne 'Enabled') { throw "Subscription '$($s.displayName)' is $($s.state), not Enabled. Nothing was changed." }
