@@ -2,7 +2,7 @@
 
 **Lab-verified 2026-11-12.** Plan §4.2 (a separate directory for customers); ADR-0041 (created by script); runbook `docs/runbooks/customer-directory.md`.
 
-Michael ran three scripts from his own terminal: `setup-customer-directory.ps1` created the directory, its resource group and the $5 budget, and `seed-customers.ps1` added the demo customers, a dry run first in each case. He then took one screenshot in the Entra admin center (Chrome Incognito), switched to the new directory.
+Michael ran two scripts from his own terminal: `setup-customer-directory.ps1` created the directory, its resource group and the $5 budget, and `seed-customers.ps1` added the demo customers, a dry run first in each case. He then took one screenshot in the Entra admin center (Chrome Incognito), switched to the new directory.
 
 Per the Owner's decision of 2026-11-11, evidence for the directory is kept light: this one screenshot.
 
