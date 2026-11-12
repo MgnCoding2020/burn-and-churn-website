@@ -5,6 +5,8 @@
  */
 import { cf } from '@astrojs/cloudflare/hono';
 import { getFetchState, middleware, notFound, pages } from 'astro/hono';
+import { graphConfig } from './lib/graph';
+import { stripeConfig } from './lib/stripe';
 import { buildApp } from './server/app';
 import { scheduled } from './server/scheduled';
 
@@ -20,7 +22,15 @@ const app = buildApp({
     app.use((c, next) => {
       const locals = getFetchState(c).locals;
       locals.user = c.get('user');
+      // For audit rows written by a page, tied to the request like the API's.
+      locals.requestId = c.get('requestId');
       locals.db = (c.env as unknown as { DB?: D1Database } | undefined)?.DB;
+      // Whether the counter can take cards here (a test key and a simulated reader).
+      locals.cardsReady = Boolean(
+        stripeConfig(c.env as unknown as Record<string, unknown>)?.terminalReaderId,
+      );
+      // Whether Publish can reach SharePoint here (ADR-0039).
+      locals.syncReady = Boolean(graphConfig(c.env as unknown as Record<string, unknown>, []));
       return next();
     });
     app.use(notFound());
@@ -29,7 +39,10 @@ const app = buildApp({
   },
 });
 
-// Requests go to the Hono pipeline; Cron Triggers run the clean-up.
+// The strict rate limiter's Durable Object (ADR-0040).
+export { RateLimiterDO } from './server/limiter-do';
+
+// Requests go to the Hono pipeline; Cron Triggers run the clean-up and the SharePoint sync.
 export default {
   fetch: app.fetch,
   scheduled,

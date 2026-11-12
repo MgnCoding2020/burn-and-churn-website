@@ -34,11 +34,19 @@ STRIPE_WEBHOOK_SECRET=whsec_replace_me
 STRIPE_TERMINAL_LOCATION_ID=tml_replace_me
 STRIPE_TERMINAL_READER_ID=tmr_replace_me
 
-# --- SharePoint sync through Microsoft Graph, app-only Sites.Selected (Phase 7) ---
-GRAPH_CLIENT_ID=your-graph-app-client-id
+# --- SharePoint sync: app bc-website-sync, app-only, Lists.SelectedOperations.Selected (ADR-0038) ---
+# Written by scripts/tenant/setup-sync-app.ps1 -WriteDevVars. Read on these lists only.
+GRAPH_CLIENT_ID=your-sync-app-client-id
 GRAPH_CERT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nreplace-me\n-----END PRIVATE KEY-----"
 GRAPH_CERT_THUMBPRINT=replace-me
 SHAREPOINT_SITE_ID=replace-me
+SHAREPOINT_LIST_MENU=replace-me
+SHAREPOINT_LIST_STOREHOURS=replace-me
+SHAREPOINT_LIST_ANNOUNCEMENTS=replace-me
+SHAREPOINT_LIST_SHIFTNOTES=replace-me
+SHAREPOINT_LIST_INVENTORY=replace-me
+SHAREPOINT_LIST_SCHEDULE=replace-me
+SHAREPOINT_LIST_USERINFORMATIONLIST=replace-me
 
 # --- Cloudflare Turnstile (bot check) ---
 # Cloudflare publishes always-pass test keys for local development.

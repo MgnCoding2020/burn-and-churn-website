@@ -38,7 +38,7 @@ function ticket(order: BoardOrder, list: HTMLOListElement): HTMLLIElement {
   num.textContent = `#${String(order.number).padStart(4, '0')}`;
   const tag = document.createElement('span');
   tag.className = 'ticket__tag';
-  tag.textContent = order.channel === 'counter' ? 'COUNTER' : 'ONLINE';
+  tag.textContent = `${order.channel === 'counter' ? 'COUNTER' : 'ONLINE'} · ${order.tender.toUpperCase()}`;
   const age = document.createElement('span');
   age.textContent = minutesAgo(order.createdAt);
   head.replaceChildren(num, tag, age);

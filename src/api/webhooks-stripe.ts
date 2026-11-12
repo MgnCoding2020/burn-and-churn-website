@@ -1,4 +1,8 @@
+import type Stripe from 'stripe';
+import { cancelledByStripe, completeCardPayment, declineCardPayment } from '../lib/card-payments';
 import { problem } from '../lib/problem';
+import { updateRefundFromStripe } from '../lib/refunds';
+import { refundState } from '../lib/terminal';
 import { stripeConfig, verifyWebhook } from '../lib/stripe';
 import type { Define } from './app';
 
@@ -8,8 +12,8 @@ import type { Define } from './app';
  * database writes for unauthenticated requests). Each event is recorded once;
  * a replay or a retry of an event already seen is acknowledged and ignored.
  *
- * Handlers for each event type arrive with the features that need them
- * (counter card payments, refunds); until then events are recorded as ignored.
+ * Counter card payments (ADR-0036) and card refunds (ADR-0037) are handled
+ * here. Any other event is recorded as ignored.
  */
 
 export const WEBHOOK_PATH = '/webhooks/stripe';
@@ -45,11 +49,53 @@ export function registerStripeWebhooks(define: Define) {
       .run();
     if (!recorded.meta.changes) return c.json({ received: true, duplicate: true });
 
-    const outcome = 'ignored';
+    const outcome = await handle(db, event, c.get('requestId'));
     await db
       .prepare('UPDATE stripe_events SET processed_at = ?, outcome = ? WHERE event_id = ?')
       .bind(Date.now(), outcome, event.id)
       .run();
     return c.json({ received: true });
   });
+}
+
+/** What this site does with each event. Returns a short outcome for the record. */
+export async function handle(
+  db: D1Database,
+  event: Stripe.Event,
+  requestId: string,
+): Promise<string> {
+  switch (event.type) {
+    case 'payment_intent.succeeded':
+      return completeCardPayment(db, event.data.object.id, requestId);
+    case 'payment_intent.payment_failed': {
+      const pi = event.data.object;
+      const code = pi.last_payment_error?.decline_code ?? pi.last_payment_error?.code ?? 'declined';
+      return declineCardPayment(db, pi.id, code, requestId);
+    }
+    case 'payment_intent.canceled':
+      return cancelledByStripe(db, event.data.object.id);
+    case 'terminal.reader.action_succeeded':
+    case 'terminal.reader.action_failed': {
+      const action = event.data.object.action;
+      const pi = action?.process_payment_intent?.payment_intent;
+      const id = typeof pi === 'string' ? pi : pi?.id;
+      if (action?.type !== 'process_payment_intent' || !id) return 'ignored';
+      return event.type === 'terminal.reader.action_succeeded'
+        ? completeCardPayment(db, id, requestId)
+        : declineCardPayment(db, id, action.failure_code ?? 'declined', requestId);
+    }
+    case 'refund.updated':
+    case 'refund.failed': {
+      const refund = event.data.object;
+      return updateRefundFromStripe(
+        db,
+        refund.id,
+        refund.metadata?.refund_id,
+        event.type === 'refund.failed' ? 'failed' : refundState(refund.status),
+        requestId,
+      );
+    }
+    default:
+      return 'ignored';
+  }
 }

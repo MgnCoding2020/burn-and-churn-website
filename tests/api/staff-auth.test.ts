@@ -166,8 +166,8 @@ describe('route principals', () => {
           r.path.startsWith('/staff/session'),
       ),
     ).toEqual([
-      { method: 'GET', path: '/auth/staff/login', principal: 'public' },
-      { method: 'GET', path: '/auth/staff/callback', principal: 'public' },
+      { method: 'GET', path: '/auth/staff/login', principal: 'public', limit: 'signin' },
+      { method: 'GET', path: '/auth/staff/callback', principal: 'public', limit: 'signin' },
       { method: 'POST', path: '/auth/staff/logout', principal: 'public' },
       { method: 'GET', path: '/staff/me', principal: 'Staff.Barista' },
       { method: 'GET', path: '/staff/session', principal: 'Staff.Barista' },

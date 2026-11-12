@@ -85,7 +85,13 @@ export function describeEvent(e: ActivityEvent): string {
     case 'auth.staff.sign_in_refused':
       return `Sign-in refused (${String(a.reason ?? 'unknown')})`;
     case 'order.sale':
-      return `Sale #${String(a.number ?? '?')}: ${money(a.totalCents)} cash`;
+      return `Sale #${String(a.number ?? '?')}: ${money(a.totalCents)} ${String(a.tender ?? 'cash')}`;
+    case 'payment.test_tap':
+      return `Simulated a card tap (test mode, ${a.card === 'decline' ? 'declined card' : 'approved card'}): ${money(a.totalCents)}`;
+    case 'payment.card_declined':
+      return `Card declined: ${money(a.totalCents)} (${String(a.failureCode ?? '')})`;
+    case 'payment.card_canceled':
+      return `Canceled a card payment: ${money(a.totalCents)}`;
     case 'menu.item.sold_out':
       return `Marked ${String(a.name ?? e.target)} sold out`;
     case 'menu.item.available':
@@ -106,6 +112,8 @@ export function describeEvent(e: ActivityEvent): string {
       return 'Refused: deciding their own restock request';
     case 'order.refund':
       return `Refund on sale #${String(a.number ?? '?')}: ${money(a.amountCents)} ${String(a.tender ?? '')} (${String(a.reason ?? '')})`;
+    case 'order.refund_failed':
+      return `Card refund failed at Stripe: ${money(a.amountCents)} (nothing refunded)`;
     case 'order.refund_refused':
       return `Refused: refunding sale #${String(a.number ?? '?')}, which they took`;
     case 'cash.drawer_opened':

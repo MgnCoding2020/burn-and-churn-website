@@ -1,6 +1,6 @@
 # ADR-0029: Rate limits with Cloudflare's Rate Limiting binding
 
-- **Status:** Accepted
+- **Status:** Accepted; supplemented by [ADR-0040](0040-strict-rate-limits-durable-object.md) (2026-11-11)
 - **Date:** 2026-11-07
 
 ## Context
@@ -49,3 +49,7 @@ Neither that page nor [Workers limits](https://developers.cloudflare.com/workers
 - The sign-in quota attack needs many addresses in many locations, not one script.
 - A visitor's IP address is now used, briefly, for counting; the privacy page says so.
 - Per-session limits for signed-in staff come with the register (Phase 3), when there's something worth limiting per person.
+
+## Update, 2026-11-11
+
+Cloudflare moved the bug report to [cloudflare/developer-platform#123](https://github.com/cloudflare/developer-platform/issues/123); it was still open. The routes that cost something now also have strict limits in a Durable Object (ADR-0040); this binding stays on all of `/api/v1`.

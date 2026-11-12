@@ -33,7 +33,7 @@ It's where the program's separate pieces meet in one working system:
 | 1. Design system and public site   | Brand tokens, styleguide, home, menu, info pages, error and maintenance pages                           | Done (cart moved to Phase 5) |
 | 2. Staff sign-in                   | Entra ID sign-in, roles, sessions, audit log                                                            | Live (role tests to finish)  |
 | 3. Register and order board        | Counter orders, cash, order board, sold out and restocks, refunds, cash count                           | Done                         |
-| 4. Stripe Terminal                 | Card payments through the simulated reader, refunds                                                     | In progress                  |
+| 4. Stripe Terminal                 | Card payments through the simulated reader, refunds                                                     | Done                         |
 | 5. Customers and Stripe Checkout   | Customer accounts, cart, online ordering, signed webhooks                                               | Planned                      |
 | 6. Trial preparation               | Tenant scripts and test plan, dry-run only                                                              | Planned                      |
 | 7. Microsoft 365 and SharePoint    | SharePoint site and lists, sync, Conditional Access, evidence                                           | Planned                      |

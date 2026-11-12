@@ -2,10 +2,12 @@ import { z } from 'zod';
 import { problem } from '../lib/problem';
 import { reasonSchema } from '../lib/reasons';
 import { issueRefund } from '../lib/refunds';
+import { stripeConfig } from '../lib/stripe';
+import { stripeTerminal } from '../lib/terminal';
 import type { Define } from './app';
 
 /**
- * Refunds (plan §4.4, ADR-0034): Manager+, never by the person who took the
+ * Refunds (plan §4.4, ADR-0034; card refunds ADR-0037): Manager+, never by the person who took the
  * payment unless Owner. The browser names lines and quantities; amounts come
  * from the sale.
  */
@@ -41,7 +43,12 @@ async function readJson(req: Request): Promise<unknown> {
 
 export function registerStaffRefunds(define: Define) {
   define(
-    { method: 'POST', path: '/staff/orders/:id/refunds', principal: 'Staff.Manager' },
+    {
+      method: 'POST',
+      path: '/staff/orders/:id/refunds',
+      principal: 'Staff.Manager',
+      limit: 'payments',
+    },
     async (c) => {
       const db = dbOf(c.env);
       if (!db) return problem(c, 503, 'Service unavailable');
@@ -50,10 +57,13 @@ export function registerStaffRefunds(define: Define) {
       const parsed = Refund.safeParse(await readJson(c.req.raw));
       if (!parsed.success) return problem(c, 400, 'Bad request', 'The refund is not valid.');
       const user = c.get('user')!;
+      // Card sales are refunded through Stripe (ADR-0037).
+      const config = stripeConfig(c.env as unknown as Record<string, unknown>);
       const outcome = await issueRefund(
         db,
         { orderId, ...parsed.data },
         { userId: user.id, role: user.role!, requestId: c.get('requestId') },
+        config ? stripeTerminal(config) : undefined,
       );
       switch (outcome) {
         case 'not_found':
@@ -74,11 +84,30 @@ export function registerStaffRefunds(define: Define) {
             'Conflict',
             'That is more than is left to refund on this sale. Reload to see what’s left.',
           );
+        case 'card_unavailable':
+          return problem(
+            c,
+            503,
+            'Service unavailable',
+            'This sale was paid by card, and card refunds aren’t set up here. It can’t be refunded in cash.',
+          );
+        case 'stripe_failed':
+          return problem(
+            c,
+            502,
+            'Bad gateway',
+            'Stripe didn’t accept the refund. Nothing was refunded; try again in a moment.',
+          );
         case 'key_reused':
           return problem(c, 409, 'Conflict', 'That refund key was already used.');
         default:
           return c.json(
-            { id: outcome.id, amountCents: outcome.amountCents, tender: outcome.tender },
+            {
+              id: outcome.id,
+              amountCents: outcome.amountCents,
+              tender: outcome.tender,
+              status: outcome.status,
+            },
             outcome.replayed ? 200 : 201,
           );
       }

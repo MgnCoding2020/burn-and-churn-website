@@ -53,9 +53,10 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
         <tr>
           <td>Rate-limit counts (Cloudflare)</td>
           <td>
-            For requests to the site's API and sign-in only: a count per IP address, so one visitor
-            can't flood the site. Counts cover one-minute windows. Cloudflare keeps them; this site
-            doesn't store them.
+            For requests to the site's API and sign-in only: a count per IP address, and for staff
+            payments, refunds and publishing a count per signed-in person, so no one can flood the
+            site. Counts cover one-minute windows and are held in memory only; nothing is written to
+            the database.
           </td>
           <td>1 minute</td>
         </tr>
@@ -96,6 +97,16 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
             For the fictional café's test sales: the drinks, prices, cash handed over and change,
             which staff member took the payment, any refund (amount, reason, who issued it) and each
             shift's cash count. No card details, ever.
+          </td>
+          <td>90 days</td>
+        </tr>
+        <tr>
+          <td>Card payment attempts (staff portal)</td>
+          <td>
+            For test-mode card sales at the counter: the amount, Stripe's payment and reader IDs,
+            whether it succeeded, and Stripe's decline code if it didn't; for a card refund,
+            Stripe's refund ID and status. No card number or card details: the simulated reader only
+            ever uses Stripe's published test cards.
           </td>
           <td>90 days</td>
         </tr>

@@ -1,0 +1,21 @@
+{
+  "at": "2026-11-09T21:29:49.562Z",
+  "dryRun": false,
+  "apiVersion": "2026-10-28.endive",
+  "locationId": "tml_Gu7ugxaeEouzSU",
+  "readerId": "tmr_Gu7ugbpHD5YjUe",
+  "readerType": "simulated_wisepos_e",
+  "webhookEndpointId": "we_1Ua08BRTPaElWJWuLrNhO0K0",
+  "webhookUrl": "https://burn-and-churn-website.naultmichael.workers.dev/api/v1/webhooks/stripe",
+  "webhookEvents": [
+    "terminal.reader.action_succeeded",
+    "terminal.reader.action_failed",
+    "payment_intent.succeeded",
+    "payment_intent.payment_failed",
+    "payment_intent.canceled",
+    "charge.refunded",
+    "refund.updated",
+    "refund.failed"
+  ],
+  "webhookSecret": "saved to the production Worker"
+}

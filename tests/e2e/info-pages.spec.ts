@@ -50,10 +50,10 @@ test('the site makes no third-party requests (as the privacy page says)', async 
 
 test('security page: built controls in place, unbuilt ones still planned', async ({ page }) => {
   await page.goto('/security/');
-  for (const area of [/^Staff sign-in/, /^Refunds and cash/]) {
+  for (const area of [/^Staff sign-in/, /^Refunds and cash/, /^Card payments at the counter/]) {
     await expect(page.getByRole('row', { name: area })).toContainText('In place');
   }
-  for (const area of [/^Customer sign-in/, /^Payments/]) {
+  for (const area of [/^Customer sign-in/, /^Online payments/]) {
     await expect(page.getByRole('row', { name: area })).toContainText('Planned');
   }
 });
