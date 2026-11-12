@@ -20,16 +20,17 @@
     existing demo customers are left alone. -WhatIf signs in read-only and lists what it would add.
 
 .PARAMETER TenantId
-    The customer directory's tenant ID (Entra admin center, Overview). Not stored anywhere.
+    The customer directory's tenant ID. Optional: by default it's read from ENTRA_CUSTOMER_TENANT_ID
+    in the git-ignored .dev.vars, where setup-customer-directory.ps1 writes it.
 
 .EXAMPLE
-    .\scripts\tenant\seed-customers.ps1 -TenantId <customer-tenant-id> -WhatIf
+    .\scripts\tenant\seed-customers.ps1 -WhatIf
 .EXAMPLE
-    .\scripts\tenant\seed-customers.ps1 -TenantId <customer-tenant-id>
+    .\scripts\tenant\seed-customers.ps1
 #>
 [CmdletBinding(SupportsShouldProcess)]
 param(
-    [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$')][string]$TenantId,
+    [ValidatePattern('^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$')][string]$TenantId,
     [string]$HubPath
 )
 
@@ -72,7 +73,25 @@ function New-UnusedPassword {
     -join $chars
 }
 
+# The customer directory's ID from the git-ignored .dev.vars (written there by
+# setup-customer-directory.ps1), when -TenantId isn't given.
+function Get-CustomerTenantId([string]$Root) {
+    $f = Join-Path $Root '.dev.vars'
+    if (Test-Path $f) {
+        $line = Get-Content $f | Where-Object { $_ -match '^\s*ENTRA_CUSTOMER_TENANT_ID\s*=' } | Select-Object -First 1
+        if ($line) { return ($line -replace '^[^=]*=\s*', '' -replace '["'']', '').Trim() }
+    }
+    $null
+}
+
 if ($MyInvocation.InvocationName -eq '.') { return }
+
+if (-not $TenantId) {
+    $fromFile = Get-CustomerTenantId $RepoRoot
+    if ($fromFile -notmatch '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$') { throw 'No customer tenant ID: pass -TenantId, or set ENTRA_CUSTOMER_TENANT_ID in .dev.vars (setup-customer-directory.ps1 does this).' }
+    $TenantId = $fromFile
+}
+if ($TenantId -notmatch '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$') { throw 'No customer tenant ID: pass -TenantId, or set ENTRA_CUSTOMER_TENANT_ID in .dev.vars (setup-customer-directory.ps1 does this).' }
 
 # ---------------------------------------------------------------- guard: not the staff tenant
 
@@ -84,6 +103,10 @@ if (Test-Path $hubEnv) {
 }
 
 # ---------------------------------------------------------------- connect
+
+# Az.Accounts and Microsoft.Graph.Authentication ship different versions of the same libraries;
+# with Az loaded first, Graph calls fail with "Method not found" (seen 2026-11-12).
+if (Get-Module Az.Accounts) { throw 'Az.Accounts is loaded in this terminal (from setup-customer-directory.ps1), which breaks Microsoft Graph. Open a new terminal and run this script there.' }
 
 $mode = if ($WhatIfPreference) { 'WHAT IF: nothing is changed' } else { 'changes are made' }
 Write-Host "Demo customers ($mode)"
@@ -133,4 +156,4 @@ for ($i = 0; $i -lt $Count; $i++) {
 
 $verb = if ($WhatIfPreference) { 'would add' } else { 'added' }
 Write-Host "  $verb  $(if ($WhatIfPreference) { $Count - $existing.Count } else { $added }) demo customers"
-Write-Host 'Done. Remove them with: .\scripts\tenant\remove-customers.ps1 -TenantId <customer-tenant-id>'
+Write-Host 'Done. Remove them with: .\scripts\tenant\remove-customers.ps1'
