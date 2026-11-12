@@ -9,14 +9,34 @@
     seed-customers.ps1. -WhatIf lists what would go.
 
 .EXAMPLE
-    .\scripts\tenant\remove-customers.ps1 -TenantId <customer-tenant-id> -WhatIf
+    .\scripts\tenant\remove-customers.ps1 -WhatIf   (tenant ID from .dev.vars, or pass -TenantId)
 #>
 [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
 param(
-    [Parameter(Mandatory)][ValidatePattern('^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$')][string]$TenantId
+    [ValidatePattern('^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$')][string]$TenantId
 )
 
 $ErrorActionPreference = 'Stop'
+$RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
+
+# The customer directory's ID from the git-ignored .dev.vars (written there by
+# setup-customer-directory.ps1), when -TenantId isn't given.
+function Get-CustomerTenantId([string]$Root) {
+    $f = Join-Path $Root '.dev.vars'
+    if (Test-Path $f) {
+        $line = Get-Content $f | Where-Object { $_ -match '^\s*ENTRA_CUSTOMER_TENANT_ID\s*=' } | Select-Object -First 1
+        if ($line) { return ($line -replace '^[^=]*=\s*', '' -replace '["'']', '').Trim() }
+    }
+    $null
+}
+
+if (-not $TenantId) {
+    $fromFile = Get-CustomerTenantId $RepoRoot
+    if ($fromFile -notmatch '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$') { throw 'No customer tenant ID: pass -TenantId, or set ENTRA_CUSTOMER_TENANT_ID in .dev.vars (setup-customer-directory.ps1 does this).' }
+    $TenantId = $fromFile
+}
+if ($TenantId -notmatch '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$') { throw 'No customer tenant ID: pass -TenantId, or set ENTRA_CUSTOMER_TENANT_ID in .dev.vars (setup-customer-directory.ps1 does this).' }
+
 $Tag = 'Burn and Churn demo customer (fictional)'
 
 $scopes = if ($WhatIfPreference) { 'User.Read.All' } else { 'User.ReadWrite.All' }

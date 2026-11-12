@@ -210,5 +210,25 @@ Write-Host "Done. $DisplayName is ready."
 Write-Host "  domain     $($dir.properties.domainName)"
 Write-Host "  tenant ID  $($dir.properties.tenantId)"
 if (-not $dir.properties.tenantId) { Write-Host '  (tenant ID not returned: find it under Entra ID, Overview, Manage tenants)' }
-Write-Host 'Copy the tenant ID into your password manager notes (not chat, not the repo). Next:'
-Write-Host '  .\scripts\tenant\seed-customers.ps1 -TenantId <tenant ID> -WhatIf'
+Write-Host 'Keep IDs out of chat and tracked files.'
+
+# Save the ID in the git-ignored .dev.vars: the seed and remove scripts read it from there, and the
+# website's customer sign-in will too.
+$devVars = Join-Path (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path '.dev.vars'
+$tid = "$($dir.properties.tenantId)"
+if ($tid -match '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$' -and $tid -ne '00000000-0000-0000-0000-000000000000') {
+    $lines = @(if (Test-Path $devVars) { Get-Content $devVars })
+    $i = $null
+    for ($k = 0; $k -lt $lines.Count; $k++) { if ($lines[$k] -match '^\s*ENTRA_CUSTOMER_TENANT_ID\s*=') { $i = $k; break } }
+    if ($null -eq $i) {
+        $lines += '', '# --- Customer directory: Entra External ID (Phase 5, ADR-0041) ---', "ENTRA_CUSTOMER_TENANT_ID=$tid"
+        Write-Host '  saved      ENTRA_CUSTOMER_TENANT_ID in .dev.vars (git-ignored)'
+    } elseif ($lines[$i] -ne "ENTRA_CUSTOMER_TENANT_ID=$tid") {
+        $lines[$i] = "ENTRA_CUSTOMER_TENANT_ID=$tid"
+        Write-Host '  updated    ENTRA_CUSTOMER_TENANT_ID in .dev.vars (git-ignored)'
+    }
+    # UTF-8 without a byte-order mark, which would break the first key for Wrangler.
+    [System.IO.File]::WriteAllLines($devVars, [string[]]$lines, (New-Object System.Text.UTF8Encoding($false)))
+}
+Write-Host 'Next:'
+Write-Host '  .\scripts\tenant\seed-customers.ps1 -WhatIf'

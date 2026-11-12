@@ -18,6 +18,11 @@ ENTRA_STAFF_CLIENT_ID=your-staff-app-client-id
 ENTRA_STAFF_CERT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nreplace-me\n-----END PRIVATE KEY-----"
 ENTRA_STAFF_CERT_THUMBPRINT=replace-me
 
+# --- Customer directory: Entra External ID (Phase 5, ADR-0041) ---
+# Written here by scripts/tenant/setup-customer-directory.ps1; read by seed-customers.ps1
+# and remove-customers.ps1. An ID, not a secret, but keep it out of tracked files.
+ENTRA_CUSTOMER_TENANT_ID=your-customer-tenant-id
+
 # --- Customer sign-in: Entra External ID app "bc-website-customers" (Phase 5) ---
 EXTERNAL_ID_AUTHORITY=https://your-external-tenant.ciamlogin.example/your-external-tenant-id/v2.0
 EXTERNAL_ID_CLIENT_ID=your-customer-app-client-id

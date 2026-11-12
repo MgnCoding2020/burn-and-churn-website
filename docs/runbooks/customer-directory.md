@@ -63,7 +63,7 @@ Connect-AzAccount -Tenant <staff-tenant>.onmicrosoft.com -Subscription $sub.Trim
 
 **Then for real**, the same command without `-WhatIf`. It prints a line every 30 seconds while the directory is created, which can take up to 30 minutes. If it stops waiting first, run it again: it picks up the same directory.
 
-**At the end it shows the domain and the tenant ID.** Copy the tenant ID into your password manager notes. It's needed for Part D. Never paste it into chat or a tracked file.
+**At the end it shows the domain and the tenant ID, and saves the ID as `ENTRA_CUSTOMER_TENANT_ID` in `.dev.vars`** (git-ignored). The seed and remove scripts read it from there, and the website's customer sign-in will too. Keep it out of chat and tracked files.
 
 **Check it** (optional): open Chrome Incognito at **entra.microsoft.com**, then gear → **Directories + subscriptions**. **Burn and Churn Customers** is listed. You're its Global Administrator.
 
@@ -80,23 +80,23 @@ In your own VS Code terminal (Windows PowerShell), from the repo folder:
 
 ```powershell
 Import-Module Microsoft.Graph.Authentication
-.\scripts\tenant\seed-customers.ps1 -TenantId <customer-tenant-id> -WhatIf
+.\scripts\tenant\seed-customers.ps1 -WhatIf
 ```
 
-- **Signing in:** a sign-in window opens. Use the same admin account. If asked to "sign in to all apps", choose **No, this app only**. If asked to consent to the permission, accept it: it's for this directory only.
+- **Signing in:** a sign-in window opens. Choose **Work or school account** and use the same admin account (it's the new directory's Global Administrator). If asked to "sign in to all apps", choose **No, this app only**. If asked to consent to the permission, accept it: it's for this directory only.
 - **What you should see:** `directory Burn and Churn Customers (customer directory)`, `existing 0`, and a "What if" line per customer.
 
 Then run it for real:
 
 ```powershell
-.\scripts\tenant\seed-customers.ps1 -TenantId <customer-tenant-id>
+.\scripts\tenant\seed-customers.ps1
 ```
 
 Expected: `added 100 demo customers`. Running it again adds nothing.
 
 **Safety:** the script refuses to run unless Graph reports a customer directory (`tenantType` = `CIAM`). It also refuses the staff tenant's ID (from the hub's `.env`), so it can't add these people to the staff tenant by mistake.
 
-**Removing them** at the end of the project: `.\scripts\tenant\remove-customers.ps1 -TenantId <customer-tenant-id>`. It deletes only accounts tagged as demo customers with `@example.com` addresses. Your own test accounts are never touched.
+**Removing them** at the end of the project: `.\scripts\tenant\remove-customers.ps1`. It deletes only accounts tagged as demo customers with `@example.com` addresses. Your own test accounts are never touched.
 
 **Deleting the directory** at the very end (no script, ADR-0041):
 
