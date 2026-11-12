@@ -32,18 +32,18 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.12",
-    "@astrojs/cloudflare": "14.4.2",
+    "@astrojs/cloudflare": "14.4.4",
     "@axe-core/playwright": "4.14.0",
     "@playwright/test": "1.64.1",
-    "astro": "7.4.2",
-    "eslint": "10.13.0",
+    "astro": "7.4.5",
+    "eslint": "10.14.0",
     "eslint-plugin-astro": "3.2.1",
     "prettier": "3.9.10",
     "prettier-plugin-astro": "1.1.2",
     "typescript": "6.0.3",
     "typescript-eslint": "8.72.1",
     "vitest": "4.1.12",
-    "wrangler": "4.153.0"
+    "wrangler": "4.156.2"
   },
   "overrides": {
     "minimatch": "11.0.1"
