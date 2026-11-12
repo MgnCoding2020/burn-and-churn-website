@@ -104,6 +104,10 @@ if (Test-Path $hubEnv) {
 
 # ---------------------------------------------------------------- connect
 
+# Az.Accounts and Microsoft.Graph.Authentication ship different versions of the same libraries;
+# with Az loaded first, Graph calls fail with "Method not found" (seen 2026-11-12).
+if (Get-Module Az.Accounts) { throw 'Az.Accounts is loaded in this terminal (from setup-customer-directory.ps1), which breaks Microsoft Graph. Open a new terminal and run this script there.' }
+
 $mode = if ($WhatIfPreference) { 'WHAT IF: nothing is changed' } else { 'changes are made' }
 Write-Host "Demo customers ($mode)"
 $scopes = if ($WhatIfPreference) { 'User.Read.All' } else { 'User.ReadWrite.All' }

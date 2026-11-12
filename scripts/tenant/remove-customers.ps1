@@ -38,6 +38,9 @@ if (-not $TenantId) {
 if ($TenantId -notmatch '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$') { throw 'No customer tenant ID: pass -TenantId, or set ENTRA_CUSTOMER_TENANT_ID in .dev.vars (setup-customer-directory.ps1 does this).' }
 
 $Tag = 'Burn and Churn demo customer (fictional)'
+# Az.Accounts and Microsoft.Graph.Authentication ship different versions of the same libraries;
+# with Az loaded first, Graph calls fail with "Method not found" (seen 2026-11-12).
+if (Get-Module Az.Accounts) { throw 'Az.Accounts is loaded in this terminal (from setup-customer-directory.ps1), which breaks Microsoft Graph. Open a new terminal and run this script there.' }
 
 $scopes = if ($WhatIfPreference) { 'User.Read.All' } else { 'User.ReadWrite.All' }
 Connect-MgGraph -TenantId $TenantId -Scopes $scopes -NoWelcome

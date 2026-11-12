@@ -76,7 +76,7 @@ These are display only (see `scripts/tenant/seed-customers.ps1`):
 - **Passwords:** random, never shown or saved.
 - **They can't sign in.** Real sign-in is tested with your own addresses (Part F).
 
-In your own VS Code terminal (Windows PowerShell), from the repo folder:
+In a **new** VS Code terminal (Windows PowerShell), from the repo folder. Not the one that ran the directory script: its Azure module clashes with the Graph module ("Method not found").
 
 ```powershell
 Import-Module Microsoft.Graph.Authentication
