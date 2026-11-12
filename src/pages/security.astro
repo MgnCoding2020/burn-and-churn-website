@@ -37,6 +37,12 @@ const controls: Array<{
     ref: ['ADR-0007', 'docs/adr/0007-api-conventions.md'],
   },
   {
+    area: 'Rate limits',
+    what: 'Sign-in, card payments, refunds and publishing are limited per person (per address before sign-in) and answer “too many requests” past the limit',
+    status: 'In place',
+    ref: ['ADR-0040', 'docs/adr/0040-strict-rate-limits-durable-object.md'],
+  },
+  {
     area: 'Honesty',
     what: 'Fictional-business banner and no search indexing on every page; unbuilt features shown as unavailable',
     status: 'In place',
