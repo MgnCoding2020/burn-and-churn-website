@@ -4,6 +4,7 @@ import {
   customerConfig,
   customerIdentity,
   importPrivateKey,
+  signInErrorDetail,
   staffConfig,
   staffIdentity,
   x5t,
@@ -164,5 +165,40 @@ describe('customer sign-in (ADR-0042)', () => {
       CUSTOMER_TENANT,
     );
     expect(long.ok && long.identity.displayName.length).toBe(100);
+  });
+});
+
+describe('signInErrorDetail', () => {
+  it('names the failed check and masks the tenant in a received issuer', () => {
+    const err = Object.assign(new Error('unexpected JWT "iss" (issuer) claim value'), {
+      name: 'OperationProcessingError',
+      code: 'OAUTH_JWT_CLAIM_COMPARISON_FAILED',
+      cause: {
+        claim: 'iss',
+        claims: { iss: `https://login.microsoftonline.com/${TENANT}/v2.0`, name: 'Secret Name' },
+      },
+    });
+    expect(signInErrorDetail(err, [TENANT])).toEqual({
+      signIn: 'OperationProcessingError',
+      code: 'OAUTH_JWT_CLAIM_COMPARISON_FAILED',
+      claim: 'iss',
+      receivedIss: 'https://login.microsoftonline.com/<tenant>/v2.0',
+    });
+  });
+
+  it("keeps the directory's error and AADSTS code, not the description", () => {
+    const err = Object.assign(new Error('x'), {
+      name: 'ResponseBodyError',
+      code: 'OAUTH_RESPONSE_BODY_ERROR',
+      error: 'invalid_client',
+      error_description:
+        'AADSTS700027: Client assertion failed signature validation. Trace ID: abc',
+    });
+    expect(signInErrorDetail(err, [TENANT])).toEqual({
+      signIn: 'ResponseBodyError',
+      code: 'OAUTH_RESPONSE_BODY_ERROR',
+      error: 'invalid_client',
+      aadsts: 'AADSTS700027',
+    });
   });
 });

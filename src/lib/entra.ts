@@ -174,3 +174,34 @@ export function customerIdentity(
     identity: { idp: 'customer', sub: claims.oid, displayName: (name || 'Customer').slice(0, 100) },
   };
 }
+
+/**
+ * What went wrong in a failed code exchange, safe for the request log: the
+ * library's error class and code, the token claim that failed a check (with
+ * the received issuer, tenant IDs masked, since that's the one most likely to
+ * differ), and the directory's error code (`invalid_grant`, `AADSTS…`). Never
+ * the token, the claims' values or the full description.
+ */
+export function signInErrorDetail(err: unknown, tenantIds: string[]): Record<string, string> {
+  const e = err as {
+    name?: string;
+    code?: string;
+    error?: string;
+    error_description?: string;
+    cause?: { claim?: string; claims?: Record<string, unknown> };
+  };
+  const out: Record<string, string> = { signIn: String(e?.name ?? 'Error') };
+  if (typeof e?.code === 'string') out.code = e.code;
+  if (typeof e?.error === 'string') out.error = e.error;
+  const aadsts = /AADSTS\d+/.exec(String(e?.error_description ?? ''));
+  if (aadsts) out.aadsts = aadsts[0];
+  const claim = e?.cause?.claim;
+  if (typeof claim === 'string') {
+    out.claim = claim;
+    const iss = e.cause?.claims?.iss;
+    if (claim === 'iss' && typeof iss === 'string') {
+      out.receivedIss = tenantIds.reduce((v, t) => v.split(t).join('<tenant>'), iss);
+    }
+  }
+  return out;
+}
