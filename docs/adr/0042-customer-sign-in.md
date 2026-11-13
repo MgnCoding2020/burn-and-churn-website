@@ -49,6 +49,17 @@ Plan §4.2 gives customers their own directory. It was created on 2026-11-12 (AD
   - The header's "Account" is now a link.
 - **The shared `workers.dev` domain stays.** The threat model's accepted risk had "before customer sign-in" as its trigger. Because `workers.dev` is a public suffix, browsers treat this Worker as its own site for cookies. All cookies are also `__Host-`. A custom domain would add nothing for cookies.
 
+## Found in the first real sign-in (2026-11-13)
+
+The Owner's first local sign-up got as far as the code exchange, which the directory refused with `AADSTS700023`: the client assertion's audience didn't match. The OIDC library addresses the assertion (`aud`) to the issuer by default. The staff tenant accepts that; the customer directory doesn't.
+
+A check with the real certificate (a `client_credentials` request, which makes the directory verify the assertion straight away; nothing usable is granted) gave:
+
+- the issuer: refused;
+- the token endpoint (either host): accepted.
+
+The token endpoint is the audience Microsoft documents for certificate credentials, so customer sign-in now sets it. Staff sign-in is unchanged, because it's verified live as it is. The request log now also records which check failed in a code exchange (error code, failing claim, the directory's `AADSTS` code), never token values.
+
 ## Not in this change
 
 - **Delete my data** comes with online ordering, when there's order data to delete along with the account. The privacy page and the threat model say so.

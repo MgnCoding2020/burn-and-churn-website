@@ -115,12 +115,21 @@ export function importPrivateKey(pem: string): Promise<CryptoKey> {
   return key;
 }
 
-export async function clientAuth(cfg: SignInConfig): Promise<oauth.ClientAuth> {
+/**
+ * Certificate client authentication. The library addresses the signed
+ * assertion (`aud`) to the issuer by default, which the staff tenant accepts.
+ * The customer directory refuses that (AADSTS700023) and accepts the token
+ * endpoint, which is what Microsoft documents for certificate credentials;
+ * checked against the customer directory on 2026-11-13 (ADR-0042). Pass
+ * `audience` to set it.
+ */
+export async function clientAuth(cfg: SignInConfig, audience?: string): Promise<oauth.ClientAuth> {
   const key = await importPrivateKey(cfg.privateKeyPem);
   const thumb = x5t(cfg.thumbprint);
   return oauth.PrivateKeyJwt(key, {
-    [oauth.modifyAssertion]: (header) => {
+    [oauth.modifyAssertion]: (header, payload) => {
       header.x5t = thumb;
+      if (audience) payload.aud = audience;
     },
   });
 }

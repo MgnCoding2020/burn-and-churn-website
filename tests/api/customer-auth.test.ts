@@ -243,6 +243,12 @@ describe('GET /auth/customer/callback', () => {
       alg: 'RS256',
       x5t: x5t(THUMB),
     });
+    // Addressed to the token endpoint: the customer directory refuses the issuer (AADSTS700023).
+    expect(decode(body.get('client_assertion')!.split('.')[1]!)).toMatchObject({
+      aud: `${CIAM}/oauth2/v2.0/token`,
+      iss: CLIENT,
+      sub: CLIENT,
+    });
 
     const token = cookieValue(res, SESSION_COOKIE)!;
     const session = await db

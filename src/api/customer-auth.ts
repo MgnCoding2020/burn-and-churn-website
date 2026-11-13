@@ -119,7 +119,7 @@ async function completeSignIn(
     const response = await oauth.authorizationCodeGrantRequest(
       as,
       client,
-      await clientAuth(cfg),
+      await clientAuth(cfg, as.token_endpoint),
       params,
       redirectUri(c),
       attempt.verifier,
