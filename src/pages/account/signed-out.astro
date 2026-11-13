@@ -1,0 +1,21 @@
+---
+import Base from '../../layouts/Base.astro';
+
+export const prerender = true;
+---
+
+<Base title="Signed out" description="You have signed out of your Burn and Churn account.">
+  <article class="container prose">
+    <span class="eyebrow">Your account</span>
+    <h1>You're signed out</h1>
+    <p class="lede">
+      Your session on this site has ended. Next time you sign in, we'll send a new code to your
+      email.
+    </p>
+    <p>
+      <a class="btn btn--primary" href="/api/v1/auth/customer/login">
+        Sign in again
+      </a>
+    </p>
+  </article>
+</Base>

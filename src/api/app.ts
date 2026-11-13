@@ -6,6 +6,7 @@ import { rateLimit } from '../lib/rate-limit';
 import { strictLimit, type LimitName } from '../lib/strict-limit';
 import type { AppEnv } from '../server/types';
 import { authorize, type Principal } from './authz';
+import { registerCustomerAuth } from './customer-auth';
 import { registerStaffAuth } from './staff-auth';
 import { registerStaffCard } from './staff-card';
 import { registerStaffCash } from './staff-cash';
@@ -18,7 +19,12 @@ import { registerStripeWebhooks, WEBHOOK_MAX_BYTES, WEBHOOK_PATH } from './webho
 
 export const API_BASE = '/api/v1';
 export const MAX_BODY_BYTES = 16 * 1024;
-const SIGNIN_PATHS = [`${API_BASE}/auth/staff/login`, `${API_BASE}/auth/staff/callback`];
+const SIGNIN_PATHS = [
+  `${API_BASE}/auth/staff/login`,
+  `${API_BASE}/auth/staff/callback`,
+  `${API_BASE}/auth/customer/login`,
+  `${API_BASE}/auth/customer/callback`,
+];
 
 type Method = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -93,6 +99,7 @@ export function createApi() {
   );
 
   registerStaffAuth(define);
+  registerCustomerAuth(define);
   registerStaffSession(define);
   registerStaffOrders(define);
   registerStaffCard(define);

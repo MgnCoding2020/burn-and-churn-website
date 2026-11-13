@@ -1,0 +1,78 @@
+---
+import Base from '../../layouts/Base.astro';
+
+// Rendered per request: it shows who is signed in (plan §4.2, ADR-0042).
+export const prerender = false;
+
+const user = Astro.locals.user;
+const customer = user?.idp === 'customer' ? user : undefined;
+const staff = user?.idp === 'workforce';
+Astro.response.headers.set('Cache-Control', 'no-store');
+---
+
+<Base
+  title="Your account"
+  description="Burn and Churn Coffee customer account (fictional business)."
+>
+  <article class="container prose account">
+    <span class="eyebrow">Your account</span>
+    {customer ? (
+      <>
+        <h1>Hello, {customer.displayName ?? 'there'}</h1>
+        <p class="lede">You're signed in with your Burn and Churn customer account.</p>
+        <h2>What this site keeps about you</h2>
+        <ul>
+          <li>The name you gave when you signed up.</li>
+          <li>
+            Your account's ID in our customer directory, so we know it's you next time. Your email
+            address stays in the directory; this site never stores it.
+          </li>
+          <li>One session cookie while you're signed in: 14 days at most, or 2 days unused.</li>
+        </ul>
+        <p>Online ordering comes next. Your orders will appear here.</p>
+        <form method="post" action="/api/v1/auth/customer/logout">
+          <button class="btn btn--secondary" type="submit">
+            Sign out
+          </button>
+        </form>
+      </>
+    ) : staff ? (
+      <>
+        <h1>Customer accounts are separate</h1>
+        <p class="lede">
+          You're signed in to the staff portal with a work account. Customer accounts live in a
+          different directory, and a work account can't be used as one.
+        </p>
+        <p>
+          <a class="btn btn--primary" href="/staff/">
+            Back to the staff portal
+          </a>
+        </p>
+      </>
+    ) : (
+      <>
+        <h1>Sign in or create an account</h1>
+        <p class="lede">
+          No password: enter your email address and we'll send you a one-time code. New here? The
+          same page lets you create an account.
+        </p>
+        <p>
+          <a class="btn btn--primary" href="/api/v1/auth/customer/login">
+            Continue with email
+          </a>
+        </p>
+        <p class="muted">
+          Burn and Churn Coffee is a fictional café, part of a security portfolio project. Sign-in
+          is real, but nothing is sold: online ordering will be in test mode. We keep only your name
+          and an account ID; see the <a href="/privacy/">privacy page</a>.
+        </p>
+      </>
+    )}
+  </article>
+</Base>
+
+<style>
+  .account {
+    max-width: 44rem;
+  }
+</style>

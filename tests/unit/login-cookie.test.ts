@@ -25,6 +25,15 @@ const attempt = {
 };
 
 describe('sealed login cookie (ADR-0030)', () => {
+  it('a staff attempt never opens as a customer one, or the other way round (ADR-0042)', async () => {
+    const pem = await pkcs8Pem();
+    const staff = await sealLoginAttempt(attempt, pem);
+    const customer = await sealLoginAttempt(attempt, pem, 'customer');
+    expect(await openLoginAttempt(staff, pem, 'customer')).toBeUndefined();
+    expect(await openLoginAttempt(customer, pem)).toBeUndefined();
+    expect(await openLoginAttempt(customer, pem, 'customer')).toEqual(attempt);
+  });
+
   it('opens what it sealed, and the sealed value reveals none of it', async () => {
     const pem = await pkcs8Pem();
     const sealed = await sealLoginAttempt(attempt, pem);

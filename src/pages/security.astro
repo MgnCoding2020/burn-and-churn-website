@@ -85,8 +85,9 @@ const controls: Array<{
   },
   {
     area: 'Customer sign-in',
-    what: 'Entra External ID, a separate directory from staff; customers see only their own data',
+    what: 'Entra External ID, a separate directory from staff with its own app and certificate; email one-time codes, no passwords; the same server-side flow and hashed sessions as staff (14-day and 2-day limits); customer sessions refused on every staff route; only a name and a directory ID kept',
     status: 'Planned',
+    ref: ['ADR-0042', 'docs/adr/0042-customer-sign-in.md'],
   },
   {
     area: 'Refunds and cash',

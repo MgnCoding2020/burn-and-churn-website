@@ -65,13 +65,15 @@ describe('FixedWindow', () => {
 });
 
 describe('which routes are strictly limited', () => {
-  it('sign-in, every Stripe call and Publish, and nothing else', () => {
+  it('staff and customer sign-in, every Stripe call and Publish, and nothing else', () => {
     const limited = createApi()
       .routes.filter((r) => r.limit)
       .map((r) => `${r.method} ${r.path} ${r.limit}`);
     expect(limited).toEqual([
       'GET /auth/staff/login signin',
       'GET /auth/staff/callback signin',
+      'GET /auth/customer/login signin',
+      'GET /auth/customer/callback signin',
       'POST /staff/card-payments payments',
       'POST /staff/card-payments/:id/simulate-tap payments',
       'POST /staff/card-payments/:id/retry payments',
