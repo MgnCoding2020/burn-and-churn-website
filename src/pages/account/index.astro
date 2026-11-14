@@ -7,6 +7,7 @@ export const prerender = false;
 const user = Astro.locals.user;
 const customer = user?.idp === 'customer' ? user : undefined;
 const staff = user?.idp === 'workforce';
+const erasureReady = Astro.locals.erasureReady === true;
 Astro.response.headers.set('Cache-Control', 'no-store');
 ---
 
@@ -35,6 +36,26 @@ Astro.response.headers.set('Cache-Control', 'no-store');
             Sign out
           </button>
         </form>
+
+        <h2>Delete your account</h2>
+        {erasureReady ? (
+          <form class="erase" method="post" action="/api/v1/account/delete">
+            <p>
+              This deletes your sign-in account from our customer directory and everything this site
+              holds about you, straight away. It can't be undone; you can always create a new
+              account later.
+            </p>
+            <label class="erase__confirm">
+              <input type="checkbox" name="confirm" value="yes" required />I understand this can't
+              be undone
+            </label>
+            <button class="btn btn--secondary" type="submit">
+              Delete my account and data
+            </button>
+          </form>
+        ) : (
+          <p class="muted">Deleting accounts isn't set up in this environment yet.</p>
+        )}
       </>
     ) : staff ? (
       <>
@@ -74,5 +95,24 @@ Astro.response.headers.set('Cache-Control', 'no-store');
 <style>
   .account {
     max-width: 44rem;
+  }
+  .erase {
+    display: grid;
+    gap: var(--bc-space-4);
+    justify-items: start;
+  }
+  .erase p {
+    margin: 0;
+  }
+  .erase__confirm {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--bc-space-2);
+    min-height: var(--bc-tap-target);
+  }
+  .erase__confirm input {
+    width: 1.25rem;
+    height: 1.25rem;
+    accent-color: var(--bc-accent);
   }
 </style>

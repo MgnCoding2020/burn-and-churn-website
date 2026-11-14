@@ -65,7 +65,7 @@ describe('FixedWindow', () => {
 });
 
 describe('which routes are strictly limited', () => {
-  it('staff and customer sign-in, every Stripe call and Publish, and nothing else', () => {
+  it('sign-in, every Stripe call, Publish and Delete my data, and nothing else', () => {
     const limited = createApi()
       .routes.filter((r) => r.limit)
       .map((r) => `${r.method} ${r.path} ${r.limit}`);
@@ -74,6 +74,7 @@ describe('which routes are strictly limited', () => {
       'GET /auth/staff/callback signin',
       'GET /auth/customer/login signin',
       'GET /auth/customer/callback signin',
+      'POST /account/delete erasure',
       'POST /staff/card-payments payments',
       'POST /staff/card-payments/:id/simulate-tap payments',
       'POST /staff/card-payments/:id/retry payments',

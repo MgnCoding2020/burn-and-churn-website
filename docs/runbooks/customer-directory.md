@@ -132,6 +132,16 @@ Then for real, writing the values into `.dev.vars`:
 
 Your address only ever exists in the directory: never in the repo, a script or chat. Any screenshot that shows it is boxed out.
 
+**Delete my data (ADR-0043).** The same script also creates the erasure app `bc-website-erasure` (delete-only permission, its own certificate). If you ran it before this was added, run it once more with `-NewCertificate -WriteDevVars`: existing parts show as `exists`, and only the erasure app and its certificate are new.
+
+Test it with your **second** address, a throwaway account:
+
+1. Sign up with it locally.
+2. On **Your account**, tick **I understand this can't be undone** and select **Delete my account and data**.
+3. You land on "Your account is deleted". In the Entra admin center (customer directory) → **Users**, the account is gone, and it isn't under **Deleted users** either.
+
+If the page says "We couldn't delete your account", the `wrangler dev` terminal shows a `customer.erase_failed` line with the step and status: paste it.
+
 **Production** (when you're ready for it to go live): set the four values as Worker secrets with `npx wrangler secret put` (names in ADR-0042). Paste each value at the prompt, never into chat.
 
 ## After Parts A to C

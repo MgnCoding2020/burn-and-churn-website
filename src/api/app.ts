@@ -6,6 +6,7 @@ import { rateLimit } from '../lib/rate-limit';
 import { strictLimit, type LimitName } from '../lib/strict-limit';
 import type { AppEnv } from '../server/types';
 import { authorize, type Principal } from './authz';
+import { registerCustomerAccount } from './customer-account';
 import { registerCustomerAuth } from './customer-auth';
 import { registerStaffAuth } from './staff-auth';
 import { registerStaffCard } from './staff-card';
@@ -100,6 +101,7 @@ export function createApi() {
 
   registerStaffAuth(define);
   registerCustomerAuth(define);
+  registerCustomerAccount(define);
   registerStaffSession(define);
   registerStaffOrders(define);
   registerStaffCard(define);

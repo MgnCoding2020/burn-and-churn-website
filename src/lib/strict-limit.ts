@@ -18,6 +18,8 @@ export const LIMITS = {
   payments: { limit: 30, periodMs: 60_000 },
   /** Publish from SharePoint (reads five lists through Graph), per signed-in person. */
   publish: { limit: 4, periodMs: 60_000 },
+  /** Delete my data (calls Graph three times), per signed-in customer. */
+  erasure: { limit: 3, periodMs: 60_000 },
 } as const;
 export type LimitName = keyof typeof LIMITS;
 

@@ -5,6 +5,7 @@
  */
 import { cf } from '@astrojs/cloudflare/hono';
 import { getFetchState, middleware, notFound, pages } from 'astro/hono';
+import { erasureConfig } from './lib/erasure';
 import { graphConfig } from './lib/graph';
 import { stripeConfig } from './lib/stripe';
 import { buildApp } from './server/app';
@@ -31,6 +32,8 @@ const app = buildApp({
       );
       // Whether Publish can reach SharePoint here (ADR-0039).
       locals.syncReady = Boolean(graphConfig(c.env as unknown as Record<string, unknown>, []));
+      // Whether Delete my data can reach the customer directory (ADR-0043).
+      locals.erasureReady = Boolean(erasureConfig(c.env as unknown as Record<string, unknown>));
       return next();
     });
     app.use(notFound());

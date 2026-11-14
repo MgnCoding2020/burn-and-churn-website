@@ -10,5 +10,7 @@ declare namespace App {
     cardsReady?: boolean;
     /** The SharePoint sync is set up in this environment (ADR-0039). */
     syncReady?: boolean;
+    /** Delete my data can reach the customer directory here (ADR-0043). */
+    erasureReady?: boolean;
   }
 }

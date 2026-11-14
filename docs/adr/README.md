@@ -48,3 +48,4 @@ Each record captures one significant decision: the context, what was decided, an
 | [0040](0040-strict-rate-limits-durable-object.md)    | Strict rate limits in a Durable Object                             | Accepted                             | 2026-11-11 |
 | [0041](0041-customer-directory-by-script.md)         | Create the customer directory by script                            | Accepted                             | 2026-11-12 |
 | [0042](0042-customer-sign-in.md)                     | Customer sign-in with Entra External ID                            | Accepted                             | 2026-11-13 |
+| [0043](0043-delete-my-data.md)                       | Delete my data                                                     | Accepted                             | 2026-11-13 |

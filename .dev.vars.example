@@ -27,6 +27,11 @@ ENTRA_CUSTOMER_TENANT_ID=your-customer-tenant-id
 ENTRA_CUSTOMER_CLIENT_ID=your-customer-app-client-id
 ENTRA_CUSTOMER_CERT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nreplace-me\n-----END PRIVATE KEY-----"
 ENTRA_CUSTOMER_CERT_THUMBPRINT=replace-me
+# Delete my data: app "bc-website-erasure" (ADR-0043), User.DeleteRestore.All in the customer
+# directory only; its own certificate. Written by setup-customer-app.ps1 -WriteDevVars.
+ENTRA_ERASURE_CLIENT_ID=your-erasure-app-client-id
+ENTRA_ERASURE_CERT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nreplace-me\n-----END PRIVATE KEY-----"
+ENTRA_ERASURE_CERT_THUMBPRINT=replace-me
 
 # --- Customer sign-in: Entra External ID app "bc-website-customers" (Phase 5) ---
 EXTERNAL_ID_AUTHORITY=https://your-external-tenant.ciamlogin.example/your-external-tenant-id/v2.0

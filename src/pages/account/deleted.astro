@@ -1,0 +1,20 @@
+---
+import Base from '../../layouts/Base.astro';
+
+export const prerender = true;
+---
+
+<Base title="Account deleted" description="Your Burn and Churn customer account has been deleted.">
+  <article class="container prose">
+    <span class="eyebrow">Your account</span>
+    <h1>Your account is deleted</h1>
+    <p class="lede">
+      Your sign-in account has been removed from our customer directory, and this site no longer
+      holds your name, your account ID or a session for you.
+    </p>
+    <p>
+      Welcome back any time: <a href="/api/v1/auth/customer/login">create a new account</a> with the
+      same email.
+    </p>
+  </article>
+</Base>
