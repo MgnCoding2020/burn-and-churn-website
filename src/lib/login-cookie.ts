@@ -18,6 +18,8 @@ export interface LoginAttempt {
   nonce: string;
   /** Epoch milliseconds after which the attempt is refused. */
   expiresAt: number;
+  /** Where to land afterwards, from a fixed list (customers: back to their order). */
+  returnTo?: 'order';
 }
 
 const VERSION = 'v1';
@@ -84,6 +86,7 @@ export async function sealLoginAttempt(
       v: attempt.verifier,
       n: attempt.nonce,
       e: attempt.expiresAt,
+      ...(attempt.returnTo ? { r: attempt.returnTo } : {}),
     }),
   );
   const sealed = new Uint8Array(
@@ -123,7 +126,13 @@ export async function openLoginAttempt(
     ) {
       return undefined;
     }
-    return { state: o.s, verifier: o.v, nonce: o.n, expiresAt: o.e };
+    return {
+      state: o.s,
+      verifier: o.v,
+      nonce: o.n,
+      expiresAt: o.e,
+      ...(o.r === 'order' ? { returnTo: 'order' as const } : {}),
+    };
   } catch {
     // Wrong key, altered bytes or bad encoding: all the same to the caller.
     return undefined;

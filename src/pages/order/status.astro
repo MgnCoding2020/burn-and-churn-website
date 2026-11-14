@@ -1,0 +1,90 @@
+---
+import Base from '../../layouts/Base.astro';
+
+// Where Stripe sends the customer after paying. Static: the script asks the
+// server for this customer's own order (src/scripts/order-status.ts).
+export const prerender = true;
+---
+
+<Base
+  title="Order status"
+  description="Your Burn and Churn Coffee order (fictional café, test mode)."
+>
+  <article class="container order-status">
+    <span class="eyebrow">Order ahead</span>
+    <h1 data-heading>Your order</h1>
+
+    <p class="lede" data-state="loading">
+      Checking your order…
+    </p>
+    <noscript>
+      <p class="lede">Order status needs JavaScript.</p>
+    </noscript>
+
+    <div data-state="signin" hidden>
+      <p class="lede">Sign in to see your order.</p>
+      <p>
+        <a class="btn btn--primary" href="/api/v1/auth/customer/login">
+          Sign in
+        </a>
+      </p>
+    </div>
+
+    <p class="lede" data-state="missing" hidden>
+      We can't find that order for your account. Your orders are listed on your{' '}
+      <a href="/account/">account page</a>.
+    </p>
+
+    <section data-state="order" hidden aria-live="polite">
+      <p class="order-status__stage" data-stage></p>
+      <p class="muted" data-detail></p>
+      <ul class="order-status__lines" data-lines></ul>
+      <p class="order-status__total">
+        <span>Total</span>
+        <span class="price" data-total></span>
+      </p>
+      <p class="subtle">
+        Burn and Churn Coffee is fictional: paid in Stripe test mode, and no drinks are made. Staff
+        move test orders along the board in the staff portal.
+      </p>
+      <p>
+        <a href="/account/">Your orders</a> · <a href="/menu/">Back to the menu</a>
+      </p>
+    </section>
+  </article>
+</Base>
+
+<script>
+  import '../../scripts/order-status';
+</script>
+
+<style>
+  .order-status {
+    max-width: 44rem;
+  }
+
+  .order-status__stage {
+    margin: var(--bc-space-4) 0 var(--bc-space-2);
+    font-size: var(--bc-text-lg);
+    font-weight: 700;
+  }
+
+  .order-status__lines {
+    margin: var(--bc-space-6) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  :global(.order-status__line) {
+    padding: var(--bc-space-3) 0;
+    border-top: var(--bc-border-width) solid var(--bc-border);
+  }
+
+  .order-status__total {
+    display: flex;
+    justify-content: space-between;
+    padding-top: var(--bc-space-4);
+    border-top: var(--bc-border-width) solid var(--bc-control-border);
+    font-weight: 700;
+  }
+</style>

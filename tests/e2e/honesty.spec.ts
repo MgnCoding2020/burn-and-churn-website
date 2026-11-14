@@ -8,6 +8,7 @@ for (const path of [
   '/',
   '/menu/',
   '/order/',
+  '/order/status/',
   '/about/',
   '/privacy/',
   '/security/',

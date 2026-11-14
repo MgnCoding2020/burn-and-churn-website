@@ -41,6 +41,8 @@ const LOGIN_TTL_MS = 10 * 60 * 1000;
 
 export const CUSTOMER_CALLBACK_PATH = '/api/v1/auth/customer/callback';
 export const ACCOUNT_PATH = '/account/';
+/** "Sign in to pay" (`?next=order`) comes back to the order, never to an address from the request. */
+export const ORDER_PATH = '/order/';
 export const CUSTOMER_PROBLEM_PAGE = '/account/sign-in-problem/';
 export const CUSTOMER_SIGNED_OUT_PAGE = '/account/signed-out/';
 
@@ -160,7 +162,7 @@ async function completeSignIn(
   c.header('Set-Cookie', sessionCookie(session.token, LIFETIMES.customer.absoluteMs / 1000), {
     append: true,
   });
-  return c.redirect(ACCOUNT_PATH, 303);
+  return c.redirect(attempt.returnTo === 'order' ? ORDER_PATH : ACCOUNT_PATH, 303);
 }
 
 export function registerCustomerAuth(define: Define) {
@@ -178,7 +180,13 @@ export function registerCustomerAuth(define: Define) {
       const nonce = oauth.generateRandomNonce();
       const verifier = oauth.generateRandomCodeVerifier();
       const sealed = await sealLoginAttempt(
-        { state, verifier, nonce, expiresAt: Date.now() + LOGIN_TTL_MS },
+        {
+          state,
+          verifier,
+          nonce,
+          expiresAt: Date.now() + LOGIN_TTL_MS,
+          ...(c.req.query('next') === 'order' ? { returnTo: 'order' as const } : {}),
+        },
         cfg.privateKeyPem,
         'customer',
       );

@@ -1,5 +1,7 @@
 ---
 import Base from '../../layouts/Base.astro';
+import { customerOrders } from '../../lib/checkout';
+import { formatCents } from '../../lib/menu';
 
 // Rendered per request: it shows who is signed in (plan §4.2, ADR-0042).
 export const prerender = false;
@@ -8,6 +10,21 @@ const user = Astro.locals.user;
 const customer = user?.idp === 'customer' ? user : undefined;
 const staff = user?.idp === 'workforce';
 const erasureReady = Astro.locals.erasureReady === true;
+const db = Astro.locals.db;
+const orders = customer && db ? await customerOrders(db, customer.id) : [];
+const STAGE: Record<string, string> = {
+  new: 'Paid, received',
+  in_progress: 'Being made',
+  ready: 'Ready at the counter',
+  collected: 'Collected',
+};
+const day = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/New_York',
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
 Astro.response.headers.set('Cache-Control', 'no-store');
 ---
 
@@ -29,8 +46,30 @@ Astro.response.headers.set('Cache-Control', 'no-store');
             address stays in the directory; this site never stores it.
           </li>
           <li>One session cookie while you're signed in: 14 days at most, or 2 days unused.</li>
+          <li>
+            Your orders: the drinks, total, status and Stripe's payment ID, for 90 days. No card
+            details: you pay on Stripe's own page.
+          </li>
         </ul>
-        <p>Online ordering comes next. Your orders will appear here.</p>
+        <h2>Your orders</h2>
+        {orders.length ? (
+          <ul class="account__orders">
+            {orders.map((o) => (
+              <li>
+                <a href={`/order/status/?id=${o.id}`}>Order #{o.orderNumber}</a>
+                <span class="muted">
+                  {day.format(o.createdAt)} · {formatCents(o.totalCents)} ·{' '}
+                  {o.payment === 'refunded' ? 'Refunded' : STAGE[o.stage ?? 'new']}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>
+            No orders yet. <a href="/menu/">Browse the menu</a> to order ahead.
+          </p>
+        )}
+        <h2>Your session</h2>
         <form method="post" action="/api/v1/auth/customer/logout">
           <button class="btn btn--secondary" type="submit">
             Sign out
@@ -95,6 +134,18 @@ Astro.response.headers.set('Cache-Control', 'no-store');
 <style>
   .account {
     max-width: 44rem;
+  }
+  .account__orders {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .account__orders li {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--bc-space-1) var(--bc-space-3);
+    padding: var(--bc-space-3) 0;
+    border-top: var(--bc-border-width) solid var(--bc-border);
   }
   .erase {
     display: grid;

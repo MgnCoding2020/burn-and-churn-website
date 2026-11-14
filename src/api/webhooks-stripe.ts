@@ -1,5 +1,6 @@
 import type Stripe from 'stripe';
 import { cancelledByStripe, completeCardPayment, declineCardPayment } from '../lib/card-payments';
+import { completeCheckout, expireCheckout, sessionState } from '../lib/checkout';
 import { problem } from '../lib/problem';
 import { updateRefundFromStripe } from '../lib/refunds';
 import { refundState } from '../lib/terminal';
@@ -84,6 +85,13 @@ export async function handle(
         ? completeCardPayment(db, id, requestId)
         : declineCardPayment(db, id, action.failure_code ?? 'declined', requestId);
     }
+    // Online orders (ADR-0044): only a paid session becomes an order.
+    case 'checkout.session.completed': {
+      const session = event.data.object;
+      return completeCheckout(db, session.id, sessionState(session));
+    }
+    case 'checkout.session.expired':
+      return expireCheckout(db, event.data.object.id);
     case 'refund.updated':
     case 'refund.failed': {
       const refund = event.data.object;

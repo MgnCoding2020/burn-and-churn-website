@@ -5,6 +5,7 @@ const pages = [
   '/',
   '/menu/',
   '/order/',
+  '/order/status/',
   '/about/',
   '/privacy/',
   '/security/',

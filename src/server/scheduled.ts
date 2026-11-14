@@ -22,6 +22,7 @@ export interface CleanUpResult {
   stripeEvents: number;
   cardPayments: number;
   syncRuns: number;
+  checkouts: number;
 }
 
 /** Orders are kept for 90 days (plan §9, privacy page). */
@@ -33,7 +34,7 @@ export async function cleanUp(db: D1Database, now = Date.now()): Promise<CleanUp
   // Children first: refunds and lines belong to the orders being removed.
   const cutoff = now - ORDER_RETENTION_MS;
   const old = 'SELECT id FROM orders WHERE created_at < ?';
-  const [, , , orders, drawers, stripeEvents, cardPayments, syncRuns] = await db.batch([
+  const [, , , orders, drawers, stripeEvents, cardPayments, syncRuns, checkouts] = await db.batch([
     db.prepare(`DELETE FROM refund_lines WHERE order_id IN (${old})`).bind(cutoff),
     db.prepare(`DELETE FROM refunds WHERE order_id IN (${old})`).bind(cutoff),
     db
@@ -46,6 +47,7 @@ export async function cleanUp(db: D1Database, now = Date.now()): Promise<CleanUp
     db.prepare('DELETE FROM stripe_events WHERE received_at < ?').bind(cutoff),
     db.prepare('DELETE FROM card_payments WHERE created_at < ?').bind(cutoff),
     db.prepare('DELETE FROM sync_runs WHERE started_at < ?').bind(now - SYNC_RUN_RETENTION_MS),
+    db.prepare('DELETE FROM online_checkouts WHERE created_at < ?').bind(cutoff),
   ]);
   return {
     sessions,
@@ -55,6 +57,7 @@ export async function cleanUp(db: D1Database, now = Date.now()): Promise<CleanUp
     stripeEvents: stripeEvents!.meta.changes ?? 0,
     cardPayments: cardPayments!.meta.changes ?? 0,
     syncRuns: syncRuns!.meta.changes ?? 0,
+    checkouts: checkouts!.meta.changes ?? 0,
   };
 }
 

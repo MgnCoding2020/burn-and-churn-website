@@ -73,8 +73,8 @@ const cookieValue = (res: Response, name: string) =>
     .find((c) => c.startsWith(`${name}=`))
     ?.slice(name.length + 1);
 
-async function startLogin() {
-  const res = await call(`${API_BASE}/auth/customer/login`);
+async function startLogin(query = '') {
+  const res = await call(`${API_BASE}/auth/customer/login${query}`);
   expect(res.status).toBe(302);
   const target = new URL(res.headers.get('Location')!);
   return {
@@ -221,6 +221,22 @@ describe('GET /auth/customer/login', () => {
 });
 
 describe('GET /auth/customer/callback', () => {
+  it('"Sign in to pay" (?next=order) comes back to the order; any other next is ignored', async () => {
+    for (const [query, landing] of [
+      ['?next=order', '/order/'],
+      ['?next=https://evil.example', ACCOUNT_PATH],
+      ['?next=/staff/', ACCOUNT_PATH],
+    ] as const) {
+      const { state, nonce, sealed } = await startLogin(query);
+      stubTokenEndpoint({ nonce, tid: TENANT, oid: OID, name: 'Avery Test' });
+      const res = await call(`${API_BASE}/auth/customer/callback?code=c-${state}&state=${state}`, {
+        headers: { Cookie: `${CUSTOMER_LOGIN_COOKIE}=${sealed}` },
+      });
+      expect(res.headers.get('Location')).toBe(landing);
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('signs a customer in: certificate assertion, customer session, name only, no audit row', async () => {
     const before = await tableCounts();
     const { state, nonce, sealed } = await startLogin();
