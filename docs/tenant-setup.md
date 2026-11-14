@@ -1,4 +1,6 @@
-# Tenant set-up: the Business Premium trial (Saturday 2026-11-14)
+# Tenant set-up: the Business Premium trial
+
+> **When:** Michael's call; the trial waits for the build (2026-11-13). **In what order:** `docs/evidence/trial-sittings.md` puts these steps and the test plan into short sittings.
 
 For Michael. Plan §3, §4.1, §5; ADR-0038; the list contract `docs/contracts/sharepoint-lists.md`; the tests in `docs/evidence/trial-test-plan.md`. The hub's CR-001/CR-003 cutover stays on **Sunday 2026-11-15** (hub CLAUDE.md §7.5).
 
@@ -12,7 +14,7 @@ For Michael. Plan §3, §4.1, §5; ADR-0038; the list contract `docs/contracts/s
 - **Data not moved to a paid subscription before it ends is deleted.**
 - The trial **converts to paid by default** unless recurring billing is turned off ([Microsoft Learn](https://learn.microsoft.com/microsoft-365/commerce/extend-your-trial)).
 
-## Before Saturday (no licence needed)
+## Before day 1 (no licence needed)
 
 | #   | Do                                                                                                                           | Why                                                                                                                                                                            |
 | --- | ---------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -33,7 +35,7 @@ For Michael. Plan §3, §4.1, §5; ADR-0038; the list contract `docs/contracts/s
 - **No break-glass accounts exist yet.** The hub defines `bg-admin-01` and `bg-admin-02` (`roles.md`), but they were never created; the homelab excluded Michael's own admin account instead. `grp-bc-break-glass` doesn't exist.
 - The scripts can read Conditional Access on Entra ID Free (P1 ran).
 
-## Saturday: day 1
+## Day 1
 
 ### 1. Start the trial and turn off auto-renewal
 
@@ -182,6 +184,18 @@ Microsoft's portals change often: follow the current menu names and note any dif
 
 The Phase 7 code (sync, Publish, My shifts, low stock) is tested against these lists as it's built. See the test plan.
 
+## Exporting the evidence
+
+`.\scripts\tenant\export-evidence.ps1 -WhatIf`, then without `-WhatIf`, in a **new** terminal (week 3, and again before day 30). It's read-only, and writes these files to `docs/evidence/<date>-tenant-export/`:
+
+- sign-ins to the staff app, with the Conditional Access policies applied;
+- the BC policies' JSON;
+- the Entra audit for the website's apps;
+- role holders;
+- licences.
+
+The real domain becomes the fictional one, the tenant ID becomes `<tenant>`, and no IP addresses or locations are written. The script refuses to finish if the real domain is still in a file. Review the files, then commit.
+
 ## Before day 30
 
 Plan §3.5:
@@ -192,6 +206,7 @@ Plan §3.5:
    - staff sign-in keeps working on Entra ID Free;
    - the website keeps its last synced copy;
    - turn the BC Conditional Access policies Off, because Free can't run them.
+   - remove the sync app: `.\scripts\tenant\remove-sync-app.ps1 -WhatIf`, then without `-WhatIf`. The SharePoint site itself is deleted in the SharePoint admin centre (Graph can't delete a site), or by Microsoft when the trial ends.
 
 ## Record
 
