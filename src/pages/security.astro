@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 
 export const prerender = true;
-const UPDATED = '2026-11-10';
+const UPDATED = '2026-11-14';
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 const doc = (path: string) => `${repo}/blob/main/${path}`;
 
@@ -86,8 +86,14 @@ const controls: Array<{
   {
     area: 'Customer sign-in',
     what: 'Entra External ID, a separate directory from staff with its own app and certificate; email one-time codes, no passwords; the same server-side flow and hashed sessions as staff (14-day and 2-day limits); customer sessions refused on every staff route; only a name and a directory ID kept',
-    status: 'Planned',
+    status: 'In place',
     ref: ['ADR-0042', 'docs/adr/0042-customer-sign-in.md'],
+  },
+  {
+    area: 'Delete my data',
+    what: 'A signed-in customer erases their own account: the sign-in account in the customer directory first (a separate app that can only delete, its own certificate), then everything this site holds; nothing is deleted if the directory refuses; past orders stay for the books, unlinked',
+    status: 'In place',
+    ref: ['ADR-0043', 'docs/adr/0043-delete-my-data.md'],
   },
   {
     area: 'Refunds and cash',
@@ -103,8 +109,9 @@ const controls: Array<{
   },
   {
     area: 'Online payments',
-    what: 'Stripe Checkout in test mode, on Stripe’s own pages: the same signed webhooks; prices set on the server',
-    status: 'Planned',
+    what: 'Stripe Checkout in test mode: card details typed only on Stripe’s own page (a redirect, PCI SAQ A); the cart holds no prices and the server prices every order from its own menu; the order created only when Stripe confirms payment, by a signed, replay-checked webhook or a status check that asks Stripe, and only once; customers see only their own orders',
+    status: 'In place',
+    ref: ['ADR-0044', 'docs/adr/0044-online-orders-stripe-checkout.md'],
   },
 ];
 ---

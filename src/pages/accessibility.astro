@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 
 export const prerender = true;
-const UPDATED = '2026-11-09';
+const UPDATED = '2026-11-14';
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 ---
 
@@ -49,8 +49,9 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
         explains why. Browser reader modes and high-contrast settings still work.
       </li>
       <li>
-        <strong>Unfinished features</strong> such as customer sign-in and ordering are shown as
-        unavailable, with text saying so.
+        <strong>Other companies' pages.</strong> Customer sign-in happens on Microsoft's page and
+        card payment on Stripe's, so their accessibility is theirs. This site's own pages around
+        them (your order, its status, your account) are tested here.
       </li>
       <li>
         <strong>Staff sign-out after a time limit.</strong> For security, the staff portal signs
