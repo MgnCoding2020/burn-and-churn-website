@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('header navigation is Home, Menu, Story (Hours returns in Phase 7)', async ({ page }) => {
+test('header navigation is Home, Menu, Story, Hours', async ({ page }) => {
   await page.goto('/menu/');
   const toggle = page.getByText('Navigation', { exact: true });
   if (await toggle.isVisible()) await toggle.click();
@@ -9,7 +9,14 @@ test('header navigation is Home, Menu, Story (Hours returns in Phase 7)', async 
   expect(names).toContain('Home');
   expect(names).toContain('Menu');
   expect(names).toContain('Story');
-  expect(names.some((n) => /hours/i.test(n))).toBe(false);
+  expect(names).toContain('Hours');
+  await page
+    .getByRole('banner')
+    .getByRole('link', { name: 'Hours' })
+    .filter({ visible: true })
+    .click();
+  await expect(page).toHaveURL(/\/#hours$/);
+  await expect(page.locator('#hours')).toContainText('Café Hours');
 });
 
 test('the styleguide is not part of the public site', async ({ page, request }) => {

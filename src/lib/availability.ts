@@ -1,6 +1,7 @@
 import { STAFF_ROLES, type StaffRole } from '../api/authz';
 import { auditIfChanged, writeAudit } from './audit';
-import { getMenuSnapshot, type Menu, type MenuItem } from './menu';
+import type { Menu, MenuItem } from './menu';
+import { publishedMenu } from './published';
 import { reasonText, type Reason } from './reasons';
 
 /**
@@ -27,7 +28,9 @@ export interface Actor {
 const atLeast = (role: StaffRole, min: StaffRole) =>
   STAFF_ROLES.indexOf(role) >= STAFF_ROLES.indexOf(min);
 
-const itemById = (id: string) => getMenuSnapshot().items.find((i) => i.id === id);
+/** An item from the published menu (SharePoint's copy, or the built-in one). */
+const itemById = async (db: D1Database, id: string) =>
+  (await publishedMenu(db)).items.find((i) => i.id === id);
 
 export interface SoldOutMark {
   soldOutAt: number;
@@ -49,7 +52,7 @@ export async function soldOutItems(db: D1Database): Promise<Map<string, SoldOutM
 /** The menu with sold-out items marked unavailable: what the register shows and sells. */
 export async function currentMenu(db: D1Database): Promise<Menu> {
   const out = await soldOutItems(db);
-  const base = getMenuSnapshot();
+  const base = await publishedMenu(db);
   const mark = (item: MenuItem): MenuItem =>
     out.has(item.id)
       ? {
@@ -76,7 +79,7 @@ export async function markSoldOut(
   actor: Actor,
   now = Date.now(),
 ): Promise<'changed' | 'unchanged' | 'unknown_item'> {
-  const item = itemById(itemId);
+  const item = await itemById(db, itemId);
   if (!item) return 'unknown_item';
   const [change] = await db.batch([
     db
@@ -118,7 +121,7 @@ export async function bringBack(
   actor: Actor,
   now = Date.now(),
 ): Promise<BringBackOutcome> {
-  const item = itemById(itemId);
+  const item = await itemById(db, itemId);
   if (!item) return 'unknown_item';
   const mark = (await soldOutItems(db)).get(itemId);
   if (!mark) return 'unchanged';
@@ -183,7 +186,7 @@ export async function requestRestock(
   actor: Actor,
   now = Date.now(),
 ): Promise<{ id: string } | 'unknown_item' | 'not_sold_out' | 'already_requested'> {
-  const item = itemById(input.itemId);
+  const item = await itemById(db, input.itemId);
   if (!item) return 'unknown_item';
   if (!(await soldOutItems(db)).has(input.itemId)) return 'not_sold_out';
   const id = crypto.randomUUID();
@@ -256,10 +259,11 @@ async function restockQuery(
       decided_name: string | null;
       received_name: string | null;
     }>();
+  const menu = await publishedMenu(db);
   return rows.results.map((r) => ({
     id: r.id,
     itemId: r.item_id,
-    itemName: itemById(r.item_id)?.name ?? r.item_id,
+    itemName: menu.items.find((i) => i.id === r.item_id)?.name ?? r.item_id,
     quantity: r.quantity,
     note: r.note,
     status: r.status,
@@ -318,7 +322,7 @@ export async function decideRestock(
   if (decision === 'reject' && !reason) return 'reason_required';
   const status = decision === 'approve' ? 'approved' : 'rejected';
   const why = decision === 'reject' && reason ? reasonText('reject', reason) : null;
-  const name = itemById(row.item_id)?.name ?? row.item_id;
+  const name = (await itemById(db, row.item_id))?.name ?? row.item_id;
   const [change] = await db.batch([
     db
       .prepare(
@@ -362,7 +366,7 @@ export async function receiveRestock(
     .bind(id)
     .first<{ item_id: string; quantity: string }>();
   if (!row) return 'not_found';
-  const name = itemById(row.item_id)?.name ?? row.item_id;
+  const name = (await itemById(db, row.item_id))?.name ?? row.item_id;
   const audit = { requestId: actor.requestId, actorUserId: actor.userId, actorRole: actor.role };
   const [received, , back] = await db.batch([
     db

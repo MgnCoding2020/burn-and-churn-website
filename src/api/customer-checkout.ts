@@ -1,6 +1,6 @@
 import type { Context } from 'hono';
 import { customerCheckout, parseLines, startCheckout, stripeCheckout } from '../lib/checkout';
-import { getMenuSnapshot } from '../lib/menu';
+import { publishedMenu } from '../lib/published';
 import { problem } from '../lib/problem';
 import { stripeConfig } from '../lib/stripe';
 import type { AppEnv } from '../server/types';
@@ -23,7 +23,8 @@ function setup(c: Context<AppEnv>) {
   };
 }
 
-const itemName = (id: string) => getMenuSnapshot().items.find((i) => i.id === id)?.name ?? id;
+const itemName = async (db: D1Database, id: string) =>
+  (await publishedMenu(db)).items.find((i) => i.id === id)?.name ?? id;
 
 export function registerCustomerCheckout(define: Define) {
   // Starts a payment: the server prices the cart, Stripe hosts the payment page.
@@ -49,7 +50,12 @@ export function registerCustomerCheckout(define: Define) {
       if (outcome.ok) return c.json({ id: outcome.checkoutId, url: outcome.url }, 201);
       switch (outcome.error) {
         case 'unavailable':
-          return problem(c, 409, 'Conflict', `${itemName(outcome.itemId)} is sold out today.`);
+          return problem(
+            c,
+            409,
+            'Conflict',
+            `${await itemName(db, outcome.itemId)} is sold out today.`,
+          );
         case 'unknown_item':
         case 'unknown_variant':
           return problem(c, 409, 'Conflict', 'Something in your order is no longer on the menu.');

@@ -50,3 +50,4 @@ Each record captures one significant decision: the context, what was decided, an
 | [0042](0042-customer-sign-in.md)                     | Customer sign-in with Entra External ID                            | Accepted                             | 2026-11-13 |
 | [0043](0043-delete-my-data.md)                       | Delete my data                                                     | Accepted                             | 2026-11-13 |
 | [0044](0044-online-orders-stripe-checkout.md)        | Online orders with Stripe Checkout                                 | Accepted                             | 2026-11-14 |
+| [0045](0045-site-reads-published-sharepoint-copy.md) | The site shows SharePoint's published copy                         | Accepted                             | 2026-11-14 |
