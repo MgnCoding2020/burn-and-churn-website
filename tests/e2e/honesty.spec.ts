@@ -7,6 +7,7 @@ const BANNER =
 for (const path of [
   '/',
   '/menu/',
+  '/order/',
   '/about/',
   '/privacy/',
   '/security/',
