@@ -9,6 +9,7 @@ import { expect, test } from '@playwright/test';
 const pages = [
   '/',
   '/menu/',
+  '/order/',
   '/about/',
   '/privacy/',
   '/security/',

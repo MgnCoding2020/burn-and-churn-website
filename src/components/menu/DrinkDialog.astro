@@ -7,6 +7,8 @@ import { priceCells } from '../../lib/menu/display';
  * button through invoker commands (command="show-modal"), so it needs no
  * JavaScript in current browsers; public/scripts/menu-dialog.js covers older
  * ones. The browser traps focus, closes on Escape and restores focus.
+ * Each available size has an Add button for the online order
+ * (src/scripts/menu-cart.ts); they stay disabled until that script runs.
  */
 interface Props {
   item: MenuItem;
@@ -41,17 +43,33 @@ const id = `drink-${item.id}`;
     <ul class="drink-dialog__sizes">
       {cells.map((c) => (
         <li class:list={['drink-dialog__size', { 'drink-dialog__size--na': !c.available }]}>
-          <span>{c.label}</span>
+          <span class="drink-dialog__size-label">{c.label}</span>
           <span class="price">{c.text}</span>
+          {c.available && (
+            <button
+              class="btn btn--secondary drink-dialog__add"
+              type="button"
+              disabled
+              data-cart-add
+              data-item={item.id}
+              data-variant={c.variantId}
+              data-name={item.name}
+              data-label={c.label}
+              aria-label={`Add ${item.name}, ${c.label}, to your order`}
+            >
+              Add
+            </button>
+          )}
         </li>
       ))}
     </ul>
 
-    <span class="btn drink-dialog__order" role="button" aria-disabled="true">
-      Ordering coming soon
-    </span>
+    <p class="drink-dialog__status" role="status" data-cart-status></p>
+    <a class="btn btn--primary drink-dialog__order" href="/order/">
+      View your order
+    </a>
     <p class="subtle drink-dialog__note">
-      Fictional drink and price. Online ordering arrives in a later phase, in test mode only.
+      Fictional drink and price. Orders are paid in Stripe test mode: no real money.
     </p>
   </div>
 </dialog>
@@ -120,10 +138,25 @@ const id = `drink-${item.id}`;
 
   .drink-dialog__size {
     display: flex;
-    justify-content: space-between;
+    align-items: center;
     gap: var(--bc-space-4);
     padding: var(--bc-space-3) 0;
     border-top: var(--bc-border-width) solid var(--bc-border);
+  }
+
+  .drink-dialog__size-label {
+    flex: 1;
+  }
+
+  .drink-dialog__add {
+    min-height: var(--bc-tap-target);
+    padding-inline: var(--bc-space-4);
+  }
+
+  .drink-dialog__status {
+    min-height: 1.5em;
+    margin: 0 0 var(--bc-space-3);
+    font-weight: 600;
   }
 
   .drink-dialog__size--na {

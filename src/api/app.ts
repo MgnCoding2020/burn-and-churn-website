@@ -8,6 +8,7 @@ import type { AppEnv } from '../server/types';
 import { authorize, type Principal } from './authz';
 import { registerCustomerAccount } from './customer-account';
 import { registerCustomerAuth } from './customer-auth';
+import { registerMenu } from './menu';
 import { registerStaffAuth } from './staff-auth';
 import { registerStaffCard } from './staff-card';
 import { registerStaffCash } from './staff-cash';
@@ -102,6 +103,7 @@ export function createApi() {
   registerStaffAuth(define);
   registerCustomerAuth(define);
   registerCustomerAccount(define);
+  registerMenu(define);
   registerStaffSession(define);
   registerStaffOrders(define);
   registerStaffCard(define);

@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 
 export const prerender = true;
-const UPDATED = '2026-11-13';
+const UPDATED = '2026-11-14';
 // When the log retention below was last checked against Cloudflare's documentation.
 const LOGS_CHECKED = '2026-11-07';
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
@@ -67,6 +67,15 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
             account's directory ID, and when it first and last signed in.
           </td>
           <td>Project life</td>
+        </tr>
+        <tr>
+          <td>Your order (cart)</td>
+          <td>
+            The drinks, sizes and quantities you add, kept in your own browser's storage (key{' '}
+            <code>bc-cart-v1</code>), not on our servers, until you remove them. No prices, no
+            personal details. Private windows or blocked site data simply start empty.
+          </td>
+          <td>Until removed</td>
         </tr>
         <tr>
           <td>Customer accounts</td>
@@ -151,7 +160,10 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 
     <h2>What this site does not do</h2>
     <ul>
-      <li>No cookies on the public pages, and nothing stored in your browser.</li>
+      <li>
+        No cookies on the public pages. The only thing kept in your browser is your order, and only
+        once you add a drink.
+      </li>
       <li>No analytics, advertising or tracking scripts.</li>
       <li>
         No third-party requests: fonts, images and video are served from this site, not from Google

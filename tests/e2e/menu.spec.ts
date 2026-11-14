@@ -85,12 +85,19 @@ test.describe('menu page', () => {
     await expect(dialog).toBeHidden();
   });
 
-  test('ordering is clearly not available yet', async ({ page }) => {
+  test('each available size can be added to the order, with a spoken confirmation', async ({
+    page,
+  }) => {
     await page.getByRole('button', { name: drink('Cappuccino') }).click();
-    const order = page
-      .getByRole('dialog', { name: 'Cappuccino' })
-      .getByText('Ordering coming soon');
-    await expect(order).toHaveAttribute('aria-disabled', 'true');
+    const dialog = page.getByRole('dialog', { name: 'Cappuccino' });
+    await dialog.getByRole('button', { name: 'Add Cappuccino, 16 oz, to your order' }).click();
+    await expect(dialog.getByRole('status')).toHaveText(
+      'Added Cappuccino, 16 oz. You have 1 in your order.',
+    );
+    await expect(dialog.getByRole('link', { name: 'View your order' })).toHaveAttribute(
+      'href',
+      '/order/',
+    );
     expect(await page.locator('form').count()).toBe(0);
   });
 

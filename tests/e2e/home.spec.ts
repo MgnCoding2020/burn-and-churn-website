@@ -15,7 +15,6 @@ test.describe('homepage', () => {
   test('features that do not exist yet are visibly unavailable, not links', async ({ page }) => {
     await page.goto('/');
     const demo = page.locator('[aria-disabled="true"]');
-    expect(await demo.count()).toBeGreaterThan(0);
     for (const el of await demo.all()) {
       if (!(await el.isVisible())) continue;
       await expect(el).toContainText(/coming soon/i);

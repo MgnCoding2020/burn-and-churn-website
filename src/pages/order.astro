@@ -1,0 +1,131 @@
+---
+import Base from '../layouts/Base.astro';
+
+// The cart lives in the browser, so the page itself is static; the script
+// fills it in from the cart and the server's menu (src/scripts/order-page.ts).
+export const prerender = true;
+---
+
+<Base
+  title="Your order"
+  description="Your Burn and Churn Coffee order (fictional café, test mode)."
+>
+  <article class="container order">
+    <span class="eyebrow">Order ahead</span>
+    <h1>Your order</h1>
+
+    <p class="lede" data-state="loading">
+      Loading your order…
+    </p>
+    <noscript>
+      <p class="lede">Your order needs JavaScript: it's kept in this browser until you pay.</p>
+    </noscript>
+
+    <div data-state="empty" hidden>
+      <p class="lede">Your order is empty.</p>
+      <p>
+        <a class="btn btn--primary" href="/menu/">
+          Browse the menu
+        </a>
+      </p>
+    </div>
+
+    <p class="status--error" data-state="error" hidden>
+      We couldn't load today's menu, so prices can't be shown. Please try again in a moment.
+    </p>
+
+    <section data-state="cart" hidden aria-labelledby="order-lines-title">
+      <h2 id="order-lines-title" class="visually-hidden">
+        Drinks in your order
+      </h2>
+      <ul class="order__lines" data-lines></ul>
+      <p class="order__unavailable status--error" data-unavailable hidden>
+        Some drinks are sold out today or no longer on the menu. They're not charged: remove them to
+        continue.
+      </p>
+      <p class="order__total">
+        <span>Total</span>
+        <span class="price" data-total></span>
+      </p>
+      <p class="muted">
+        Pickup at the counter. Burn and Churn Coffee is fictional: no drinks are made.
+      </p>
+      <p>
+        <span class="btn btn--primary order__pay" role="button" aria-disabled="true">
+          Pay with card: coming next
+        </span>
+      </p>
+      <p class="subtle">
+        Paying online arrives in the next update, through Stripe's own payment page in test mode.
+        <a href="/menu/">Keep browsing</a>
+      </p>
+    </section>
+
+    <p class="visually-hidden" role="status" data-announce></p>
+  </article>
+</Base>
+
+<script>
+  import '../scripts/order-page';
+</script>
+
+<style>
+  .order {
+    max-width: 44rem;
+  }
+
+  .order__lines {
+    margin: var(--bc-space-6) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  :global(.order-line) {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--bc-space-2) var(--bc-space-4);
+    align-items: center;
+    padding: var(--bc-space-4) 0;
+    border-top: var(--bc-border-width) solid var(--bc-border);
+  }
+
+  :global(.order-line__name) {
+    font-weight: 600;
+  }
+
+  :global(.order-line--na .order-line__name) {
+    color: var(--bc-ink-subtle);
+  }
+
+  :global(.order-line__controls) {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--bc-space-2);
+  }
+
+  :global(.order-line__qty) {
+    min-width: 2.5ch;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+
+  :global(.order-line__controls button) {
+    min-width: var(--bc-tap-target);
+    min-height: var(--bc-tap-target);
+  }
+
+  .order__total {
+    display: flex;
+    justify-content: space-between;
+    padding-top: var(--bc-space-4);
+    border-top: var(--bc-border-width) solid var(--bc-control-border);
+    font-size: var(--bc-text-lg);
+    font-weight: 700;
+  }
+
+  .order__pay {
+    width: 100%;
+  }
+</style>

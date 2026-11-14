@@ -38,9 +38,13 @@ const current = Astro.url.pathname;
       >
         Account
       </a>
-      <span class="btn site-header__order" role="link" aria-disabled="true">
-        Order ahead <span class="demo-action__note">· Demo: coming soon</span>
-      </span>
+      <a
+        class="btn site-header__order"
+        href="/order/"
+        aria-current={current.startsWith('/order/') ? 'page' : undefined}
+      >
+        Order<span data-cart-count></span>
+      </a>
     </div>
 
     <details class="site-nav site-nav--narrow">
@@ -59,12 +63,20 @@ const current = Astro.url.pathname;
               Account
             </a>
           </li>
-          <li class="muted">Online ordering: coming soon</li>
+          <li>
+            <a href="/order/" aria-current={current.startsWith('/order/') ? 'page' : undefined}>
+              Order<span data-cart-count></span>
+            </a>
+          </li>
         </ul>
       </nav>
     </details>
   </div>
 </header>
+
+<script>
+  import '../../scripts/cart-count';
+</script>
 
 <style>
   .site-header {
@@ -127,11 +139,6 @@ const current = Astro.url.pathname;
     text-decoration-color: var(--bc-accent);
     text-decoration-thickness: 2px;
     text-underline-offset: 0.4em;
-  }
-
-  .demo-action__note {
-    color: var(--bc-ink-subtle);
-    font-size: var(--bc-text-xs);
   }
 
   .site-header__order {
