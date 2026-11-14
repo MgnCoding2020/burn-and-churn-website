@@ -19,8 +19,11 @@
       5. User flow     "bc-customers-sign-up-sign-in": sign-up allowed, email one-time passcode as
                        the only method (no passwords), collects the email (hidden) and a display
                        name. The app is linked to it.
-      6. .dev.vars     With -WriteDevVars, writes the client ID, thumbprint and private key into
-                       the git-ignored .dev.vars. Values are never printed.
+      6. Erasure app   "bc-website-erasure" (ADR-0043), for Delete my data: no sign-in, no redirect
+                       URIs; one application permission, User.DeleteRestore.All (delete and restore
+                       users; it can't read or change them), with admin consent; its own certificate.
+      7. .dev.vars     With -WriteDevVars, writes both apps' client IDs, thumbprints and private keys
+                       into the git-ignored .dev.vars. Values are never printed.
 
     Safety: refuses unless Graph reports a customer directory (tenantType CIAM), and refuses the
     staff tenant's ID from the hub's .env. Safe to run more than once. -WhatIf signs in read-only
@@ -30,7 +33,8 @@
     The customer directory's tenant ID. Default: ENTRA_CUSTOMER_TENANT_ID from .dev.vars.
 
 .PARAMETER NewCertificate
-    Make a new certificate (RSA 2048, one year) with openssl. Refuses to overwrite one.
+    Make the certificates that don't exist yet (RSA 2048, one year) with openssl: one for the
+    sign-in app, one for the erasure app. Never overwrites one.
 
 .PARAMETER ReplaceCertificate
     Replace the app's current certificate with -CertificatePath (yearly rotation).
@@ -60,6 +64,8 @@ $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
 $AppName  = 'bc-website-customers'
 $CertName = 'bc-website-customers'
 $FlowName = 'bc-customers-sign-up-sign-in'
+$EraserName = 'bc-website-erasure'
+$EraserPermission = 'User.DeleteRestore.All'
 $EmailOtp = 'EmailOtpSignup-OAUTH'
 $RedirectUris = @(
     'http://localhost:8787/api/v1/auth/customer/callback',
@@ -226,6 +232,32 @@ if (Test-Path $CertificatePath) {
     throw "No certificate at $CertificatePath. Use -NewCertificate, or pass -CertificatePath."
 }
 
+# The erasure app's certificate: the same rules, its own key pair.
+$eraserCertPath = Join-Path $secretsFull "$EraserName.crt"
+$eraserKeyPath = Join-Path $secretsFull "$EraserName.pkcs8.pem"
+if ($NewCertificate) {
+    if (Test-Path $eraserCertPath) {
+        Write-Step 'exists' 'certificate' "$eraserCertPath (not overwritten)"
+    } elseif ($PSCmdlet.ShouldProcess($secretsFull, 'Create the erasure app certificate with openssl')) {
+        $openssl = Find-OpenSsl
+        New-Item -ItemType Directory -Force $secretsFull | Out-Null
+        $rawKey = Join-Path $secretsFull "$EraserName.key"
+        & $openssl req -x509 -newkey rsa:2048 -sha256 -days 365 -nodes -keyout $rawKey -out $eraserCertPath -subj "/CN=$EraserName"
+        if ($LASTEXITCODE) { throw 'openssl req failed.' }
+        & $openssl pkcs8 -topk8 -nocrypt -in $rawKey -out $eraserKeyPath
+        if ($LASTEXITCODE) { throw 'openssl pkcs8 failed.' }
+        Remove-Item $rawKey
+        Write-Step 'created' 'certificate' "$eraserCertPath (+ private key next to it)"
+    } else {
+        Write-Step 'would' 'certificate' "create $EraserName in $secretsFull"
+    }
+}
+$eraserCert = $null
+if (Test-Path $eraserCertPath) {
+    $eraserCert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2 (, [IO.File]::ReadAllBytes($eraserCertPath))
+    Write-Host ("  erasure certificate thumbprint ends ...{0}, expires {1:yyyy-MM-dd}" -f $eraserCert.Thumbprint.Substring(34), $eraserCert.NotAfter)
+}
+
 # ---------------------------------------------------------------- connect
 
 if (-not (Get-Module -ListAvailable Microsoft.Graph.Authentication)) {
@@ -234,7 +266,7 @@ if (-not (Get-Module -ListAvailable Microsoft.Graph.Authentication)) {
 if ($WhatIfPreference) {
     $scopes = 'Application.Read.All', 'EventListener.Read.All', 'IdentityProvider.Read.All'
 } else {
-    $scopes = 'Application.ReadWrite.All', 'DelegatedPermissionGrant.ReadWrite.All', 'EventListener.ReadWrite.All', 'IdentityProvider.Read.All'
+    $scopes = 'Application.ReadWrite.All', 'AppRoleAssignment.ReadWrite.All', 'DelegatedPermissionGrant.ReadWrite.All', 'EventListener.ReadWrite.All', 'IdentityProvider.Read.All'
 }
 Connect-MgGraph -TenantId $TenantId -Scopes $scopes -NoWelcome
 
@@ -382,7 +414,78 @@ if (-not $flow) {
     }
 }
 
-# ---------------------------------------------------------------- 6. .dev.vars
+# ---------------------------------------------------------------- 6. erasure app
+
+$eraserRole = @($graphSp.appRoles) | Where-Object { $_.value -eq $EraserPermission } | Select-Object -First 1
+if (-not $eraserRole) { throw "Microsoft Graph has no application permission '$EraserPermission' here. Nothing more was changed." }
+$eraserAccess = @(@{ resourceAppId = $GraphAppId; resourceAccess = @(@{ id = $eraserRole.id; type = 'Role' }) })
+
+$eraser = @(Get-All "v1.0/applications?`$filter=displayName eq '$EraserName'") | Select-Object -First 1
+if (-not $eraser) {
+    if ($PSCmdlet.ShouldProcess($EraserName, "Create app registration with $EraserPermission")) {
+        $eraser = Invoke-Graph POST 'v1.0/applications' @{
+            displayName            = $EraserName
+            signInAudience         = 'AzureADMyOrg'
+            description            = 'Burn and Churn Coffee Delete my data: deletes a customer''s directory account at their request (fictional business, security portfolio project). ADR-0043.'
+            requiredResourceAccess = $eraserAccess
+        }
+        Write-Step 'created' 'app' "$EraserName ($EraserPermission only, no sign-in)"
+    } else {
+        Write-Step 'would' 'app' "create $EraserName ($EraserPermission only, no sign-in)"
+    }
+} else {
+    $have = @(@($eraser.requiredResourceAccess) | ForEach-Object { $_.resourceAccess } | ForEach-Object { $_.id })
+    if (($have -join ' ') -ne $eraserRole.id -or @($eraser.web.redirectUris | Where-Object { $_ }).Count) {
+        if ($PSCmdlet.ShouldProcess($EraserName, "Set permissions to $EraserPermission only, no redirect URIs")) {
+            Invoke-Graph PATCH "v1.0/applications/$($eraser.id)" @{ requiredResourceAccess = $eraserAccess; web = @{ redirectUris = @() } } | Out-Null
+            Write-Step 'updated' 'app' "$EraserName permissions"
+        } else {
+            Write-Step 'would' 'app' "set $EraserName to $EraserPermission only"
+        }
+    } else {
+        Write-Step 'exists' 'app' "$EraserName (up to date)"
+    }
+    if (@($eraser.passwordCredentials).Count) { Write-Warning "$EraserName has a client secret: delete it in the admin centre." }
+}
+
+if ($eraser -and $eraserCert) {
+    $keys = @($eraser.keyCredentials)
+    if ($keys | Where-Object { Test-SameCertificate $_ $eraserCert }) {
+        Write-Step 'exists' 'credential' "$EraserName certificate already uploaded"
+    } elseif ($keys.Count -and -not $ReplaceCertificate) {
+        Write-Step 'skipped' 'credential' "$EraserName has a different certificate; use -ReplaceCertificate to rotate"
+    } elseif ($PSCmdlet.ShouldProcess($EraserName, 'Upload certificate')) {
+        Invoke-Graph PATCH "v1.0/applications/$($eraser.id)" @{ keyCredentials = @(@{ type = 'AsymmetricX509Cert'; usage = 'Verify'; key = [Convert]::ToBase64String($eraserCert.RawData); displayName = "CN=$EraserName" }) } | Out-Null
+        Write-Step 'uploaded' 'credential' ("$EraserName certificate, expires {0:yyyy-MM-dd}" -f $eraserCert.NotAfter)
+    } else {
+        Write-Step 'would' 'credential' "upload $EraserName certificate"
+    }
+}
+
+$eraserSp = $null
+if ($eraser) { $eraserSp = @(Get-All "v1.0/servicePrincipals?`$filter=appId eq '$($eraser.appId)'") | Select-Object -First 1 }
+if (-not $eraserSp) {
+    if ($eraser -and $PSCmdlet.ShouldProcess($EraserName, 'Create enterprise app')) {
+        $eraserSp = Invoke-Graph POST 'v1.0/servicePrincipals' @{ appId = $eraser.appId; tags = @('WindowsAzureActiveDirectoryIntegratedApp') }
+        Write-Step 'created' 'enterprise' $EraserName
+    } else {
+        Write-Step 'would' 'enterprise' "create $EraserName"
+    }
+}
+
+# Admin consent for an application permission is an app role assignment on Microsoft Graph.
+$granted = $null
+if ($eraserSp) { $granted = @(Get-All "v1.0/servicePrincipals/$($eraserSp.id)/appRoleAssignments") | Where-Object { $_.appRoleId -eq $eraserRole.id -and $_.resourceId -eq $graphSp.id } }
+if ($granted) {
+    Write-Step 'exists' 'consent' "$EraserName $EraserPermission"
+} elseif ($eraserSp -and $PSCmdlet.ShouldProcess($EraserName, "Grant admin consent for $EraserPermission")) {
+    Invoke-Graph POST "v1.0/servicePrincipals/$($graphSp.id)/appRoleAssignedTo" @{ principalId = $eraserSp.id; resourceId = $graphSp.id; appRoleId = $eraserRole.id } | Out-Null
+    Write-Step 'granted' 'consent' "$EraserName $EraserPermission"
+} else {
+    Write-Step 'would' 'consent' "grant $EraserName $EraserPermission"
+}
+
+# ---------------------------------------------------------------- 7. .dev.vars
 
 if ($WriteDevVars) {
     $devVars = Join-Path $RepoRoot '.dev.vars'
@@ -396,8 +499,15 @@ if ($WriteDevVars) {
             ENTRA_CUSTOMER_CERT_THUMBPRINT  = $cert.Thumbprint
             ENTRA_CUSTOMER_CERT_PRIVATE_KEY = ConvertTo-DotEnvPem ([IO.File]::ReadAllText($keyPath))
         })
+        if ($eraser -and $eraserCert -and (Test-Path $eraserKeyPath)) {
+            $text = Set-DotEnvValues $text ([ordered]@{
+                ENTRA_ERASURE_CLIENT_ID        = $eraser.appId
+                ENTRA_ERASURE_CERT_THUMBPRINT  = $eraserCert.Thumbprint
+                ENTRA_ERASURE_CERT_PRIVATE_KEY = ConvertTo-DotEnvPem ([IO.File]::ReadAllText($eraserKeyPath))
+            })
+        }
         [IO.File]::WriteAllText($devVars, $text, (New-Object System.Text.UTF8Encoding $false))
-        Write-Step 'written' '.dev.vars' 'tenant ID, client ID, thumbprint, private key (values not shown)'
+        Write-Step 'written' '.dev.vars' 'tenant ID, client IDs, thumbprints, private keys (values not shown)'
     }
 }
 

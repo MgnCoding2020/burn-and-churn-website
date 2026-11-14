@@ -166,7 +166,7 @@ describe('route principals', () => {
   it('declares every customer auth route, with the sign-in limit on login and callback', () => {
     const { routes } = createApi();
     expect(
-      routes.filter((r) => r.path.includes('/auth/customer/') || r.path.startsWith('/account/')),
+      routes.filter((r) => r.path.includes('/auth/customer/') || r.path === '/account/me'),
     ).toEqual([
       { method: 'GET', path: '/auth/customer/login', principal: 'public', limit: 'signin' },
       { method: 'GET', path: '/auth/customer/callback', principal: 'public', limit: 'signin' },

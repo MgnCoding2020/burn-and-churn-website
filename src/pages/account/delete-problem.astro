@@ -1,0 +1,21 @@
+---
+import Base from '../../layouts/Base.astro';
+
+export const prerender = true;
+---
+
+<Base title="Account not deleted" description="Your Burn and Churn account could not be deleted.">
+  <article class="container prose">
+    <span class="eyebrow">Your account</span>
+    <h1>We couldn't delete your account</h1>
+    <p class="lede">
+      Nothing was deleted: your account and everything with it are exactly as they were. Please try
+      again in a few minutes.
+    </p>
+    <p>
+      <a class="btn btn--primary" href="/account/">
+        Back to your account
+      </a>
+    </p>
+  </article>
+</Base>

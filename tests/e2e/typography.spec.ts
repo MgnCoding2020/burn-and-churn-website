@@ -20,6 +20,8 @@ const pages = [
   '/account/',
   '/account/sign-in-problem/',
   '/account/signed-out/',
+  '/account/deleted/',
+  '/account/delete-problem/',
   '/500',
   '/maintenance/',
   '/a-page-that-does-not-exist',
