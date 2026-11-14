@@ -417,3 +417,25 @@ describe('POST /auth/customer/logout', () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe('account pages', () => {
+  it('see the signed-in customer (the session is read on /account/)', async () => {
+    const { token } = await signInCustomer('Page Reader');
+    const withPage = buildApp({
+      log: false,
+      tail: (a) => {
+        a.get('/account/', (c) => c.json({ idp: c.get('user')?.idp ?? null }));
+        a.get('/menu/', (c) => c.json({ idp: c.get('user')?.idp ?? null }));
+      },
+    });
+    const get = (path: string) =>
+      withPage.request(
+        `${ORIGIN}${path}`,
+        { headers: { Cookie: `${SESSION_COOKIE}=${token}` } },
+        env,
+      );
+    expect(await (await get('/account/')).json()).toEqual({ idp: 'customer' });
+    // Public pages don't look the session up.
+    expect(await (await get('/menu/')).json()).toEqual({ idp: null });
+  });
+});
