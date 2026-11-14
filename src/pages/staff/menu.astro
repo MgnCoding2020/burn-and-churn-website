@@ -1,6 +1,7 @@
 ---
 import ReasonPicker from '../../components/staff/ReasonPicker.astro';
 import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import LowStock from '../../components/staff/LowStock.astro';
 import StaffBar from '../../components/staff/StaffBar.astro';
 import Base from '../../layouts/Base.astro';
 import { decide } from '../../api/authz';
@@ -15,6 +16,7 @@ import {
 } from '../../lib/availability';
 import { getMenuSnapshot } from '../../lib/menu';
 import { STORE_TIME_ZONE } from '../../lib/orders';
+import { lowStock } from '../../lib/published';
 import { staffPageAccess, timeLeft } from '../../lib/staff-page';
 
 // Sold-out items and the restock chain (ADR-0033): anyone marks sold out,
@@ -29,6 +31,7 @@ Astro.response.headers.set('Cache-Control', 'no-store');
 const db = Astro.locals.db;
 const menu = db ? await currentMenu(db) : getMenuSnapshot();
 const marks: Map<string, SoldOutMark> = db ? await soldOutItems(db) : new Map();
+const low = await lowStock(db, menu);
 const isLead = decide('Staff.ShiftLead', user) === 'allow';
 const isManager = decide('Staff.Manager', user) === 'allow';
 const requests: RestockRequest[] = db && isLead ? await liveRestockRequests(db) : [];
@@ -54,6 +57,7 @@ const time = new Intl.DateTimeFormat('en-US', {
       Tapped the wrong one? You can undo your own mark for 5 minutes.
     </p>
     <p class="staff-menu__status" role="status" data-menu-status></p>
+    <LowStock items={low} />
 
     {isLead && (
       <section aria-labelledby="restock-title" class="staff-menu__restock">

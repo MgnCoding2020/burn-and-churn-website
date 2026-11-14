@@ -1,0 +1,85 @@
+---
+import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import StaffBar from '../../components/staff/StaffBar.astro';
+import Base from '../../layouts/Base.astro';
+import { recentShiftNotes } from '../../lib/published';
+import { staffPageAccess, timeLeft } from '../../lib/staff-page';
+
+// Shift notes from SharePoint, last 14 days, read-only (contract §4; 7.3).
+// Shift leads write them in SharePoint; everyone on staff reads them here.
+export const prerender = false;
+
+const access = staffPageAccess(Astro.locals.user, 'Staff.Barista');
+if (!access.ok) return Astro.redirect(access.redirect, access.status);
+const { user } = access;
+Astro.response.headers.set('Cache-Control', 'no-store');
+
+const notes = await recentShiftNotes(Astro.locals.db);
+const SHIFT = { open: 'Opening', mid: 'Mid', close: 'Closing' } as const;
+const day = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'UTC',
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+});
+const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
+---
+
+<Base title="Shift notes" description="Burn and Churn Coffee shift notes (fictional business).">
+  <section class="container notes">
+    <StaffBar name={user.displayName ?? 'Staff member'} role={user.role} current="/staff/notes/" />
+    <h1>Shift notes</h1>
+    <p class="lede">
+      The last 14 days. Shift leads write notes in SharePoint; they appear here after the next sync
+      or Publish.
+    </p>
+    {notes.length ? (
+      <ul class="notes__list">
+        {notes.map((n) => (
+          <li class="notes__item">
+            <p class="notes__meta">
+              <strong>{day.format(new Date(`${n.date}T12:00:00Z`))}</strong> · {SHIFT[n.shift]}
+              {n.author && <span class="muted"> · {n.author}</span>}
+            </p>
+            <p class="notes__summary">{n.summary}</p>
+            <p class="notes__body">{n.note}</p>
+          </li>
+        ))}
+      </ul>
+    ) : (
+      <p>No shift notes in the last 14 days.</p>
+    )}
+  </section>
+  <SessionTimeout idleMsLeft={idleMsLeft} absoluteMsLeft={absoluteMsLeft} />
+</Base>
+
+<style>
+  .notes {
+    max-width: 52rem;
+  }
+
+  .notes__list {
+    margin: var(--bc-space-6) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .notes__item {
+    padding: var(--bc-space-4) 0;
+    border-top: var(--bc-border-width) solid var(--bc-border);
+  }
+
+  .notes__meta,
+  .notes__summary {
+    margin: 0 0 var(--bc-space-1);
+  }
+
+  .notes__summary {
+    font-weight: 700;
+  }
+
+  .notes__body {
+    margin: 0;
+    white-space: pre-line;
+  }
+</style>

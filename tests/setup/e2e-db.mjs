@@ -55,6 +55,23 @@ export function setSessionIdle(token, idleMs) {
   execSql(`UPDATE sessions SET idle_ms = ${idleMs} WHERE id_hash = '${hash}';`);
 }
 
+/**
+ * Stores a list's published copy, as the SharePoint sync would (ADR-0045).
+ * `data` is a test constant, never input; `null` removes the list's copy.
+ */
+export function seedSnapshot(list, data) {
+  const name = list.replace(/'/g, "''");
+  if (data === null) {
+    execSql(`DELETE FROM sharepoint_snapshots WHERE list = '${name}';`);
+    return;
+  }
+  const json = JSON.stringify(data).replace(/'/g, "''");
+  execSql(`
+    INSERT INTO sharepoint_snapshots (list, data, item_count, synced_at, run_id)
+    VALUES ('${name}', '${json}', ${Array.isArray(data) ? data.length : 1}, ${Date.now()}, 'e2e')
+    ON CONFLICT (list) DO UPDATE SET data = excluded.data, synced_at = excluded.synced_at;`);
+}
+
 function execSql(sql) {
   // A file, not --command: no shell quoting to get wrong on Windows.
   const dir = mkdtempSync(join(tmpdir(), 'bc-e2e-'));

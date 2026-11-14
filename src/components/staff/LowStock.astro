@@ -1,0 +1,61 @@
+---
+import type { InventoryItem } from '../../lib/sharepoint';
+
+/**
+ * Supplies at or below their par level, from the Inventory list (contract
+ * §5; 7.3). A warning only: it names the drinks a supply is used in, so a
+ * shift lead can decide what to mark sold out. Counts are kept in SharePoint.
+ */
+interface Props {
+  items: (InventoryItem & { drinks: string[] })[];
+}
+const { items } = Astro.props;
+---
+
+{items.length > 0 && (
+  <section class="low-stock" aria-labelledby="low-stock-title">
+    <h2 id="low-stock-title" class="low-stock__title">
+      Low stock ({items.length})
+    </h2>
+    <ul>
+      {items.map((i) => (
+        <li>
+          <strong>{i.supply}</strong>: {i.onHand} {i.unit} on hand, par {i.parLevel}.
+          {i.drinks.length > 0 && <span class="muted"> Used in {i.drinks.join(', ')}.</span>}
+        </li>
+      ))}
+    </ul>
+    <p class="muted low-stock__note">
+      Counts come from the Inventory list in SharePoint. Mark drinks sold out on the Menu screen if
+      you run out.
+    </p>
+  </section>
+)}
+
+<style>
+  .low-stock {
+    margin-block: var(--bc-space-6);
+    padding: var(--bc-space-4);
+    border: var(--bc-border-width) solid var(--bc-accent);
+    border-radius: var(--bc-radius-card);
+  }
+
+  .low-stock__title {
+    margin: 0 0 var(--bc-space-3);
+    font-size: var(--bc-text-lg);
+    color: var(--bc-accent);
+  }
+
+  .low-stock ul {
+    margin: 0;
+    padding-left: var(--bc-space-5);
+  }
+
+  .low-stock li + li {
+    margin-top: var(--bc-space-2);
+  }
+
+  .low-stock__note {
+    margin: var(--bc-space-3) 0 0;
+  }
+</style>

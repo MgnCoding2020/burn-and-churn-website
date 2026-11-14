@@ -1,0 +1,51 @@
+---
+import type { Announcement } from '../../lib/sharepoint';
+
+/**
+ * Announcements from the SharePoint list (ADR-0045, 7.3), already filtered to
+ * today and to this audience. Plain text only: SharePoint content is untrusted.
+ * Nothing is rendered when there are none.
+ */
+interface Props {
+  items: Announcement[];
+  label?: string;
+}
+const { items, label = 'Announcements' } = Astro.props;
+---
+
+{items.length > 0 && (
+  <section class="announcements" aria-label={label}>
+    <ul>
+      {items.map((a) => (
+        <li class="announcements__item">
+          <strong class="announcements__headline">{a.headline}</strong>
+          <span>{a.body}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<style>
+  .announcements ul {
+    display: grid;
+    gap: var(--bc-space-3);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .announcements__item {
+    display: grid;
+    gap: var(--bc-space-1);
+    padding: var(--bc-space-4);
+    background: var(--bc-surface);
+    border: var(--bc-border-width) solid var(--bc-control-border);
+    border-left: 4px solid var(--bc-gold);
+    border-radius: var(--bc-radius-card);
+  }
+
+  .announcements__headline {
+    color: var(--bc-gold);
+  }
+</style>
