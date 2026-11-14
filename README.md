@@ -34,8 +34,8 @@ It's where the program's separate pieces meet in one working system:
 | 2. Staff sign-in                   | Entra ID sign-in, roles, sessions, audit log                                                            | Live (role tests to finish)  |
 | 3. Register and order board        | Counter orders, cash, order board, sold out and restocks, refunds, cash count                           | Done                         |
 | 4. Stripe Terminal                 | Card payments through the simulated reader, refunds                                                     | Done                         |
-| 5. Customers and Stripe Checkout   | Customer accounts, cart, online ordering, signed webhooks                                               | In progress                  |
-| 6. Trial preparation               | Tenant scripts and test plan, dry-run only                                                              | Planned                      |
+| 5. Customers and Stripe Checkout   | Customer accounts, cart, online ordering, signed webhooks                                               | Done                         |
+| 6. Trial preparation               | Tenant scripts and test plan, dry-run only                                                              | Done                         |
 | 7. Microsoft 365 and SharePoint    | SharePoint site and lists, sync, Conditional Access, evidence                                           | Planned                      |
 | 8. AI order helper                 | Read-only assistant with caps and prompt-injection tests                                                | Planned                      |
 | 9. Hardening and program alignment | Scans, restore test, evidence rolled up to the hub                                                      | Planned                      |
