@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 
 export const prerender = true;
-const UPDATED = '2026-11-09';
+const UPDATED = '2026-11-13';
 // When the log retention below was last checked against Cloudflare's documentation.
 const LOGS_CHECKED = '2026-11-07';
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
@@ -18,9 +18,9 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
     <p class="updated">Last updated {UPDATED}</p>
     <p class="lede">
       Very little. Burn and Churn Coffee is a fictional business and this site is a portfolio
-      project. The public pages have no accounts, no forms, no cookies, no analytics and no
-      trackers. Only the staff portal, used by the café's fictional test employees, has sign-in and
-      cookies.
+      project. The public pages have no forms, no cookies, no analytics and no trackers. Cookies are
+      set only when you sign in: to a customer account, or to the staff portal used by the café's
+      fictional test employees.
     </p>
 
     <h2>What is collected today</h2>
@@ -69,25 +69,37 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
           <td>Project life</td>
         </tr>
         <tr>
+          <td>Customer accounts</td>
           <td>
-            Staff session cookie <code>__Host-bc_session</code>
+            If you create an account: the name you give and your account's ID in the customer
+            directory (Microsoft Entra External ID, separate from staff), and when it first and last
+            signed in. Your email address stays in the directory, which uses it to send your sign-in
+            codes; this site never stores it. No password exists. Kept until you ask for it to be
+            deleted.
           </td>
-          <td>
-            A random value that keeps a staff member signed in. The server stores only a hash of it,
-            with its expiry time. Strictly necessary; set only after staff sign-in. It ends at
-            sign-out, after 1 hour without use, or after 8 hours, and is deleted from the server
-            within the hour after.
-          </td>
-          <td>8 hours</td>
+          <td>Project life</td>
         </tr>
         <tr>
           <td>
-            Sign-in cookie <code>__Host-bc_login</code>
+            Session cookie <code>__Host-bc_session</code>
           </td>
           <td>
-            The one-time values of a staff sign-in in progress, encrypted so the browser can't read
-            or change them. It ties the sign-in to the browser that started it, so a sign-in can't
-            be forced on someone else. Strictly necessary; deleted when the sign-in finishes.
+            A random value that keeps you signed in. The server stores only a hash of it, with its
+            expiry time. Strictly necessary; set only after sign-in. It ends at sign-out, or for
+            staff after 1 hour without use or 8 hours, for customers after 2 days without use or 14
+            days, and is deleted from the server within the hour after.
+          </td>
+          <td>14 days</td>
+        </tr>
+        <tr>
+          <td>
+            Sign-in cookies <code>__Host-bc_login</code> (staff), <code>__Host-bc_clogin</code>{' '}
+            (customers)
+          </td>
+          <td>
+            The one-time values of a sign-in in progress, encrypted so the browser can't read or
+            change them. It ties the sign-in to the browser that started it, so a sign-in can't be
+            forced on someone else. Strictly necessary; deleted when the sign-in finishes.
           </td>
           <td>10 minutes</td>
         </tr>
@@ -156,10 +168,6 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
     </p>
     <ul>
       <li>
-        <strong>Customer sign-in</strong> (Microsoft Entra External ID): one strictly necessary
-        session cookie; test accounts only.
-      </li>
-      <li>
         <strong>Online ordering</strong> (Stripe Checkout in test mode): order details for a
         fictional café; card details stay on Stripe's pages and never reach this site.
       </li>
@@ -170,9 +178,10 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 
     <h2>Questions</h2>
     <p>
-      Customers have no accounts yet, so there's no personal data to request or delete today; staff
-      accounts are fictional test accounts. If you have a question or spot something wrong, open an
-      issue on <a href={`${repo}/issues`}>GitHub</a>, or report a security concern through{' '}
+      A button to delete your customer account and everything this site holds about it arrives with
+      online ordering; staff accounts are fictional test accounts. If you have a question or spot
+      something wrong, open an issue on <a href={`${repo}/issues`}>GitHub</a>, or report a security
+      concern through{' '}
       <a href={`${repo}/security/advisories/new`}>private vulnerability reporting</a>.
     </p>
   </article>

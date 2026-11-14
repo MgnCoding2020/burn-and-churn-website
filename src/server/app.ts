@@ -29,8 +29,8 @@ const ALWAYS_SERVED = [
 ];
 const RETRY_AFTER_SECONDS = '600';
 
-/** Where the session cookie is looked up. */
-const SESSION_PATHS = [`${API_BASE}/`, '/staff/'];
+/** Where the session cookie is looked up; public pages never touch the database. */
+export const SESSION_PATHS = [`${API_BASE}/`, '/staff/', '/account/'];
 /** Reads that don't count as activity: the timeout warning's check and the order board's polling. */
 const PASSIVE_READS = [`${API_BASE}/staff/session`, `${API_BASE}/staff/orders`];
 /** Register screens and their API: using them tightens the session to 15 minutes idle (ADR-0031). */

@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { importPrivateKey, staffConfig, staffIdentity, x5t } from '../../src/lib/entra';
+import {
+  customerAuthorizationServer,
+  customerConfig,
+  customerIdentity,
+  importPrivateKey,
+  signInErrorDetail,
+  staffConfig,
+  staffIdentity,
+  x5t,
+} from '../../src/lib/entra';
 
 const TENANT = '11111111-2222-4333-8444-555555555555';
 const OID = '99999999-8888-4777-8666-555555555555';
@@ -91,5 +100,105 @@ describe('staffIdentity', () => {
   it('falls back to a neutral name', () => {
     const r = staffIdentity({ ...claims, name: '  ' }, TENANT);
     expect(r.ok && r.identity.displayName).toBe('Staff member');
+  });
+});
+
+describe('customer sign-in (ADR-0042)', () => {
+  const CUSTOMER_TENANT = '33333333-4444-4555-8666-777777777777';
+
+  it('reads its own settings, never the staff ones', () => {
+    expect(customerConfig(valid)).toBeUndefined();
+    const cfg = customerConfig({
+      ENTRA_CUSTOMER_TENANT_ID: CUSTOMER_TENANT,
+      ENTRA_CUSTOMER_CLIENT_ID: '44444444-5555-4666-8777-888888888888',
+      ENTRA_CUSTOMER_CERT_THUMBPRINT: 'CD'.repeat(20),
+      ENTRA_CUSTOMER_CERT_PRIVATE_KEY: valid.ENTRA_STAFF_CERT_PRIVATE_KEY,
+    });
+    expect(cfg?.tenantId).toBe(CUSTOMER_TENANT);
+    expect(customerConfig({ ...valid, ENTRA_CUSTOMER_TENANT_ID: 'not-a-guid' })).toBeUndefined();
+  });
+
+  it("signs in on the directory's own ciamlogin.com host", () => {
+    const as = customerAuthorizationServer(CUSTOMER_TENANT);
+    const base = `https://${CUSTOMER_TENANT}.ciamlogin.com/${CUSTOMER_TENANT}`;
+    expect(as).toEqual({
+      issuer: `${base}/v2.0`,
+      authorization_endpoint: `${base}/oauth2/v2.0/authorize`,
+      token_endpoint: `${base}/oauth2/v2.0/token`,
+      jwks_uri: `${base}/discovery/v2.0/keys`,
+    });
+  });
+
+  it('accepts its own directory and an object ID; keeps the name, never a role or the email', () => {
+    const r = customerIdentity(
+      {
+        tid: CUSTOMER_TENANT,
+        oid: OID,
+        name: '  Avery Test ',
+        email: 'a@example.com',
+        roles: ['Staff.Owner'],
+      },
+      CUSTOMER_TENANT,
+    );
+    expect(r).toEqual({
+      ok: true,
+      identity: { idp: 'customer', sub: OID, displayName: 'Avery Test' },
+    });
+  });
+
+  it('refuses another directory (the staff tenant) and a missing object ID', () => {
+    expect(customerIdentity({ tid: TENANT, oid: OID }, CUSTOMER_TENANT)).toEqual({
+      ok: false,
+      reason: 'wrong_tenant',
+    });
+    expect(customerIdentity({ tid: CUSTOMER_TENANT }, CUSTOMER_TENANT)).toEqual({
+      ok: false,
+      reason: 'no_object_id',
+    });
+  });
+
+  it('falls back to "Customer" and caps a long name', () => {
+    const blank = customerIdentity({ tid: CUSTOMER_TENANT, oid: OID, name: ' ' }, CUSTOMER_TENANT);
+    expect(blank.ok && blank.identity.displayName).toBe('Customer');
+    const long = customerIdentity(
+      { tid: CUSTOMER_TENANT, oid: OID, name: 'x'.repeat(300) },
+      CUSTOMER_TENANT,
+    );
+    expect(long.ok && long.identity.displayName.length).toBe(100);
+  });
+});
+
+describe('signInErrorDetail', () => {
+  it('names the failed check and masks the tenant in a received issuer', () => {
+    const err = Object.assign(new Error('unexpected JWT "iss" (issuer) claim value'), {
+      name: 'OperationProcessingError',
+      code: 'OAUTH_JWT_CLAIM_COMPARISON_FAILED',
+      cause: {
+        claim: 'iss',
+        claims: { iss: `https://login.microsoftonline.com/${TENANT}/v2.0`, name: 'Secret Name' },
+      },
+    });
+    expect(signInErrorDetail(err, [TENANT])).toEqual({
+      signIn: 'OperationProcessingError',
+      code: 'OAUTH_JWT_CLAIM_COMPARISON_FAILED',
+      claim: 'iss',
+      receivedIss: 'https://login.microsoftonline.com/<tenant>/v2.0',
+    });
+  });
+
+  it("keeps the directory's error and AADSTS code, not the description", () => {
+    const err = Object.assign(new Error('x'), {
+      name: 'ResponseBodyError',
+      code: 'OAUTH_RESPONSE_BODY_ERROR',
+      error: 'invalid_client',
+      error_description:
+        'AADSTS700027: Client assertion failed signature validation. Trace ID: abc',
+    });
+    expect(signInErrorDetail(err, [TENANT])).toEqual({
+      signIn: 'ResponseBodyError',
+      code: 'OAUTH_RESPONSE_BODY_ERROR',
+      error: 'invalid_client',
+      aadsts: 'AADSTS700027',
+    });
   });
 });

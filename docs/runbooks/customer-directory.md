@@ -108,9 +108,31 @@ Expected: `added 100 demo customers`. Running it again adds nothing.
 
 In the customer directory, go to **Entra ID** → **Users**. Screenshot the list showing the demo customers. Save it to `burn-and-churn-design\originals` as usual. If any row shows your own address, it'll be boxed out on the repo copy.
 
-## Part F: later (the next PR)
+## Part F: customer sign-in (ADR-0042)
 
-Claude prepares a script for the website's customer app registration (`bc-website-customers`) and the email one-time-code sign-in. Then you sign up through the site with your two personal addresses. Those addresses only ever exist in the directory: never in the repo, a script or chat. Any screenshot that shows them is boxed out.
+`scripts/tenant/setup-customer-app.ps1` creates the website's customer app `bc-website-customers` with its own certificate, and the user flow `bc-customers-sign-up-sign-in` (email one-time codes only, sign-up allowed). It reads the tenant ID from `.dev.vars`.
+
+In a **new** terminal (not one that ran the directory script):
+
+```powershell
+Import-Module Microsoft.Graph.Authentication
+.\scripts\tenant\setup-customer-app.ps1 -NewCertificate -WhatIf
+```
+
+- **Signing in:** choose **Work or school account** and use your admin account. Accept the permission consent if asked; it's for the customer directory only.
+- **What you should see:** `checked directory Burn and Churn Customers (customer directory)` and `checked provider EmailOtpSignup-OAUTH`, then "would" lines for the certificate, app, enterprise app, consent and user flow.
+
+Then for real, writing the values into `.dev.vars`:
+
+```powershell
+.\scripts\tenant\setup-customer-app.ps1 -NewCertificate -WriteDevVars
+```
+
+**Try it locally:** run `npm run build` and `npx wrangler dev`, open `http://localhost:8787/account/`, and select **Continue with email**. On Microsoft's page, choose to create an account and use one of your own addresses. Enter the code from your inbox and your name. You land on **Your account** with your name.
+
+Your address only ever exists in the directory: never in the repo, a script or chat. Any screenshot that shows it is boxed out.
+
+**Production** (when you're ready for it to go live): set the four values as Worker secrets with `npx wrangler secret put` (names in ADR-0042). Paste each value at the prompt, never into chat.
 
 ## After Parts A to C
 

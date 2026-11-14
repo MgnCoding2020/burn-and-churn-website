@@ -31,9 +31,13 @@ const current = Astro.url.pathname;
     </nav>
 
     <div class="site-header__actions">
-      <span class="demo-action" aria-disabled="true">
-        Account <span class="demo-action__note">(coming soon)</span>
-      </span>
+      <a
+        class="site-header__account"
+        href="/account/"
+        aria-current={current.startsWith('/account/') ? 'page' : undefined}
+      >
+        Account
+      </a>
       <span class="btn site-header__order" role="link" aria-disabled="true">
         Order ahead <span class="demo-action__note">· Demo: coming soon</span>
       </span>
@@ -50,7 +54,12 @@ const current = Astro.url.pathname;
               </a>
             </li>
           ))}
-          <li class="muted">Customer accounts and ordering: coming soon</li>
+          <li>
+            <a href="/account/" aria-current={current.startsWith('/account/') ? 'page' : undefined}>
+              Account
+            </a>
+          </li>
+          <li class="muted">Online ordering: coming soon</li>
         </ul>
       </nav>
     </details>
@@ -102,9 +111,22 @@ const current = Astro.url.pathname;
     gap: var(--bc-space-4);
   }
 
-  .demo-action {
-    color: var(--bc-ink-muted);
+  .site-header__account {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--bc-tap-target);
+    color: var(--bc-ink);
     font-size: var(--bc-text-sm);
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .site-header__account:hover,
+  .site-header__account[aria-current='page'] {
+    text-decoration: underline;
+    text-decoration-color: var(--bc-accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.4em;
   }
 
   .demo-action__note {

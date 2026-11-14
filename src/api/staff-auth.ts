@@ -8,6 +8,7 @@ import {
   STAFF_SCOPE,
   staffConfig,
   staffIdentity,
+  signInErrorDetail,
   type StaffSignInConfig,
 } from '../lib/entra';
 import { openLoginAttempt, sealLoginAttempt } from '../lib/login-cookie';
@@ -146,9 +147,13 @@ async function completeSignIn(
     });
     claims = (oauth.getValidatedIdTokenClaims(result) ?? {}) as Record<string, unknown>;
   } catch (err) {
-    // The error class only: messages can carry upstream detail.
+    // Which check failed (signInErrorDetail), never the token or claim values.
     console.error(
-      JSON.stringify({ level: 'warn', requestId: c.get('requestId'), signIn: (err as Error).name }),
+      JSON.stringify({
+        level: 'warn',
+        requestId: c.get('requestId'),
+        ...signInErrorDetail(err, [cfg.tenantId]),
+      }),
     );
     return refuseAnonymous(c, 'token_error');
   }
