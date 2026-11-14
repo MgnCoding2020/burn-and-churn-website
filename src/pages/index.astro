@@ -2,15 +2,26 @@
 import CraftSection from '../components/home/CraftSection.astro';
 import FeatureCards from '../components/home/FeatureCards.astro';
 import HeroSection from '../components/home/HeroSection.astro';
+import Announcements from '../components/shared/Announcements.astro';
 import Base from '../layouts/Base.astro';
-import { hoursSummary, openNow, publishedHours, publishedMenu } from '../lib/published';
+import {
+  activeAnnouncements,
+  hoursSummary,
+  openNow,
+  publishedHours,
+  publishedMenu,
+} from '../lib/published';
 
 // Rendered per request (ADR-0045): opening hours and the featured drink's price
 // come from what SharePoint published.
 export const prerender = false;
 
 const db = Astro.locals.db;
-const [menu, hours] = await Promise.all([publishedMenu(db), publishedHours(db)]);
+const [menu, hours, notices] = await Promise.all([
+  publishedMenu(db),
+  publishedHours(db),
+  activeAnnouncements(db, 'public'),
+]);
 const featured = menu.items.find((i) => i.id === 'cream-cold-brew');
 ---
 
@@ -29,6 +40,17 @@ const featured = menu.items.find((i) => i.id === 'cream-cold-brew');
     fetchpriority="high"
   />
   <HeroSection />
+  {notices.length > 0 && (
+    <div class="container home-notices">
+      <Announcements items={notices} />
+    </div>
+  )}
   <FeatureCards hours={hoursSummary(hours)} open={openNow(hours)} />
   <CraftSection featured={featured} />
 </Base>
+
+<style>
+  .home-notices {
+    margin-top: var(--bc-space-8);
+  }
+</style>

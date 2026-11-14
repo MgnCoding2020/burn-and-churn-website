@@ -1,7 +1,12 @@
 ---
 import SessionTimeout from '../../components/staff/SessionTimeout.astro';
+import Announcements from '../../components/shared/Announcements.astro';
+import LowStock from '../../components/staff/LowStock.astro';
 import StaffBar from '../../components/staff/StaffBar.astro';
 import Base from '../../layouts/Base.astro';
+import { currentMenu } from '../../lib/availability';
+import { getMenuSnapshot } from '../../lib/menu';
+import { activeAnnouncements, lowStock } from '../../lib/published';
 import { screensFor, staffPageAccess, timeLeft } from '../../lib/staff-page';
 
 // Rendered per request: it shows who is signed in.
@@ -18,9 +23,14 @@ const BLURBS: Record<string, string> = {
   '/staff/menu/': 'Mark drinks sold out; shift leads request restocks and managers approve them.',
   '/staff/cash/': 'Open the cash drawer with a float; count it at the end of the shift.',
   '/staff/refunds/': 'Refund a sale, or part of one. Never one you took yourself.',
+  '/staff/notes/': "Shift leads' notes from the last 14 days.",
   '/staff/activity/': 'What you and your team have done.',
 };
 const screens = screensFor(user.role);
+// From SharePoint's published lists (ADR-0045): notices for staff, and supplies running low.
+const db = Astro.locals.db;
+const notices = await activeAnnouncements(db, 'staff');
+const low = await lowStock(db, db ? await currentMenu(db) : getMenuSnapshot());
 const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
 ---
 
@@ -30,6 +40,8 @@ const { idleMsLeft, absoluteMsLeft } = timeLeft(user);
     <span class="eyebrow">Staff portal</span>
     <h1>Hello, {user.displayName ?? 'there'}</h1>
     <p class="lede">You're signed in with your Burn and Churn work account.</p>
+    <Announcements items={notices} label="Staff notices" />
+    <LowStock items={low} />
 
     <ul class="launcher">
       {screens.map((s) => (

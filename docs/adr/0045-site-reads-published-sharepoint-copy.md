@@ -28,6 +28,13 @@ The trial's test T-SP-06 ("change a price in SharePoint, Publish, and the public
   - Both pages were prerendered before. The built-in menu is still validated at build time.
 - **The header's "Hours" link returns** (to `/#hours`). The contact page points there instead of repeating fixed hours, and the old `src/data/store-hours.ts` constant is removed.
 
+### Announcements, shift notes and low stock (7.3)
+
+- **Announcements** show from `StartsOn` to `EndsOn`, inclusive, in the store's time zone. **Public** ones appear on the home and menu pages (the pages rendered per request); **staff** ones appear on the portal home. The other public pages are prerendered and don't show them.
+- **Shift notes:** a read-only **Notes** screen for every staff role, showing the last 14 days, newest first (contract §4).
+- **Low stock:** supplies at or below their par level, with the menu names of the drinks they're used in. It's shown on the portal home and the staff Menu screen. **It's a warning only:** marking a drink sold out stays a person's decision, and counts are kept in SharePoint.
+- **Before the first sync, or with a malformed copy,** these show nothing. There's no built-in copy, because there's nothing true to show.
+
 ## Consequences
 
 - **A Publish shows up at once** on the menu, the home page, the register and the cart, with no deploy.

@@ -3,9 +3,11 @@ import CategoryNav from '../components/menu/CategoryNav.astro';
 import FeaturedDrink from '../components/menu/FeaturedDrink.astro';
 import MenuCategory from '../components/menu/MenuCategory.astro';
 import MenuHero from '../components/menu/MenuHero.astro';
+import Announcements from '../components/shared/Announcements.astro';
 import Base from '../layouts/Base.astro';
 import { currentMenu } from '../lib/availability';
 import { getMenuSnapshot } from '../lib/menu';
+import { activeAnnouncements } from '../lib/published';
 
 // Rendered per request (ADR-0045): the menu SharePoint published, with today's
 // sold-out marks. The built-in menu is still validated at build time, and is
@@ -14,6 +16,7 @@ export const prerender = false;
 
 const db = Astro.locals.db;
 const menu = db ? await currentMenu(db) : getMenuSnapshot();
+const notices = await activeAnnouncements(db, 'public');
 const spotlight = menu.items.find((i) => i.id === 'burn-churn-latte');
 ---
 
@@ -23,6 +26,11 @@ const spotlight = menu.items.find((i) => i.id === 'burn-churn-latte');
   flush
 >
   <MenuHero />
+  {notices.length > 0 && (
+    <div class="container menu-notices">
+      <Announcements items={notices} />
+    </div>
+  )}
   <CategoryNav categories={menu.categories} />
 
   <div class="container menu-board">
@@ -50,6 +58,10 @@ const spotlight = menu.items.find((i) => i.id === 'burn-churn-latte');
     gap: var(--bc-space-6);
     align-items: start;
     margin-top: var(--bc-space-10);
+  }
+
+  .menu-notices {
+    margin-top: var(--bc-space-6);
   }
 
   .menu-note {

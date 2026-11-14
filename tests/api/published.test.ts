@@ -3,7 +3,14 @@ import { API_BASE } from '../../src/api/app';
 import { currentMenu, markSoldOut } from '../../src/lib/availability';
 import { getMenuSnapshot, type Menu } from '../../src/lib/menu';
 import { priceOrder } from '../../src/lib/orders';
-import { DEFAULT_HOURS, publishedHours, publishedMenu } from '../../src/lib/published';
+import {
+  activeAnnouncements,
+  DEFAULT_HOURS,
+  lowStock,
+  publishedHours,
+  publishedMenu,
+  recentShiftNotes,
+} from '../../src/lib/published';
 import { upsertUser } from '../../src/lib/users';
 import { buildApp } from '../../src/server/app';
 import { testDb } from '../setup/db';
@@ -119,5 +126,77 @@ describe("a SharePoint price change reaches everything that sells (T-SP-06's cod
     expect((await currentMenu(db)).items.find((i) => i.id === 'winter-special')!.available).toBe(
       false,
     );
+  });
+});
+
+describe('announcements, shift notes and low stock (7.3)', () => {
+  const NOW = new Date('2026-11-20T15:00:00Z'); // Friday 10:00 AM in New York
+
+  it('announcements show for their audience from StartsOn to EndsOn, inclusive', async () => {
+    const a = (headline: string, audience: string, startsOn: string, endsOn: string | null) => ({
+      headline,
+      body: 'x',
+      audience,
+      startsOn,
+      endsOn,
+    });
+    await publish('Announcements', [
+      a('Today only', 'public', '2026-11-20', '2026-11-20'),
+      a('Ongoing', 'public', '2026-11-01', null),
+      a('Future', 'public', '2026-11-21', null),
+      a('Ended', 'public', '2026-11-01', '2026-11-19'),
+      a('Staff', 'staff', '2026-11-01', null),
+    ]);
+    const shown = (await activeAnnouncements(db, 'public', NOW)).map((x) => x.headline);
+    expect(shown).toEqual(['Today only', 'Ongoing']);
+    expect((await activeAnnouncements(db, 'staff', NOW)).map((x) => x.headline)).toEqual(['Staff']);
+    expect(await activeAnnouncements(undefined, 'public', NOW)).toEqual([]);
+  });
+
+  it('shift notes: the last 14 days, newest day and latest shift first', async () => {
+    const n = (summary: string, date: string, shift: string) => ({
+      summary,
+      date,
+      shift,
+      note: 'x',
+      author: null,
+    });
+    await publish('ShiftNotes', [
+      n('Too old', '2026-11-06', 'open'),
+      n('Oldest kept', '2026-11-07', 'open'),
+      n('Friday open', '2026-11-20', 'open'),
+      n('Friday close', '2026-11-20', 'close'),
+    ]);
+    expect((await recentShiftNotes(db, 14, NOW)).map((x) => x.summary)).toEqual([
+      'Friday close',
+      'Friday open',
+      'Oldest kept',
+    ]);
+  });
+
+  it('low stock: at or below par, with the menu names of the drinks it affects', async () => {
+    const menu = getMenuSnapshot();
+    const [first, second] = menu.items;
+    await publish('Inventory', [
+      {
+        supply: 'At par',
+        unit: 'kg',
+        parLevel: 3,
+        onHand: 3,
+        menuItems: [first!.id, 'gone'],
+        low: true,
+      },
+      { supply: 'Plenty', unit: 'kg', parLevel: 3, onHand: 9, menuItems: [second!.id], low: false },
+    ]);
+    const low = await lowStock(db, menu);
+    expect(low.map((x) => [x.supply, x.drinks])).toEqual([['At par', [first!.name]]]);
+    expect(await lowStock(undefined, menu)).toEqual([]);
+  });
+
+  it('a malformed list shows nothing rather than breaking a page', async () => {
+    await publish('Announcements', '{"not": "a list"}');
+    await publish('Inventory', '[{"supply": 5}]');
+    expect(await activeAnnouncements(db, 'public', NOW)).toEqual([]);
+    expect(await lowStock(db, getMenuSnapshot())).toEqual([]);
   });
 });

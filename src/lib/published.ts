@@ -1,5 +1,5 @@
 import { getMenuSnapshot, type Menu } from './menu';
-import type { StoreHoursDay } from './sharepoint';
+import type { Announcement, InventoryItem, ShiftNote, StoreHoursDay } from './sharepoint';
 import { readSnapshot } from './sync';
 
 /**
@@ -112,4 +112,77 @@ export function openNow(days: StoreHoursDay[], now = new Date()): boolean {
     time >= today.opens &&
     time < today.closes,
   );
+}
+
+// ---------------------------------------------------------------- announcements, notes, stock (7.3)
+
+/** Today's date in the store's time zone, YYYY-MM-DD (what SharePoint's date columns hold). */
+export function storeToday(now = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: STORE_TIME_ZONE }).format(now);
+}
+
+const isList = <T>(v: unknown, check: (x: T) => boolean): v is T[] =>
+  Array.isArray(v) && v.every((x) => x !== null && typeof x === 'object' && check(x as T));
+
+async function snapshotList<T>(
+  db: D1Database | undefined,
+  list: 'Announcements' | 'ShiftNotes' | 'Inventory',
+  check: (x: T) => boolean,
+): Promise<T[]> {
+  if (!db) return [];
+  const snap = await readSnapshot<unknown>(db, list).catch(() => undefined);
+  return isList<T>(snap, check) ? snap : [];
+}
+
+/** Announcements for one audience that are showing today (from StartsOn to EndsOn, inclusive). */
+export async function activeAnnouncements(
+  db: D1Database | undefined,
+  audience: Announcement['audience'],
+  now = new Date(),
+): Promise<Announcement[]> {
+  const today = storeToday(now);
+  const all = await snapshotList<Announcement>(
+    db,
+    'Announcements',
+    (a) => typeof a.headline === 'string' && typeof a.startsOn === 'string',
+  );
+  return all.filter(
+    (a) => a.audience === audience && a.startsOn <= today && (!a.endsOn || a.endsOn >= today),
+  );
+}
+
+/** Shift notes from the last `days` days, newest first (the contract: 14, read-only). */
+export async function recentShiftNotes(
+  db: D1Database | undefined,
+  days = 14,
+  now = new Date(),
+): Promise<ShiftNote[]> {
+  const from = storeToday(new Date(now.getTime() - (days - 1) * 86_400_000));
+  const order = { open: 0, mid: 1, close: 2 } as const;
+  const notes = await snapshotList<ShiftNote>(
+    db,
+    'ShiftNotes',
+    (n) => typeof n.date === 'string' && typeof n.note === 'string',
+  );
+  return notes
+    .filter((n) => n.date >= from)
+    .sort((a, b) => b.date.localeCompare(a.date) || order[b.shift] - order[a.shift]);
+}
+
+/** Supplies at or below their par level, with the drinks that use them (names from the menu). */
+export async function lowStock(
+  db: D1Database | undefined,
+  menu: Menu,
+): Promise<(InventoryItem & { drinks: string[] })[]> {
+  const stock = await snapshotList<InventoryItem>(
+    db,
+    'Inventory',
+    (i) => typeof i.supply === 'string' && typeof i.onHand === 'number',
+  );
+  return stock
+    .filter((i) => i.onHand <= i.parLevel)
+    .map((i) => ({
+      ...i,
+      drinks: (i.menuItems ?? []).flatMap((id) => menu.items.find((m) => m.id === id)?.name ?? []),
+    }));
 }
