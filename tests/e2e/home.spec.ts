@@ -53,6 +53,10 @@ test.describe('homepage', () => {
   test('hours are labelled as fictional', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('#hours')).toContainText('Fictional hours');
+    // The built-in hours until SharePoint publishes (ADR-0045), and whether it's open right now.
+    await expect(page.locator('#hours')).toContainText('Open daily');
+    await expect(page.locator('#hours')).toContainText('7:00 AM – 8:00 PM');
+    await expect(page.locator('#hours .feature__open')).toHaveText(/^(Open|Closed) now$/);
   });
 
   test('images declare their size, so the layout does not jump', async ({ page }) => {

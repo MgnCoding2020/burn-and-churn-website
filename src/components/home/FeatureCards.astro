@@ -1,5 +1,10 @@
 ---
-import { STORE_HOURS } from '../../data/store-hours';
+// Opening hours come from the published StoreHours list (ADR-0045).
+interface Props {
+  hours: { label: string; hours: string }[];
+  open: boolean;
+}
+const { hours, open } = Astro.props;
 
 const cards = [
   {
@@ -59,12 +64,18 @@ const cards = [
     </picture>
     <div class="feature__body">
       <h2 class="feature__title">Café Hours</h2>
-      <p>
-        <strong>{STORE_HOURS.summary}</strong>
-        <br />
-        {STORE_HOURS.opens} – {STORE_HOURS.closes}
+      <p class:list={['feature__open', open ? 'status--ok' : 'status--error']}>
+        {open ? 'Open now' : 'Closed now'}
       </p>
-      <p class="subtle">{STORE_HOURS.note}</p>
+      <dl class="feature__hours">
+        {hours.map((h) => (
+          <div>
+            <dt>{h.label}</dt>
+            <dd>{h.hours}</dd>
+          </div>
+        ))}
+      </dl>
+      <p class="subtle">Fictional hours for a fictional café.</p>
     </div>
   </article>
 </section>
@@ -89,6 +100,29 @@ const cards = [
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  .feature__open {
+    margin: 0 0 var(--bc-space-2);
+    font-weight: 700;
+  }
+
+  .feature__hours {
+    margin: 0 0 var(--bc-space-3);
+  }
+
+  .feature__hours div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 var(--bc-space-2);
+  }
+
+  .feature__hours dt {
+    font-weight: 700;
+  }
+
+  .feature__hours dd {
+    margin: 0;
   }
 
   .feature--hours .feature__media img {

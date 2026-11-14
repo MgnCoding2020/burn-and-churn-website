@@ -1,9 +1,11 @@
 ---
-import { formatCents, getMenuSnapshot, startingPrice } from '../../lib/menu';
+import { formatCents, startingPrice, type MenuItem } from '../../lib/menu';
 
-// The featured drink comes from menu data, never hard-coded copy or prices.
-const FEATURED_ID = 'cream-cold-brew';
-const featured = getMenuSnapshot().items.find((i) => i.id === FEATURED_ID);
+// The featured drink comes from the published menu, never hard-coded copy or prices.
+interface Props {
+  featured: MenuItem | undefined;
+}
+const { featured } = Astro.props;
 const from = featured ? startingPrice(featured) : undefined;
 
 const tastingNotes = ['Dark chocolate', 'Toasted nut', 'Vanilla cream'];

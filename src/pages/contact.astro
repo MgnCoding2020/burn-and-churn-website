@@ -1,6 +1,5 @@
 ---
 import Base from '../layouts/Base.astro';
-import { STORE_HOURS } from '../data/store-hours';
 
 export const prerender = true;
 const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
@@ -20,11 +19,9 @@ const repo = 'https://github.com/MgnCoding2020/burn-and-churn-website';
 
     <h2>The café (fictional)</h2>
     <p>
-      <strong>
-        {STORE_HOURS.summary}, {STORE_HOURS.opens} – {STORE_HOURS.closes}.
-      </strong>{' '}
-      {STORE_HOURS.note} There's no real address, phone number or email address for the café, and
-      this site has no contact form.
+      Opening hours (fictional, kept up to date by the café's managers) are on the{' '}
+      <a href="/#hours">home page</a>. There's no real address, phone number or email address for
+      the café, and this site has no contact form.
     </p>
 
     <h2>About the project</h2>

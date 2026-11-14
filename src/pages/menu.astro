@@ -4,13 +4,16 @@ import FeaturedDrink from '../components/menu/FeaturedDrink.astro';
 import MenuCategory from '../components/menu/MenuCategory.astro';
 import MenuHero from '../components/menu/MenuHero.astro';
 import Base from '../layouts/Base.astro';
+import { currentMenu } from '../lib/availability';
 import { getMenuSnapshot } from '../lib/menu';
 
-export const prerender = true;
+// Rendered per request (ADR-0045): the menu SharePoint published, with today's
+// sold-out marks. The built-in menu is still validated at build time, and is
+// what shows until SharePoint has synced.
+export const prerender = false;
 
-// Validated at build time: invalid menu data fails the build, so a broken
-// menu (zero-dollar rows, unknown sizes) can never be deployed.
-const menu = getMenuSnapshot();
+const db = Astro.locals.db;
+const menu = db ? await currentMenu(db) : getMenuSnapshot();
 const spotlight = menu.items.find((i) => i.id === 'burn-churn-latte');
 ---
 

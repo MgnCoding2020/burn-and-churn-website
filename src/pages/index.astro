@@ -3,8 +3,15 @@ import CraftSection from '../components/home/CraftSection.astro';
 import FeatureCards from '../components/home/FeatureCards.astro';
 import HeroSection from '../components/home/HeroSection.astro';
 import Base from '../layouts/Base.astro';
+import { hoursSummary, openNow, publishedHours, publishedMenu } from '../lib/published';
 
-export const prerender = true;
+// Rendered per request (ADR-0045): opening hours and the featured drink's price
+// come from what SharePoint published.
+export const prerender = false;
+
+const db = Astro.locals.db;
+const [menu, hours] = await Promise.all([publishedMenu(db), publishedHours(db)]);
+const featured = menu.items.find((i) => i.id === 'cream-cold-brew');
 ---
 
 <Base
@@ -22,6 +29,6 @@ export const prerender = true;
     fetchpriority="high"
   />
   <HeroSection />
-  <FeatureCards />
-  <CraftSection />
+  <FeatureCards hours={hoursSummary(hours)} open={openNow(hours)} />
+  <CraftSection featured={featured} />
 </Base>
