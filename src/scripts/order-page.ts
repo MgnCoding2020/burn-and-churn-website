@@ -1,6 +1,7 @@
 // The order page (src/pages/order.astro): the cart from this browser, priced
 // from the server's menu. Prices here are for showing only; checkout prices
-// the order again on the server.
+// the order again on the server, then sends the customer to Stripe's own
+// payment page (ADR-0044).
 import { MAX_QTY, removeLine, setQty, showCart, type Cart, type PricingItem } from '../lib/cart';
 import { CART_EVENT, loadCart, saveCart } from './cart-store';
 
@@ -17,8 +18,15 @@ const linesEl = $<HTMLUListElement>('[data-lines]');
 const totalEl = $<HTMLElement>('[data-total]');
 const unavailableEl = $<HTMLElement>('[data-unavailable]');
 const announce = $<HTMLElement>('[data-announce]');
+const payBtn = $<HTMLButtonElement>('[data-pay-button]');
+const signInLink = $<HTMLAnchorElement>('[data-pay-signin]');
+const staffNote = $<HTMLElement>('[data-pay-staff]');
+const payError = $<HTMLElement>('[data-pay-error]');
 
 let items: PricingItem[] | undefined;
+/** Who is here: a customer may pay; anyone else is shown why not. */
+let who: 'customer' | 'signed-out' | 'staff' | 'unknown' = 'unknown';
+let paying = false;
 
 function show(state: (typeof states)[number]) {
   for (const s of states) {
@@ -97,8 +105,64 @@ function render() {
   );
   totalEl.textContent = money(shown.totalCents);
   unavailableEl.hidden = shown.unavailable === 0;
+  payBtn.hidden = who !== 'customer';
+  signInLink.hidden = who !== 'signed-out';
+  staffNote.hidden = who !== 'staff';
+  // Sold-out lines must go first: what's paid is exactly what's shown.
+  payBtn.disabled = paying || shown.unavailable > 0 || shown.totalCents === 0;
   show('cart');
 }
+
+async function whoIsHere() {
+  try {
+    const res = await fetch('/api/v1/account/me', { headers: { Accept: 'application/json' } });
+    who = res.ok
+      ? 'customer'
+      : res.status === 401
+        ? 'signed-out'
+        : res.status === 403
+          ? 'staff'
+          : 'unknown';
+  } catch {
+    who = 'unknown';
+  }
+}
+
+async function pay() {
+  paying = true;
+  payError.hidden = true;
+  render();
+  announce.textContent = 'Starting your payment…';
+  try {
+    const res = await fetch('/api/v1/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      // One key per attempt: a double-click can't start two payments.
+      body: JSON.stringify({ key: crypto.randomUUID(), lines: loadCart().lines }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { url?: string; detail?: string };
+    if (res.status === 201 && body.url?.startsWith('https://checkout.stripe.com/')) {
+      window.location.assign(body.url);
+      return;
+    }
+    if (res.status === 401) {
+      who = 'signed-out';
+    } else if (res.status === 409) {
+      // Something sold out meanwhile: refresh prices and availability.
+      await start();
+    }
+    payError.textContent = body.detail ?? "We couldn't start the payment. Please try again.";
+  } catch {
+    payError.textContent = "We couldn't reach the site. Please try again.";
+  }
+  payError.hidden = false;
+  paying = false;
+  render();
+}
+
+payBtn.addEventListener('click', () => {
+  if (!paying) void pay();
+});
 
 async function start() {
   if (!loadCart().lines.length) return show('empty');
@@ -118,4 +182,4 @@ window.addEventListener(CART_EVENT, () => {
 window.addEventListener('storage', () => {
   if (items) render();
 });
-void start();
+void whoIsHere().then(start);

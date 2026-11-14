@@ -32,13 +32,15 @@ import { STRIPE_API_VERSION } from '../../src/lib/stripe.ts';
 const WEBHOOK_URL =
   'https://burn-and-churn-website.naultmichael.workers.dev/api/v1/webhooks/stripe';
 
-// What counter card payments and card refunds need (plan §6.1, §6.2).
+// What counter card payments, card refunds and online orders need (plan §6.1, §6.2).
 const WEBHOOK_EVENTS = [
   'terminal.reader.action_succeeded',
   'terminal.reader.action_failed',
   'payment_intent.succeeded',
   'payment_intent.payment_failed',
   'payment_intent.canceled',
+  'checkout.session.completed',
+  'checkout.session.expired',
   'charge.refunded',
   'refund.updated',
   'refund.failed',

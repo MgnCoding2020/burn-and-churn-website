@@ -50,13 +50,27 @@ export const prerender = true;
       <p class="muted">
         Pickup at the counter. Burn and Churn Coffee is fictional: no drinks are made.
       </p>
-      <p>
-        <span class="btn btn--primary order__pay" role="button" aria-disabled="true">
-          Pay with card: coming next
-        </span>
-      </p>
+      <div class="order__pay-area">
+        <button class="btn btn--primary order__pay" type="button" data-pay-button disabled hidden>
+          Pay with card (test mode)
+        </button>
+        <a
+          class="btn btn--primary order__pay"
+          href="/api/v1/auth/customer/login?next=order"
+          data-pay-signin
+          hidden
+        >
+          Sign in to pay
+        </a>
+        <p class="muted" data-pay-staff hidden>
+          You're signed in with a staff account. Online orders need a customer account: sign out of
+          the staff portal first.
+        </p>
+        <p class="status--error" role="alert" data-pay-error hidden></p>
+      </div>
       <p class="subtle">
-        Paying online arrives in the next update, through Stripe's own payment page in test mode.
+        You'll pay on Stripe's own page, in test mode: no real money. Use Stripe's test card 4242
+        4242 4242 4242 with any future date and any security code.{' '}
         <a href="/menu/">Keep browsing</a>
       </p>
     </section>
@@ -127,5 +141,16 @@ export const prerender = true;
 
   .order__pay {
     width: 100%;
+  }
+
+  .order__pay-area {
+    display: grid;
+    gap: var(--bc-space-3);
+    margin-block: var(--bc-space-4);
+  }
+
+  /* .btn sets display, which would override the hidden attribute. */
+  .order__pay-area [hidden] {
+    display: none;
   }
 </style>

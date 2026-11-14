@@ -59,7 +59,10 @@ export function registerCustomerAccount(define: Define) {
       }
 
       // Sessions go with the user (ON DELETE CASCADE); deleted explicitly as well.
+      // Orders stay for the shop's books, unlinked from the person (Owner, 2026-11-14).
       await db.batch([
+        db.prepare('UPDATE orders SET customer_id = NULL WHERE customer_id = ?').bind(user.id),
+        db.prepare('UPDATE online_checkouts SET user_id = NULL WHERE user_id = ?').bind(user.id),
         db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(user.id),
         db.prepare(`DELETE FROM users WHERE id = ? AND idp = 'customer'`).bind(user.id),
       ]);

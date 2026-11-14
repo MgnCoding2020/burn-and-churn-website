@@ -211,6 +211,44 @@ describe('POST /account/delete', () => {
     expect(await rows(id)).toEqual({ users: 0, sessions: 0 });
   });
 
+  it("keeps the customer's orders for the shop, unlinked from them (Owner, 2026-11-14)", async () => {
+    const oid = '11111111-aaaa-4bbb-8ccc-000000000009';
+    const { id, cookie } = await customer(oid);
+    const orderId = crypto.randomUUID();
+    const now = Date.now();
+    await db.batch([
+      db
+        .prepare(
+          `INSERT INTO orders (id, business_day, number, channel, tender, total_cents, idempotency_key,
+             payment_intent_id, customer_id, created_at, updated_at)
+           VALUES (?, '2026-11-14', 900, 'online', 'card', 525, ?, 'pi_test_erase', ?, ?, ?)`,
+        )
+        .bind(orderId, `checkout-${orderId}`, id, now, now),
+      db
+        .prepare(
+          `INSERT INTO online_checkouts (id, idempotency_key, user_id, status, total_cents, lines,
+             order_id, created_at, updated_at, expires_at)
+           VALUES (?, ?, ?, 'paid', 525, '[]', ?, ?, ?, ?)`,
+        )
+        .bind(crypto.randomUUID(), crypto.randomUUID(), id, orderId, now, now, now),
+    ]);
+    stubMicrosoft({
+      [`DELETE /users/${oid}`]: [204],
+      [`DELETE /directory/deletedItems/${oid}`]: [204],
+    });
+    expect((await post(cookie)).headers.get('Location')).toBe(DELETED_PAGE);
+    const order = await db
+      .prepare('SELECT customer_id, total_cents FROM orders WHERE id = ?')
+      .bind(orderId)
+      .first();
+    expect(order).toEqual({ customer_id: null, total_cents: 525 });
+    const linked = await db
+      .prepare('SELECT COUNT(*) AS n FROM online_checkouts WHERE user_id = ?')
+      .bind(id)
+      .first<{ n: number }>();
+    expect(linked!.n).toBe(0);
+  });
+
   it('deletes nothing when the directory refuses: the customer can try again', async () => {
     const oid = '11111111-aaaa-4bbb-8ccc-000000000002';
     const { id, cookie } = await customer(oid);

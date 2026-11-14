@@ -50,6 +50,17 @@ Set the Worker key on production. Paste it at the prompt (from your password man
 npx wrangler secret put STRIPE_API_KEY
 ```
 
+## 3a. Online orders (Phase 5, ADR-0044): add the Checkout events
+
+The webhook endpoint needs two more events: `checkout.session.completed` and `checkout.session.expired`. Re-run the set-up script; it finds the endpoint and adds what's missing:
+
+1. Create the one-time key again (step 2.1 above: **Write** on Terminal Locations, Terminal Readers and Webhook Endpoints).
+2. Run `npx wrangler login`, then `node scripts/stripe/setup-test.mjs --dry-run`, and paste the key. It should say the endpoint exists and list the two events as missing.
+3. Run `node scripts/stripe/setup-test.mjs` for real: the endpoint is updated. The signing secret doesn't change, so there's nothing to save.
+4. Delete the one-time key, then run `npx wrangler logout`.
+
+Locally, no webhook is needed: after you pay, the order status page asks Stripe directly.
+
 ## 4. Local webhooks (optional, for testing on your laptop)
 
 Stripe can't reach `localhost`, so the Stripe CLI forwards events:

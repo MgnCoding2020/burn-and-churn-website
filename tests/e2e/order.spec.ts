@@ -62,7 +62,7 @@ test('a tampered cart is cleaned up, never trusted', async ({ page }) => {
   await expect(page.getByText('Your order is empty.')).toBeVisible();
 });
 
-test('paying is clearly not available yet', async ({ page }) => {
+test('signed out, paying asks you to sign in and come back here', async ({ page }) => {
   await page.goto('/order/');
   await page.evaluate(() =>
     localStorage.setItem(
@@ -71,8 +71,14 @@ test('paying is clearly not available yet', async ({ page }) => {
     ),
   );
   await page.reload();
-  await expect(page.getByText('Pay with card: coming next')).toHaveAttribute(
-    'aria-disabled',
-    'true',
+  await expect(page.getByRole('link', { name: 'Sign in to pay' })).toHaveAttribute(
+    'href',
+    '/api/v1/auth/customer/login?next=order',
   );
+  await expect(page.getByRole('button', { name: 'Pay with card (test mode)' })).toBeHidden();
+});
+
+test('the status page asks a signed-out visitor to sign in', async ({ page }) => {
+  await page.goto('/order/status/?id=00000000-0000-4000-8000-000000000000');
+  await expect(page.getByText('Sign in to see your order.')).toBeVisible();
 });
