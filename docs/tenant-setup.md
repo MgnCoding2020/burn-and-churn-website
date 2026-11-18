@@ -210,13 +210,13 @@ Plan §3.5:
 
 ## Record
 
-|                              |              |
-| ---------------------------- | ------------ |
-| Trial started                |              |
-| Trial expires                |              |
-| Recurring billing            | Off (date: ) |
-| Licence SKU                  |              |
-| Site created                 |              |
-| Sync app certificate expires |              |
-| Conditional Access On        |              |
-| Outcome at day 30            |              |
+|                              |                                                          |
+| ---------------------------- | -------------------------------------------------------- |
+| Trial started                | 2026-11-18                                               |
+| Trial expires                | about 2026-12-18 (30 days)                               |
+| Recurring billing            | Off (2026-11-18, Michael's statement; not screenshotted) |
+| Licence SKU                  | `SPB` (Business Premium), 25 seats; 21 assigned          |
+| Site created                 | 2026-11-18 (`docs/evidence/2026-11-18-trial-day-1/`)     |
+| Sync app certificate expires | 2027-11-18                                               |
+| Conditional Access On        |                                                          |
+| Outcome at day 30            |                                                          |
