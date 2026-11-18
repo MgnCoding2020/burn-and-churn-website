@@ -114,7 +114,11 @@ Graph can't set SharePoint permissions for groups, so this step is done in the b
    - Windows **Settings → Accounts → Access work or school → Connect**, signing in with your Burn and Churn admin-capable account. Choose the enrolment option the Intune admin centre recommends for a personal device.
    - In the **Intune admin centre → Devices → Compliance → Create policy (Windows 10 and later)**: a minimal policy, for example require a password and a supported OS. Assign it to `grp-bc-all-staff`.
 3. **Device check in the browser:** Chrome passes the device state to Entra only with Microsoft's **"Microsoft Single Sign On"** extension (or use Edge), and **not in Incognito**, where extensions are off. Re-check Microsoft's current requirement before `T-CA-05`.
-4. **Audit:** the Purview portal → **Audit**. If it offers **Start recording user and admin activity**, start it. Search 24 hours later for today's SharePoint changes (`T-AUD-01`).
+4. **Audit:** Business Premium does **not** turn auditing on by default (Microsoft Learn, "Turn auditing on or off", checked 2026-11-19), and the portal's banner isn't a reliable sign. Check in **Exchange Online** PowerShell, in a new terminal (not Security & Compliance PowerShell, where the value always reads `False`):
+   - `Connect-ExchangeOnline -ShowBanner:$false`, then `Get-AdminAuditLogConfig | Format-List UnifiedAuditLogIngestionEnabled`.
+   - `True`: on. `False`: `Set-AdminAuditLogConfig -UnifiedAuditLogIngestionEnabled $true` (up to 60 minutes to take effect).
+   - `Disconnect-ExchangeOnline -Confirm:$false`.
+   - Found `True` on 2026-11-19, most likely left on from the homelab work. Search 24 hours after the changes for the SharePoint activity (`T-AUD-01`).
 5. **Next day:** Entra → **Sign-in logs**, filter app `bc-website-staff`, tab **Report-only** (`T-CA-01`). Then do **step 8a** (the switch from security defaults); the 8-hour and device policies go On after it (`T-CA-04`, `T-CA-05`).
 
 ### 8a. Switch from security defaults to Conditional Access (one sitting, about 20 minutes)
