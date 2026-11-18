@@ -179,7 +179,7 @@ foreach ($list in $contract.lists) {
             }
             Write-Step 'created' "list $($list.name)" "$($columns.Count) columns"
         } else {
-            Write-Step 'would' "list $($list.name)" "create with $($columns.Count) columns: $(($list.columns | ForEach-Object name) -join ', ')"
+            Write-Step 'would' "list $($list.name)" "create with $($columns.Count) columns: $(@($list.columns.name) -join ', ')"
             continue
         }
     } else {

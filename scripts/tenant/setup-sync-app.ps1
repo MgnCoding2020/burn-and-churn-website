@@ -200,13 +200,13 @@ foreach ($t in $targets) {
     $have = $null
     if ($app) {
         $perms = @(Get-All "v1.0/sites/$($site.id)/lists/$($t.list.id)/permissions")
-        $have = $perms | Where-Object { @($_.grantedToIdentitiesV2 + $_.grantedToIdentities) | Where-Object { $_.application.id -eq $app.appId } } | Select-Object -First 1
+        $have = $perms | Where-Object { @(@($_.grantedToV2) + @($_.grantedTo) + @($_.grantedToIdentitiesV2) + @($_.grantedToIdentities)) | Where-Object { $_.application.id -eq $app.appId } } | Select-Object -First 1
     }
     if ($have -and @($have.roles) -contains 'read' -and @($have.roles).Count -eq 1) { Write-Step 'exists' "grant $($t.label)" 'read' }
     elseif ($have) { Write-Step 'CHECK' "grant $($t.label)" "has roles $(@($have.roles) -join ', '), expected read only: fix by hand" }
     elseif ($app -and $PSCmdlet.ShouldProcess("list $($t.label)", "Grant $AppName read")) {
         Invoke-Graph POST "v1.0/sites/$($site.id)/lists/$($t.list.id)/permissions" @{
-            roles = @('read'); grantedToIdentities = @(@{ application = @{ id = $app.appId; displayName = $AppName } })
+            roles = @('read'); grantedToV2 = @{ application = @{ id = $app.appId; displayName = $AppName } }
         } | Out-Null
         Write-Step 'granted' "list $($t.label)" 'read'
     } else { Write-Step 'would' "list $($t.label)" "grant $AppName read" }
