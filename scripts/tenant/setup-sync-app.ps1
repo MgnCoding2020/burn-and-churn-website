@@ -192,7 +192,10 @@ $lists = @(Get-All "v1.0/sites/$($site.id)/lists?`$select=id,name,displayName&`$
 $listIds = [ordered]@{}
 
 $targets = @($contract.lists | Where-Object { $_.websiteReads } | ForEach-Object { $n = $_.name; [pscustomobject]@{ label = $n; list = ($lists | Where-Object { $_.name -eq $n } | Select-Object -First 1) } })
-$targets += [pscustomobject]@{ label = $UserInfoList; list = ($lists | Where-Object { $_.displayName -eq $UserInfoList } | Select-Object -First 1) }
+# The User Information List is hidden, so Graph leaves it out of the list above; ask for it by title.
+$uil = $lists | Where-Object { $_.displayName -eq $UserInfoList } | Select-Object -First 1
+if (-not $uil) { try { $uil = Invoke-Graph GET "v1.0/sites/$($site.id)/lists/$([uri]::EscapeDataString($UserInfoList))?`$select=id,name,displayName" } catch { } }
+$targets += [pscustomobject]@{ label = $UserInfoList; list = $uil }
 
 foreach ($t in $targets) {
     if (-not $t.list) { Write-Step 'missing' "list $($t.label)" 'not found on the site (run setup-sharepoint.ps1; for the User Information List see T-SP-05)'; continue }

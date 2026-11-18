@@ -7,8 +7,12 @@
 //   node scripts/tenant/check-sync-access.mjs
 //
 // Expected: every list marked "websiteReads" in docs/contracts/sharepoint-lists.json
-// answers 200; the site's other content, the tenant's root site and directory data answer
-// 403 (or 401). The token carries one permission: Lists.SelectedOperations.Selected.
+// answers 200; the tenant's root site and directory data answer 403 (or 401). Inside the
+// site, SharePoint doesn't refuse an ungranted list with 403: it answers 200 with the items
+// filtered out (seen 2026-11-18). So those probes pass on 4xx or on an empty result, and
+// they use lists that do hold items: Site Pages (the Home page) and Documents (upload one
+// test file first, trial test T-SP-03). The token carries one permission:
+// Lists.SelectedOperations.Selected.
 
 import { createHash, createPrivateKey, randomUUID, sign } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -101,9 +105,14 @@ probes.push({
   expect: 'allowed',
 });
 probes.push({
-  label: "The site's own pages and documents",
+  label: "The site's pages (Site Pages holds the Home page)",
+  path: `sites/${site}/lists/Site Pages/items?$top=5`,
+  expect: 'hidden',
+});
+probes.push({
+  label: "The site's documents (upload one test file first)",
   path: `sites/${site}/drive/root/children`,
-  expect: 'refused',
+  expect: 'hidden',
 });
 // Recorded, not judged: whether a per-list grant may enumerate the site's lists isn't documented.
 probes.push({ label: "The site's list of lists", path: `sites/${site}/lists`, expect: 'info' });
@@ -118,18 +127,21 @@ for (const p of probes) {
   }
   const r = await graph(p.path);
   const ok = r.status >= 200 && r.status < 300;
-  const pass = (p.expect === 'allowed') === ok;
+  // Item counts only, never item contents.
+  const items = ok ? ((await r.json()).value ?? []).length : undefined;
+  const pass = p.expect === 'hidden' ? !ok || items === 0 : p.expect === 'allowed' ? ok : !ok;
   results.push({
     label: p.label,
     expect: p.expect,
     status: r.status,
+    items,
     outcome: p.expect === 'info' ? 'INFO' : pass ? 'PASS' : 'FAIL',
   });
 }
 
 for (const r of results)
   console.log(
-    `${r.outcome.padEnd(8)} ${String(r.status).padEnd(4)} ${r.expect.padEnd(8)} ${r.label}`,
+    `${r.outcome.padEnd(8)} ${String(r.status).padEnd(4)} ${String(r.items ?? '-').padEnd(5)} ${r.expect.padEnd(8)} ${r.label}`,
   );
 const failed = results.filter((r) => r.outcome === 'FAIL').length;
 console.log(
