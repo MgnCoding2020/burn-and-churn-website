@@ -23,6 +23,12 @@ Written 2026-11-14 for Michael's busy month (work, school, exams). It puts the t
 | Week 4    | **13. Buffer**                          | as needed | Re-run anything that failed, after Claude's fixes; optional mentor invite (T-MEN)                                                                                                                                                                                |                                             |                                                                                       |
 | By day 28 | **14. Wrap-up**                         | 30 min    | Final `export-evidence.ps1`; decide whether to buy seats or let the trial lapse. If it lapses: BC policies Off (`setup-conditional-access.ps1 -State Off`) and `remove-sync-app.ps1`. The site keeps its last published copy                                     | T-END-01, T-END-02                          | `trial-decision`                                                                      |
 
+## Progress
+
+| Date       | Sittings                              | Result                                                                                                                                                                                                                                                   |
+| ---------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-18 | **1** and **2** done; **5** half done | Trial started (ends about 2026-12-18). Licences, site and lists, group permissions, sync app, roles by group, Ethan's role change: `2026-11-18-trial-day-1/`. Still in 5: a no-role account refused. **Next: 3** (report-only CA; its dry run was clean) |
+
 **If a sitting runs over or a test fails,** stop there: note it, and the next sitting starts from the same row. Weeks 2 and 3 don't depend on each other, except that device compliance (11) needs the enrolled laptop (8).
 
 **Clock checks** (plan §16 item 10): at the start of each sitting, Claude says how many trial days are left and what's still untested.

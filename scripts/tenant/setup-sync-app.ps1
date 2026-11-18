@@ -192,7 +192,10 @@ $lists = @(Get-All "v1.0/sites/$($site.id)/lists?`$select=id,name,displayName&`$
 $listIds = [ordered]@{}
 
 $targets = @($contract.lists | Where-Object { $_.websiteReads } | ForEach-Object { $n = $_.name; [pscustomobject]@{ label = $n; list = ($lists | Where-Object { $_.name -eq $n } | Select-Object -First 1) } })
-$targets += [pscustomobject]@{ label = $UserInfoList; list = ($lists | Where-Object { $_.displayName -eq $UserInfoList } | Select-Object -First 1) }
+# The User Information List is hidden, so Graph leaves it out of the list above; ask for it by title.
+$uil = $lists | Where-Object { $_.displayName -eq $UserInfoList } | Select-Object -First 1
+if (-not $uil) { try { $uil = Invoke-Graph GET "v1.0/sites/$($site.id)/lists/$([uri]::EscapeDataString($UserInfoList))?`$select=id,name,displayName" } catch { } }
+$targets += [pscustomobject]@{ label = $UserInfoList; list = $uil }
 
 foreach ($t in $targets) {
     if (-not $t.list) { Write-Step 'missing' "list $($t.label)" 'not found on the site (run setup-sharepoint.ps1; for the User Information List see T-SP-05)'; continue }
@@ -200,13 +203,13 @@ foreach ($t in $targets) {
     $have = $null
     if ($app) {
         $perms = @(Get-All "v1.0/sites/$($site.id)/lists/$($t.list.id)/permissions")
-        $have = $perms | Where-Object { @($_.grantedToIdentitiesV2 + $_.grantedToIdentities) | Where-Object { $_.application.id -eq $app.appId } } | Select-Object -First 1
+        $have = $perms | Where-Object { @(@($_.grantedToV2) + @($_.grantedTo) + @($_.grantedToIdentitiesV2) + @($_.grantedToIdentities)) | Where-Object { $_.application.id -eq $app.appId } } | Select-Object -First 1
     }
     if ($have -and @($have.roles) -contains 'read' -and @($have.roles).Count -eq 1) { Write-Step 'exists' "grant $($t.label)" 'read' }
     elseif ($have) { Write-Step 'CHECK' "grant $($t.label)" "has roles $(@($have.roles) -join ', '), expected read only: fix by hand" }
     elseif ($app -and $PSCmdlet.ShouldProcess("list $($t.label)", "Grant $AppName read")) {
         Invoke-Graph POST "v1.0/sites/$($site.id)/lists/$($t.list.id)/permissions" @{
-            roles = @('read'); grantedToIdentities = @(@{ application = @{ id = $app.appId; displayName = $AppName } })
+            roles = @('read'); grantedToV2 = @{ application = @{ id = $app.appId; displayName = $AppName } }
         } | Out-Null
         Write-Step 'granted' "list $($t.label)" 'read'
     } else { Write-Step 'would' "list $($t.label)" "grant $AppName read" }
