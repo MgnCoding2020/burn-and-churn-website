@@ -215,7 +215,14 @@ foreach ($list in $contract.lists) {
     if (-not $Seed) { continue }
     $rows = $null
     if ($list.seed) {
-        $json = & node (Join-Path $PSScriptRoot 'menu-seed-rows.mjs')
+        # Node writes UTF-8; Windows PowerShell 5.1 decodes a program's output with the console
+        # code page (437) unless told otherwise, which garbled the accented e in "Caffe Latte"
+        # in SharePoint (2026-11-19).
+        $consoleEncoding = [Console]::OutputEncoding
+        try {
+            [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
+            $json = & node (Join-Path $PSScriptRoot 'menu-seed-rows.mjs')
+        } finally { [Console]::OutputEncoding = $consoleEncoding }
         if ($LASTEXITCODE) { throw 'menu-seed-rows.mjs failed (is Node installed?).' }
         $rows = ($json -join "`n") | ConvertFrom-Json
     } elseif ($list.seedRows) {
