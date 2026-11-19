@@ -217,7 +217,7 @@ foreach ($list in $contract.lists) {
     if ($list.seed) {
         # Node writes UTF-8; Windows PowerShell 5.1 decodes a program's output with the console
         # code page (437) unless told otherwise, which garbled the accented e in "Caffe Latte"
-        # in SharePoint (2026-11-19).
+        # in SharePoint (found 2026-11-18).
         $consoleEncoding = [Console]::OutputEncoding
         try {
             [Console]::OutputEncoding = New-Object System.Text.UTF8Encoding $false
