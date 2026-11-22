@@ -246,7 +246,7 @@ export interface Announcement {
   body: string;
   audience: 'public' | 'staff';
   startsOn: string;
-  endsOn: string | null;
+  endsOn: string;
 }
 
 const AnnouncementRow = z
@@ -255,10 +255,11 @@ const AnnouncementRow = z
     Body: plain(500),
     Audience: z.enum(['public', 'staff']),
     StartsOn: dateOnly,
-    EndsOn: z.preprocess((v) => (v === null || v === '' ? undefined : v), dateOnly.optional()),
+    // Required: an announcement with no last day would stay up after its date passed.
+    EndsOn: dateOnly,
   })
   .superRefine((row, ctx) => {
-    if (row.EndsOn && row.EndsOn < row.StartsOn)
+    if (row.EndsOn < row.StartsOn)
       ctx.addIssue({ code: 'custom', path: ['EndsOn'], message: 'must be on or after StartsOn' });
   });
 
@@ -269,7 +270,7 @@ export function announcementsFromRows(items: ListItem[]): ListResult<Announcemen
     body: r.Body,
     audience: r.Audience,
     startsOn: r.StartsOn,
-    endsOn: r.EndsOn ?? null,
+    endsOn: r.EndsOn,
   }));
   return { data, read: items.length, published: data.length, rejected, publishable: true };
 }

@@ -152,7 +152,7 @@
           "choices": ["public", "staff"]
         },
         { "name": "StartsOn", "displayName": "Show from", "type": "date", "required": true },
-        { "name": "EndsOn", "displayName": "Show until", "type": "date" }
+        { "name": "EndsOn", "displayName": "Show until", "type": "date", "required": true }
       ]
     },
     {

@@ -144,11 +144,12 @@ export async function activeAnnouncements(
   const all = await snapshotList<Announcement>(
     db,
     'Announcements',
-    (a) => typeof a.headline === 'string' && typeof a.startsOn === 'string',
+    (a) =>
+      typeof a.headline === 'string' &&
+      typeof a.startsOn === 'string' &&
+      typeof a.endsOn === 'string',
   );
-  return all.filter(
-    (a) => a.audience === audience && a.startsOn <= today && (!a.endsOn || a.endsOn >= today),
-  );
+  return all.filter((a) => a.audience === audience && a.startsOn <= today && a.endsOn >= today);
 }
 
 /** Shift notes from the last `days` days, newest first (the contract: 14, read-only). */

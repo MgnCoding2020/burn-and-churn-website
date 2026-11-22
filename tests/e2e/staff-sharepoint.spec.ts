@@ -14,14 +14,14 @@ test.beforeAll(() => {
       body: 'We close early on Thursday.',
       audience: 'public',
       startsOn: today,
-      endsOn: null,
+      endsOn: today,
     },
     {
       headline: 'Team meeting',
       body: 'Monday 8 PM in the back room.',
       audience: 'staff',
       startsOn: today,
-      endsOn: null,
+      endsOn: today,
     },
     {
       headline: 'Old news',
