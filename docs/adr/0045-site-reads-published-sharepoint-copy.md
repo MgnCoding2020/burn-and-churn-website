@@ -30,7 +30,7 @@ The trial's test T-SP-06 ("change a price in SharePoint, Publish, and the public
 
 ### Announcements, shift notes and low stock (7.3)
 
-- **Announcements** show from `StartsOn` to `EndsOn`, inclusive, in the store's time zone. **Public** ones appear on the home and menu pages (the pages rendered per request); **staff** ones appear on the portal home. The other public pages are prerendered and don't show them.
+- **Announcements** show from `StartsOn` to `EndsOn`, inclusive, in the store's time zone. **Amended 2026-11-22:** `EndsOn` is now required, and a row without it is skipped and named at Publish like any other bad row. An empty `EndsOn` used to mean "until removed", and on trial day 5 a staff notice for a Friday meeting was still on the portal on the Sunday after (Michael's finding). The site can't read a date out of the message, so the manager who writes it sets the last day. **Public** ones appear on the home and menu pages (the pages rendered per request); **staff** ones appear on the portal home. The other public pages are prerendered and don't show them.
 - **Shift notes:** a read-only **Notes** screen for every staff role, showing the last 14 days, newest first (contract §4).
 - **Low stock:** supplies at or below their par level, with the menu names of the drinks they're used in. It's shown on the portal home and the staff Menu screen. **It's a warning only:** marking a drink sold out stays a person's decision, and counts are kept in SharePoint.
 - **Before the first sync, or with a malformed copy,** these show nothing. There's no built-in copy, because there's nothing true to show.

@@ -133,7 +133,7 @@ describe('announcements, shift notes and low stock (7.3)', () => {
   const NOW = new Date('2026-11-20T15:00:00Z'); // Friday 10:00 AM in New York
 
   it('announcements show for their audience from StartsOn to EndsOn, inclusive', async () => {
-    const a = (headline: string, audience: string, startsOn: string, endsOn: string | null) => ({
+    const a = (headline: string, audience: string, startsOn: string, endsOn: string) => ({
       headline,
       body: 'x',
       audience,
@@ -142,10 +142,10 @@ describe('announcements, shift notes and low stock (7.3)', () => {
     });
     await publish('Announcements', [
       a('Today only', 'public', '2026-11-20', '2026-11-20'),
-      a('Ongoing', 'public', '2026-11-01', null),
-      a('Future', 'public', '2026-11-21', null),
+      a('Ongoing', 'public', '2026-11-01', '2026-12-31'),
+      a('Future', 'public', '2026-11-21', '2026-11-30'),
       a('Ended', 'public', '2026-11-01', '2026-11-19'),
-      a('Staff', 'staff', '2026-11-01', null),
+      a('Staff', 'staff', '2026-11-01', '2026-11-20'),
     ]);
     const shown = (await activeAnnouncements(db, 'public', NOW)).map((x) => x.headline);
     expect(shown).toEqual(['Today only', 'Ongoing']);
@@ -198,5 +198,10 @@ describe('announcements, shift notes and low stock (7.3)', () => {
     await publish('Inventory', '[{"supply": 5}]');
     expect(await activeAnnouncements(db, 'public', NOW)).toEqual([]);
     expect(await lowStock(db, getMenuSnapshot())).toEqual([]);
+    // A copy published before EndsOn was required shows nothing until the next sync.
+    await publish('Announcements', [
+      { headline: 'Old copy', body: 'x', audience: 'public', startsOn: '2026-11-18', endsOn: null },
+    ]);
+    expect(await activeAnnouncements(db, 'public', NOW)).toEqual([]);
   });
 });

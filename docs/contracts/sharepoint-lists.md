@@ -80,13 +80,13 @@ Seeded with the hours the site shows today.
 
 Who edits: managers and owners.
 
-| Internal name | Display    | Type                       | Required | Rules                                           |
-| ------------- | ---------- | -------------------------- | -------- | ----------------------------------------------- |
-| `Title`       | Headline   | Text (80)                  | Yes      |                                                 |
-| `Body`        | Message    | Multiple lines, plain text | Yes      | Up to 500 characters                            |
-| `Audience`    | Audience   | Choice                     | Yes      | `public` (site banner) or `staff` (portal only) |
-| `StartsOn`    | Show from  | Date                       | Yes      |                                                 |
-| `EndsOn`      | Show until | Date                       | No       | Empty = until removed; must be after `StartsOn` |
+| Internal name | Display    | Type                       | Required | Rules                                                                                                               |
+| ------------- | ---------- | -------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| `Title`       | Headline   | Text (80)                  | Yes      |                                                                                                                     |
+| `Body`        | Message    | Multiple lines, plain text | Yes      | Up to 500 characters                                                                                                |
+| `Audience`    | Audience   | Choice                     | Yes      | `public` (site banner) or `staff` (portal only)                                                                     |
+| `StartsOn`    | Show from  | Date                       | Yes      |                                                                                                                     |
+| `EndsOn`      | Show until | Date                       | Yes      | Last day shown; on or after `StartsOn`. Required since 2026-11-22: a row without it is skipped and named at Publish |
 
 ### 4. ShiftNotes: website reads
 

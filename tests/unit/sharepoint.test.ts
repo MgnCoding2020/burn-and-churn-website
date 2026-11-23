@@ -124,6 +124,13 @@ describe('announcementsFromRows', () => {
           Body: 'Maple Smoke returns this weekend.',
           Audience: 'public',
           StartsOn: '2026-11-14T05:00:00Z',
+          EndsOn: '2026-11-16T05:00:00Z',
+        },
+        {
+          Title: 'No end',
+          Body: 'x',
+          Audience: 'staff',
+          StartsOn: '2026-11-14T05:00:00Z',
           EndsOn: null,
         },
         { Title: 'Bad', Body: 'x', Audience: 'everyone', StartsOn: '2026-11-14T05:00:00Z' },
@@ -142,10 +149,11 @@ describe('announcementsFromRows', () => {
         body: 'Maple Smoke returns this weekend.',
         audience: 'public',
         startsOn: '2026-11-14',
-        endsOn: null,
+        endsOn: '2026-11-16',
       },
     ]);
     expect(result.rejected.map((r) => r.reason)).toEqual([
+      expect.stringMatching(/^EndsOn: /),
       expect.stringMatching(/^Audience: /),
       'EndsOn: must be on or after StartsOn',
     ]);
